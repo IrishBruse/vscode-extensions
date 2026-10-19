@@ -7,7 +7,7 @@ Update any bullet that does not follow this form.
 
 - **Add**: Install ACP agents from the official registry (**Browse Agent Registry**) with `npx`, `uvx`, and binary installs in extension storage; manual `ib-acp-ui.agents` still wins on name collision.
 - **Add**: Composer agent picker switches agents before the first message.
-- **Add**: Paste images from the clipboard into the chat composer; ACP agents advertising image prompts receive them as image content blocks.
+- **Add**: Paste images from the clipboard into the chat composer; thumbnails render in the composer and ACP agents advertising image prompts receive them as image content blocks.
 - **Add**: Empty new-chat page shows a **Provider** select and recent chats for that provider; new chats are titled `New <provider> chat` and the picker switches provider until the first message.
 - **Change**: Chat UI under 800px wide collapses side padding to 4px and uses the full panel width for transcript and composer.
 - **Change**: Chat UI follows the current VS Code design language (corner radius, spacing, fonts, and focus states).

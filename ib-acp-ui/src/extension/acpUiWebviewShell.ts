@@ -18,6 +18,7 @@ export function getAcpUiWebviewHtml(extensionRoot: Uri, webview: Webview): strin
     const cspSource = webview.cspSource;
     const contentSecurityPolicy = [
         `default-src 'none'`,
+        `img-src ${cspSource} data:`,
         `style-src ${cspSource}`,
         `font-src ${cspSource}`,
         `script-src ${cspSource}`,
