@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+## 0.6.0
+
 - **Add**: Install ACP agents from the official registry (**Browse Agent Registry**) with `npx`, `uvx`, and binary installs in extension storage; manual `ib-acp-ui.agents` still wins on name collision.
 - **Add**: Composer agent picker switches agents before the first message.
 - **Add**: Paste images from the clipboard into the chat composer; thumbnails render in the composer and ACP agents advertising image prompts receive them as image content blocks.

@@ -1,7 +1,7 @@
 {
     "name": "ib-acp-ui",
     "displayName": "ACP UI",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "Agent Client Protocol (ACP) UI integration",
     "categories": [
         "Other"
