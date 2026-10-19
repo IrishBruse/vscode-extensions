@@ -3,41 +3,47 @@
     "tasks": [
         {
             "label": "ib-utilities: build",
-            "type": "npm",
-            "script": "build",
-            "path": "ib-utilities/",
+            "type": "shell",
+            "command": "npm run build -w ib-utilities",
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "ib-acp-ui: build",
-            "type": "npm",
-            "script": "build",
-            "path": "ib-acp-ui/",
+            "type": "shell",
+            "command": "npm run build -w ib-acp-ui",
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "ib-utilities: watch",
-            "type": "npm",
-            "script": "watch",
-            "path": "ib-utilities/",
+            "type": "shell",
+            "command": "npm run watch -w ib-utilities",
+            "options": { "cwd": "${workspaceFolder}" },
             "isBackground": true,
             "problemMatcher": [],
+            "runOptions": { "runOn": "folderOpen" },
             "presentation": {
                 "reveal": "never",
+                "showIn": "tasks",
+                "panel": "dedicated",
                 "group": "watchers"
             }
         },
         {
             "label": "ib-acp-ui: watch",
-            "type": "npm",
-            "script": "watch",
-            "path": "ib-acp-ui/",
+            "type": "shell",
+            "command": "npm run watch -w ib-acp-ui",
+            "options": { "cwd": "${workspaceFolder}" },
             "isBackground": true,
             "problemMatcher": [],
+            "runOptions": { "runOn": "folderOpen" },
             "presentation": {
                 "reveal": "never",
+                "showIn": "tasks",
+                "panel": "dedicated",
                 "group": "watchers"
             }
         }
