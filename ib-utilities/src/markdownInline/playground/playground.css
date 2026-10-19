@@ -1,0 +1,83 @@
+:root {
+    --vscode-editor-background: #1e1e1e;
+    --vscode-editor-foreground: #d4d4d4;
+    --vscode-editor-font-family: ui-sans-serif, system-ui, sans-serif;
+    --ib-md-heading-1: #d19a66;
+    --ib-md-heading-2: #e06c75;
+    --ib-md-heading-3: #61afef;
+    --ib-md-heading-4: #c678dd;
+    --ib-md-heading-5: #c678dd;
+    --ib-md-heading-6: #c678dd;
+    --ib-md-inline-code: #c678dd;
+    --ib-md-inline-code-background: #21252ba0;
+    --vscode-textBlockQuote-background: #7f7f7f1a;
+    --vscode-textBlockQuote-border: #4b5163;
+    --vscode-descriptionForeground: #9da5b4;
+    color-scheme: dark;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-editor-font-family);
+}
+
+#toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--vscode-editorWidget-border, #3a3f4b);
+    background: var(--vscode-sideBar-background, #21252b);
+    color: var(--vscode-foreground, #d7dae0);
+    font-family: var(--vscode-font-family, system-ui, sans-serif);
+    font-size: 13px;
+}
+
+#source {
+    display: flex;
+}
+
+#source button {
+    font: inherit;
+    color: var(--vscode-foreground, #d7dae0);
+    background: transparent;
+    border: 1px solid var(--vscode-dropdown-border, #21252b);
+    padding: 2px 10px;
+    cursor: pointer;
+}
+
+#source button + button {
+    margin-left: -1px;
+}
+
+#source button[aria-pressed="true"] {
+    color: var(--vscode-button-foreground, #ffffff);
+    background: var(--vscode-button-background, #35a854);
+    border-color: var(--vscode-button-background, #35a854);
+}
+
+#toolbar select {
+    font: inherit;
+    color: var(--vscode-dropdown-foreground, var(--vscode-editor-foreground));
+    background: var(--vscode-dropdown-background, #353b45);
+    border: 1px solid var(--vscode-dropdown-border, #21252b);
+    padding: 2px 6px;
+}
+
+body > #editor.inline-md-root,
+body > #editor {
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}

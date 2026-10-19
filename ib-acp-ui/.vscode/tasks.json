@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch:extension",
+            "type": "npm",
+            "script": "watch:extension",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "never",
+                "group": "watchers",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "watch:webview",
+            "type": "npm",
+            "script": "watch:webview",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "never",
+                "group": "watchers",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "watch",
+            "dependsOn": ["watch:extension", "watch:webview"],
+            "dependsOrder": "parallel",
+            "problemMatcher": [],
+            "runOptions": { "runOn": "folderOpen" }
+        },
+        {
+            "label": "Playground UI",
+            "type": "npm",
+            "script": "dev:playground",
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "watchers"
+            },
+            "runOptions": { "runOn": "folderOpen" }
+        }
+    ]
+}

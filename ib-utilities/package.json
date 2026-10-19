@@ -1,0 +1,581 @@
+{
+    "name": "ib-utilities",
+    "displayName": "IrishBruse's Utilities",
+    "version": "0.29.0",
+    "description": "A collection of utilities made by me",
+    "categories": [
+        "Other"
+    ],
+    "license": "MIT",
+    "author": "Ethan Conneely",
+    "repository": {
+        "url": "https://github.com/IrishBruse/vscode-extensions"
+    },
+    "publisher": "irishbruse",
+    "main": "./dist/extension.js",
+    "scripts": {
+        "vscode:prepublish": "npm run build-markdown-inline && npm run package",
+        "build": "vp pack && node src/markdownInline/build.mjs",
+        "watch": "vp pack --watch",
+        "build-markdown-inline": "npm run build -w @ib-utilities/markdown-inline",
+        "watch-markdown-inline": "npm run watch -w @ib-utilities/markdown-inline",
+        "dev:markdown-inline": "npm run dev -w @ib-utilities/markdown-inline",
+        "check:markdown-inline": "npm run check -w @ib-utilities/markdown-inline",
+        "test:markdown-inline": "npm run test -w @ib-utilities/markdown-inline",
+        "test:markdown-inline-browser": "vp test run --project markdownInline",
+        "e2e:markdown-inline": "npm run e2e -w @ib-utilities/markdown-inline",
+        "verify:markdown-inline": "npm run verify -w @ib-utilities/markdown-inline",
+        "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
+        "lint": "vp lint . && tsc --noEmit",
+        "test": "vp test run --project unit",
+        "test:coverage": "vp test run --project unit --coverage",
+        "verify": "npm run build && npm run test && npm run lint",
+        "package:vsix": "vsce package --out ib-utilities-$(node -p \"require('./package.json').version\").vsix",
+        "install:local": "npm run package:vsix && node scripts/install-local.mjs",
+        "release": "node scripts/release.mjs",
+        "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs",
+        "test:watch": "vp test watch",
+        "prepare": "vp config"
+    },
+    "dependencies": {
+        "mermaid": "^12.2.0"
+    },
+    "devDependencies": {
+        "@azure/identity": "^4.14.0",
+        "@types/node": "^24.13.3",
+        "@types/vscode": "^1.140.0",
+        "@vitest/coverage-v8": "5.0.4",
+        "@vscode/vsce": "^4.0.0",
+        "pixelmatch": "^8.0.0",
+        "playwright-core": "^1.64.1",
+        "pngjs": "^7.0.0",
+        "typescript": "^7.0.2",
+        "vite-plus": "1.3.0",
+        "vitest": "5.0.4"
+    },
+    "overrides": {
+        "@vitest/browser": "5.0.5",
+        "@vitest/browser-preview": "5.0.5",
+        "@vitest/ui": "5.0.5",
+        "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
+        "vitest": "5.0.4"
+    },
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "IrishBruse Utilities",
+            "properties": {
+                "ib-utilities.languageIdMappings": {
+                    "type": "object",
+                    "description": "Map snippet files to known language ID.",
+                    "additionalProperties": {
+                        "type": "string",
+                        "description": "The replacement language ID."
+                    },
+                    "default": {
+                        "node": "typescript",
+                        "react": "typescriptreact"
+                    }
+                },
+                "ib-utilities.generatedLanguageMappings": {
+                    "type": "object",
+                    "description": "On the left is the languageId for the snippet to auto generate on the right is the comma delimited array of languages to build it from.",
+                    "additionalProperties": {
+                        "type": "string",
+                        "description": "The resulting language ID."
+                    },
+                    "default": {
+                        "javascript": "node",
+                        "typescript": "node",
+                        "typescriptreact": "node,react",
+                        "javascriptreact": "node,react"
+                    }
+                },
+                "ib-utilities.github.ghPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Absolute path to the GitHub CLI (gh) executable. Leave empty to use gh from PATH."
+                },
+                "ib-utilities.gitHelpers.debugMode": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show Git Helpers with mock PR, checks, and change stats for UI development and testing."
+                }
+            }
+        },
+        "customEditors": [
+            {
+                "viewType": "ib-utilities.markdownInline",
+                "displayName": "Inline Markdown (ib-utilities)",
+                "selector": [
+                    {
+                        "filenamePattern": "*.md"
+                    }
+                ],
+                "priority": "option"
+            },
+            {
+                "viewType": "ib-utilities.mermaidPreview",
+                "displayName": "Mermaid Preview",
+                "selector": [
+                    {
+                        "filenamePattern": "*.mmd"
+                    },
+                    {
+                        "filenamePattern": "*.mermaid"
+                    }
+                ],
+                "priority": "option"
+            }
+        ],
+        "languages": [
+            {
+                "id": "mermaid",
+                "aliases": [
+                    "Mermaid"
+                ],
+                "extensions": [
+                    ".mmd",
+                    ".mermaid"
+                ]
+            },
+            {
+                "id": "gherkin",
+                "aliases": [
+                    "Gherkin",
+                    "feature",
+                    "cucumber"
+                ],
+                "extensions": [
+                    ".feature"
+                ],
+                "configuration": "./syntaxes/gherkin.language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "mermaid",
+                "scopeName": "source.mermaid",
+                "path": "./syntaxes/mermaid.tmLanguage.json"
+            },
+            {
+                "scopeName": "markdown.mermaid.codeblock",
+                "path": "./syntaxes/mermaid.markdown-injection.tmLanguage.json",
+                "injectTo": [
+                    "text.html.markdown"
+                ],
+                "embeddedLanguages": {
+                    "meta.embedded.block.mermaid": "mermaid"
+                }
+            },
+            {
+                "language": "gherkin",
+                "scopeName": "text.gherkin.feature",
+                "path": "./syntaxes/gherkin.tmLanguage"
+            },
+            {
+                "scopeName": "markdown.gherkin.codeblock",
+                "path": "./syntaxes/gherkin.markdown-injection.tmLanguage.json",
+                "injectTo": [
+                    "text.html.markdown"
+                ],
+                "embeddedLanguages": {
+                    "meta.embedded.block.gherkin": "gherkin"
+                }
+            }
+        ],
+        "themes": [
+            {
+                "label": "Empty Dark Theme",
+                "uiTheme": "vs-dark",
+                "path": "./themes/empty-dark.json"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "snippetContainer",
+                    "title": "Snippet Manager",
+                    "icon": "media/snippet_icon.svg"
+                }
+            ],
+            "panel": [
+                {
+                    "id": "localPorts",
+                    "title": "Localhost",
+                    "icon": "media/ports_icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "snippetContainer": [
+                {
+                    "id": "snippetView",
+                    "name": "Groups",
+                    "icon": "media/snippet_icon.svg"
+                }
+            ],
+            "localPorts": [
+                {
+                    "id": "ib-utilities.localPorts",
+                    "name": "Ports",
+                    "contextualTitle": "Localhost"
+                }
+            ],
+            "scm": [
+                {
+                    "id": "ib-utilities.gitHelpers",
+                    "name": "Git Helpers",
+                    "icon": "$(git-branch)",
+                    "contextualTitle": "Git Helpers",
+                    "visibility": "visible"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "ib-utilities.relativeGoTo",
+                "title": "Relative goto",
+                "shortTitle": "Relative goto"
+            },
+            {
+                "command": "ib-utilities.openSnippet",
+                "title": "Open Snippet",
+                "shortTitle": "Open"
+            },
+            {
+                "command": "ib-utilities.showSnippetView",
+                "title": "Show Snippet View",
+                "shortTitle": "Show Snippet View"
+            },
+            {
+                "command": "ib-utilities.openPR",
+                "title": "Open Pull Request",
+                "shortTitle": "Open PR",
+                "icon": "$(github)"
+            },
+            {
+                "command": "ib-utilities.openRepo",
+                "title": "Open Repository",
+                "shortTitle": "Open repo",
+                "icon": "$(github)"
+            },
+            {
+                "command": "ib-utilities.createDraftPR",
+                "title": "Create Draft Pull Request",
+                "shortTitle": "Create draft PR",
+                "icon": "$(git-pull-request-create)"
+            },
+            {
+                "command": "ib-utilities.markPrReady",
+                "title": "Mark Pull Request Ready",
+                "shortTitle": "Mark ready",
+                "icon": "$(check)"
+            },
+            {
+                "command": "ib-utilities.copyPrUrl",
+                "title": "Copy Pull Request URL",
+                "shortTitle": "Copy PR URL",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "ib-utilities.openChangesFile",
+                "title": "Open Changed File Diff",
+                "shortTitle": "Open file diff"
+            },
+            {
+                "command": "ib-utilities.openPrReview",
+                "title": "Open Pull Request Review",
+                "shortTitle": "Open PR review",
+                "icon": "$(comment-discussion)"
+            },
+            {
+                "command": "ib-utilities.refreshSnippetView",
+                "title": "Refresh Snippets",
+                "shortTitle": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "ib-utilities.addSnippet",
+                "title": "Add new snippet",
+                "shortTitle": "Add snippet",
+                "icon": "$(add)"
+            },
+            {
+                "command": "ib-utilities.editSnippet",
+                "title": "Edit snippet",
+                "shortTitle": "Edit snippet",
+                "icon": "$(edit)"
+            },
+            {
+                "command": "ib-utilities.deleteSnippet",
+                "title": "Delete snippet",
+                "shortTitle": "Delete snippet",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "ib-utilities.terminalPaste",
+                "title": "Terminal paste (text or image)",
+                "shortTitle": "Terminal paste"
+            },
+            {
+                "command": "ib-utilities.openMarkdownInline",
+                "title": "Open Inline Markdown",
+                "shortTitle": "Inline Markdown",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "ib-utilities.openMarkdownSource",
+                "title": "Open Text Editor",
+                "shortTitle": "Text Editor",
+                "icon": "$(code)"
+            },
+            {
+                "command": "ib-utilities.openMermaidPreview",
+                "title": "Open Preview",
+                "shortTitle": "Open Preview",
+                "icon": "$(open-preview)"
+            },
+            {
+                "command": "ib-utilities.openMermaidSource",
+                "title": "Open Source",
+                "shortTitle": "Open Source",
+                "icon": "$(code)"
+            },
+            {
+                "command": "ib-utilities.openMermaidMarkdownPreview",
+                "title": "Open Mermaid Preview",
+                "shortTitle": "Open Preview"
+            },
+            {
+                "command": "ib-utilities.showGitHelpers",
+                "title": "Show Git Helpers",
+                "shortTitle": "Git Helpers",
+                "icon": "$(git-branch)"
+            },
+            {
+                "command": "ib-utilities.refreshGitHelpers",
+                "title": "Refresh Git Helpers",
+                "shortTitle": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "ib-utilities.gitHelpersRefreshing",
+                "title": "Refreshing Git Helpers",
+                "shortTitle": "Refreshing",
+                "icon": "$(sync~spin)"
+            },
+            {
+                "command": "ib-utilities.diffWithBase",
+                "title": "Diff",
+                "shortTitle": "Diff",
+                "icon": "$(diff)"
+            },
+            {
+                "command": "ib-utilities.setBaseBranch",
+                "title": "Set Base Branch",
+                "shortTitle": "Set base",
+                "icon": "$(gear)"
+            },
+            {
+                "command": "ib-utilities.revertBranchDiffHunk",
+                "title": "Revert Hunk to Base",
+                "shortTitle": "Revert hunk",
+                "icon": "$(discard)"
+            },
+            {
+                "command": "ib-utilities.revertBranchDiffSelection",
+                "title": "Revert Selection to Base",
+                "shortTitle": "Revert selection",
+                "icon": "$(discard)"
+            },
+            {
+                "command": "ib-utilities.copyScmResourcePath",
+                "title": "Copy Path",
+                "shortTitle": "Copy path"
+            },
+            {
+                "command": "ib-utilities.copyScmResourceRelativePath",
+                "title": "Copy Relative Path",
+                "shortTitle": "Copy relative path"
+            },
+            {
+                "command": "ib-utilities.copyGithubHeadFileUrl",
+                "title": "Copy GitHub Head URL",
+                "shortTitle": "Copy head URL",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "ib-utilities.revertToDisk",
+                "title": "Discard Editor Changes",
+                "shortTitle": "Discard",
+                "icon": "$(discard)"
+            },
+            {
+                "command": "ib-utilities.refreshLocalPorts",
+                "title": "Refresh Localhost",
+                "shortTitle": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "ib-utilities.openLocalPort",
+                "title": "Open Port",
+                "shortTitle": "Open"
+            },
+            {
+                "command": "ib-utilities.killLocalPort",
+                "title": "Kill Process on Port",
+                "shortTitle": "Kill",
+                "icon": "$(trash)"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "ib-utilities.revertToDisk",
+                    "when": "ib-utilities.diskEditorConflict",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.openMarkdownInline",
+                    "when": "resourceExtname == .md && !inDiffEditor && resourceScheme != git && activeCustomEditorId != 'ib-utilities.markdownInline'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.openMarkdownSource",
+                    "when": "resourceExtname == .md && activeCustomEditorId == 'ib-utilities.markdownInline'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.openMermaidPreview",
+                    "when": "(resourceExtname == .mmd || resourceExtname == .mermaid) && activeCustomEditorId != 'ib-utilities.mermaidPreview'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.openMermaidSource",
+                    "when": "activeCustomEditorId == 'ib-utilities.mermaidPreview'",
+                    "group": "navigation"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "ib-utilities.revertBranchDiffSelection",
+                    "when": "ib-utilities.inBranchDiffFile && editorHasSelection && inDiffEditor",
+                    "group": "ib-utilities@0"
+                },
+                {
+                    "command": "ib-utilities.revertBranchDiffHunk",
+                    "when": "ib-utilities.inBranchDiffFile && !editorHasSelection && inDiffEditor",
+                    "group": "ib-utilities@0"
+                }
+            ],
+            "scm/resourceState/context": [
+                {
+                    "command": "ib-utilities.copyScmResourcePath",
+                    "group": "2_copy@1"
+                },
+                {
+                    "command": "ib-utilities.copyScmResourceRelativePath",
+                    "group": "2_copy@2"
+                },
+                {
+                    "command": "ib-utilities.copyGithubHeadFileUrl",
+                    "group": "2_copy@3"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "ib-utilities.copyGithubHeadFileUrl",
+                    "when": "resourceScheme != untitled",
+                    "group": "6_copypath@30"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "ib-utilities.copyGithubHeadFileUrl",
+                    "when": "resourceScheme == file",
+                    "group": "1_cutcopypaste@3"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "ib-utilities.editSnippet",
+                    "when": "view == snippetView && viewItem == folder",
+                    "group": "inline"
+                },
+                {
+                    "command": "ib-utilities.addSnippet",
+                    "when": "view == snippetView && viewItem == folder",
+                    "group": "inline"
+                },
+                {
+                    "command": "ib-utilities.deleteSnippet",
+                    "when": "view == snippetView && viewItem == file",
+                    "group": "inline"
+                },
+                {
+                    "command": "ib-utilities.setBaseBranch",
+                    "when": "view == ib-utilities.gitHelpers && viewItem == action-diffWithBase",
+                    "group": "inline"
+                },
+                {
+                    "command": "ib-utilities.markPrReady",
+                    "when": "view == ib-utilities.gitHelpers && viewItem == action-openPr-draft",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "ib-utilities.copyPrUrl",
+                    "when": "view == ib-utilities.gitHelpers && (viewItem == action-openPr || viewItem == action-openPr-draft)",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "ib-utilities.killLocalPort",
+                    "when": "view == ib-utilities.localPorts && viewItem == port",
+                    "group": "inline"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "ib-utilities.showSnippetView",
+                    "when": "view == snippetContainer",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.refreshSnippetView",
+                    "when": "view == snippetView",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-utilities.openRepo",
+                    "when": "view == ib-utilities.gitHelpers",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "ib-utilities.refreshGitHelpers",
+                    "when": "view == ib-utilities.gitHelpers && !ib-utilities.gitHelpers.refreshing",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "ib-utilities.gitHelpersRefreshing",
+                    "when": "view == ib-utilities.gitHelpers && ib-utilities.gitHelpers.refreshing",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "ib-utilities.refreshLocalPorts",
+                    "when": "view == ib-utilities.localPorts",
+                    "group": "navigation"
+                }
+            ]
+        }
+    },
+    "activationEvents": [
+        "onCustomEditor:ib-utilities.markdownInline",
+        "onStartupFinished",
+        "onView:ib-utilities.gitHelpers",
+        "onView:ib-utilities.localPorts"
+    ],
+    "icon": "logo.png",
+    "engines": {
+        "vscode": "^1.140.0"
+    }
+}

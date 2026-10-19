@@ -1,0 +1,12 @@
+[
+    {
+        "name": "Cursor",
+        "command": "agent",
+        "args": ["acp"]
+    },
+    {
+        "name": "Gemini",
+        "command": "gemini",
+        "args": ["--acp"]
+    }
+]

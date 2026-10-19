@@ -1,0 +1,33 @@
+.inline-md-root .monaco-editor .codelens-decoration {
+    border: 0;
+    color: var(--vscode-descriptionForeground, #9da5b4);
+    font-size: 11px;
+    line-height: 16px;
+    pointer-events: auto;
+}
+
+.inline-md-root .monaco-editor .codelens-decoration > a {
+    border: 0;
+    color: var(--vscode-descriptionForeground, #9da5b4);
+    text-decoration: none;
+}
+
+.inline-md-root .monaco-editor .codelens-decoration > a:hover {
+    color: var(--vscode-descriptionForeground, #9da5b4) !important;
+    text-decoration: underline;
+}
+
+.inline-md-code-hit {
+    opacity: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.inline-md-root .monaco-editor .inline-md-skill-error {
+    text-decoration: underline wavy
+        var(--vscode-editorError-foreground, var(--vscode-errorForeground, #f14c4c));
+}
+
+.inline-md-root .monaco-editor .inline-md-skill-error-message {
+    color: var(--vscode-editorError-foreground, var(--vscode-errorForeground, #f14c4c)) !important;
+}

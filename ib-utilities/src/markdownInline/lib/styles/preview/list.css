@@ -1,0 +1,4 @@
+.inline-md-root .monaco-editor .margin {
+    contain: none !important;
+    z-index: 4;
+}

@@ -1,0 +1,10 @@
+**
+!CHANGELOG.md
+!LICENSE.md
+!README.md
+!logo.png
+!package.json
+!dist/**/!(*.map)
+!media/**/!(*.map)
+!syntaxes/**
+!themes/**

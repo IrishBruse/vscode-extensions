@@ -1,0 +1,29 @@
+{
+    "fileTypes": [],
+    "injectionSelector": "L:text.html.markdown",
+    "patterns": [
+        {
+            "include": "#mermaid-code-block"
+        }
+    ],
+    "repository": {
+        "mermaid-code-block": {
+            "begin": "(?i)(?<=[`~])\\s*mermaid(\\s+[^`~]*)?$",
+            "end": "(^|\\G)(?=\\s*[`~]{3,}\\s*$)",
+            "contentName": "meta.embedded.block.mermaid",
+            "patterns": [
+                {
+                    "include": "#mermaid"
+                }
+            ]
+        },
+        "mermaid": {
+            "patterns": [
+                {
+                    "include": "source.mermaid"
+                }
+            ]
+        }
+    },
+    "scopeName": "markdown.mermaid.codeblock"
+}

@@ -1,0 +1,31 @@
+# Selection
+
+With the caret on the last line, the heading hash stays hidden.
+
+When the selection covers the heading and the paragraphs, the hash stays visible.
+
+The selection highlight covers every selected line.
+Heading lines stretch the highlight to the line height.
+Body lines keep a normal highlight height.
+A document-wide selection keeps one solid band across a blank line and a heading below it.
+The picture for that case shows the line numbers and the heading band.
+
+When the selection covers the whole sentence, the bold asterisks stay visible.
+
+When a selection on the line covers only the word between the marks, the bold, italic, code, and link stay previewed.
+The asterisks, backticks, and link address stay hidden.
+
+When a selection runs from the task line through the code below, the highlight stays solid across the task markers.
+The hyphen and checkbox are not left out of the highlight.
+
+While the mouse button is held and the selection is dragged across a link, the address stays visible before the button is released.
+
+When a selection runs from the quote through the lines below the task, the task line highlight stays one solid band across the dash, checkbox, and word Task.
+The picture shows the line numbers and the selected lines under the task.
+
+A click on text that is already selected places the caret at that click.
+A click outside the selection still places the caret there.
+
+When a selection starts in the middle of a wrapped paragraph, the highlight follows those words through the end of the paragraph.
+The highlight does not add a separate box before the first selected word or after the last selected word.
+A normal line keeps its selection highlight.

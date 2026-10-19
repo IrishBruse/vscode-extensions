@@ -1,0 +1,131 @@
+# IrishBruse's Utilities
+
+A [Visual Studio Code](https://code.visualstudio.com/) extension: snippet management, GitHub shortcuts, and small editor helpers.
+
+**Install:** search the Marketplace for **IrishBruse's Utilities** ([publisher `irishbruse`](https://marketplace.visualstudio.com/publishers/irishbruse)) or install from a `.vsix` built from [this repository](https://github.com/IrishBruse/irishbruse-utilities).
+
+**Requirements:** VS Code `^1.125.0` (see `engines.vscode` in `package.json`).
+
+## Features
+
+### Snippet Manager
+
+Tree view under the **Snippet Manager** activity bar: create, edit, and delete snippets in folders; map snippet files to [language IDs](https://code.visualstudio.com/docs/languages/overview) for highlighting; and auto-generate snippets from multiple language sources using the settings below.
+
+### Git Helpers (Source Control)
+
+A **Git Helpers** panel in the Source Control sidebar shows git workflow actions for the **active repository**.
+Panel data is cached per repository so switching between local repos restores the last-known state immediately:
+
+- **Pull request** — first row, opens the GitHub PR for the current branch (draft PRs use a draft icon).
+  Inline buttons copy the PR URL and mark draft PRs ready
+- **Diff** — opens a multi-file diff. Base branch is shown as the row description, with an inline Set base button
+- **Changes** — file count with `+additions −deletions`. Click opens the same multi-file diff
+- **Checks** — GitHub Actions status row when a PR is open (check name as label, status as description). Click to open checks
+- **Create draft PR** — shown when there is no open PR and the branch is not the base branch (hidden on `main` / `master`)
+
+The Git Helpers title bar opens the GitHub repository and refreshes the panel.
+
+### Localhost
+
+A **Localhost** panel lists local websites that are listening. Click a row to open it in the browser. The title bar refreshes the list, and the inline action stops the process on that port.
+
+Right-click any file in the file explorer for **Copy GitHub Head URL** (blob link at the current branch `HEAD`). Under **Source Control → Changes**, right-click for **Copy Path**, **Copy Relative Path**, and **Copy GitHub Head URL**.
+
+### Relative goto
+
+**Relative goto** jumps by line in the active editor: relative forward, `-` prefix for relative backward, or a leading space for an absolute line number (see the command prompt when you run it).
+
+### Theme
+
+**Empty Dark Theme** is contributed as an optional dark UI theme (see **Preferences: Color Theme**).
+
+### Markdown Editor (ib-utilities)
+
+Open `*.md` files with **Markdown Editor (ib-utilities)** from **Reopen Editor With...**. The custom editor is optional, so it is not the default Markdown editor. Git diffs and other compare views keep the stock text editor.
+
+The editor shows WYSIWYG Markdown with colors from the active theme, fenced-code highlighting, a language label on inactive code blocks, and HTML preview for inactive HTML blocks. Large files mount only the blocks on screen. `SKILL.md` YAML opens as a Properties card with typed fields.
+
+Tables open as a grid. Edit a cell, add a row or column from the gap controls, and select a row or column from the cell border. Then press Backspace or Delete to remove that row or column. Wide cells wrap inside the editor; short columns stay narrow. Click a link in a table to open it.
+
+Idle ` ```mermaid ` `` fences render a themed diagram and show an **Open Preview** button that opens the same Mermaid Preview as the CodeLens in the text editor.
+
+### Inline Markdown (ib-utilities)
+
+Open `*.md` files with **Inline Markdown (ib-utilities)** from **Reopen Editor With...** or the editor title bar. The file stays raw Markdown; formatting hides until you click or select, then markers and source appear where you edit. Git diffs and compare views keep the stock text editor.
+
+The view uses your theme for headings, emphasis, links, blockquotes, and code blocks, with line numbers beside the text and a language label on fenced code. Tables preview as a bordered grid; mermaid fences show an inline diagram and **Open Preview** CodeLens. `SKILL.md` YAML front matter highlights as YAML. Task lines show a checkbox without a list bullet.
+
+### Mermaid Preview
+
+Open `.mmd` or `.mermaid` files as **source text** by default (including branch diffs and `vscode.diff`). Use **Open Preview** from the editor title bar or the `ib-utilities.openMermaidPreview` command for live diagram rendering that follows your VS Code color theme. In preview, use the toolbar to zoom, pan, fit to view, or copy the diagram as PNG. Switch back to source with **Open Source**.
+
+In Markdown files, ` ```mermaid ` `` blocks get embedded syntax highlighting. Use the **Open Preview** CodeLens above a block, or Ctrl/Cmd+click the `mermaid` language tag, to open the same preview (edits to the block in markdown stay in sync while the preview is open).
+
+Clickable nodes (flowchart `click … href`, Gantt task links, and similar) open in the editor. Location formats (tooltip is preferred when present):
+
+- **GBL / compiler style (preferred):** `path:line:column` in the second `click` string (e.g. `../test.gbl:12:1`). The first string may use the same location or a plain path; the preview normalizes to `path` + `path:line:column` because Mermaid breaks SVG links when `href` contains `:line:column`.
+- **VS Code URI fragment:** `path#Lline,column` (e.g. `../test.gbl#L12,5`) — matches VS Code’s documented `L3,5` fragment form.
+- **GitHub / web:** `path#Lline` (e.g. `../test.gbl#L12`) — line only; column defaults to 1.
+
+`http(s)` and `mailto:` links open in your browser. Hover a linked node for a short custom label. Hold **Ctrl** or **Cmd** while clicking to open beside the active tab.
+
+## Configuration
+
+Map snippet file labels to VS Code language IDs:
+
+```json
+{
+    "ib-utilities.languageIdMappings": {
+        "node": "typescript",
+        "react": "typescriptreact"
+    }
+}
+```
+
+Control auto-generated snippet languages (left: target language ID; right: comma-separated source labels):
+
+```json
+{
+    "ib-utilities.generatedLanguageMappings": {
+        "typescriptreact": "node,react"
+    }
+}
+```
+
+## Commands
+
+| Command                           | Title                     |
+| --------------------------------- | ------------------------- |
+| `ib-utilities.relativeGoTo`       | Relative goto             |
+| `ib-utilities.openSnippet`        | Open Snippet              |
+| `ib-utilities.showSnippetView`    | Show Snippet View         |
+| `ib-utilities.openPR`             | Open Pull Request         |
+| `ib-utilities.refreshSnippetView` | Refresh Snippets          |
+| `ib-utilities.addSnippet`         | Add new snippet           |
+| `ib-utilities.editSnippet`        | Edit snippet              |
+| `ib-utilities.deleteSnippet`      | Delete snippet            |
+| `ib-utilities.openMermaidPreview` | Open Preview              |
+| `ib-utilities.openMermaidSource`  | Open Source               |
+| `ib-utilities.showGitHelpers`     | Show Git Helpers          |
+| `ib-utilities.createDraftPR`      | Create Draft Pull Request |
+| `ib-utilities.diffWithBase`       | Diff vs Base Branch       |
+| `ib-utilities.setBaseBranch`      | Set base branch for diffs |
+
+## Development
+
+```bash
+npm install
+npm run verify
+```
+
+- **Build:** `npm run build`
+- **Tests:** `npm run test`
+- **Lint:** `npm run lint`
+- **Install locally:** `npm run install:local` (packages a VSIX and installs it via `cursor` or `code`; override with `VSCODE_CLI`)
+
+See [`AGENTS.md`](./AGENTS.md) for contributor notes (including `fnm` for Node versions).
+
+## License
+
+[MIT](LICENSE.md)

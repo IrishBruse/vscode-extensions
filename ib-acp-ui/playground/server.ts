@@ -1,0 +1,854 @@
+/**
+ * Playground WebSocket bridge for the ACP UI (dev). Reuses {@link AcpSessionBridge} and the
+ * same protocol/mapping as the VS Code extension — unlike a duplicated inline ACP client.
+ *
+ * Usage: `npm run dev:playground` (Vite + this server with `tsx --watch`).
+ */
+
+import { randomUUID } from "node:crypto";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type * as acp from "@agentclientprotocol/sdk";
+import { WebSocket, WebSocketServer } from "ws";
+import type { AcpAgentSpawnConfig } from "../src/acp/domain/agentSpawnConfig";
+import { parseAcpAgentsJsonFileContent } from "../src/acp/domain/agentSpawnConfig";
+import {
+    buildAcpClientInfoFromPackage,
+    configureAcpClientInfo,
+} from "../src/acp/infrastructure/acpAgentProcess";
+import {
+    createToolCallKindTracking,
+    extensionMessagesForPermissionRequest,
+    sessionUpdateToWebviewMessages,
+} from "../src/acp/mapping/sessionUpdateMapping";
+import { NullAcpRpcNdjsonSink } from "../src/acp/ports/rpcNdjsonSink";
+import { AcpSessionBridge } from "../src/acp/session/acpSessionBridge";
+import {
+    parseReadmeSessionSeedFromJson,
+    parseReadmeSessionSeedFromNdjson,
+    type ReadmeSessionSeed,
+} from "../src/acp/session/readmeSessionSeed";
+import { readCachedComposerSeed } from "../src/acp/session/sessionConfigOptionsCache";
+import { pickWebviewMarkdownThemeVariables } from "../src/platform/markdownThemeResolver";
+import { FileAcpRpcNdjsonSink } from "../src/platform/node/fileRpcNdjsonSink";
+import { createNodeAcpSessionHostRuntime } from "../src/platform/node/nodeAcpSessionHostRuntime";
+import { resolvePlaygroundThemeCssVariables } from "../src/platform/node/resolvePlaygroundThemeCssVariables";
+import { formatPathWithTilde } from "../src/platform/pathDisplay";
+import { resolveUserHomeDir } from "../src/platform/resolveUserHomeDir";
+import {
+    type ExtensionToWebviewMessage,
+    tryParseWebviewMessage,
+} from "../src/protocol/extensionHostMessages";
+
+const PORT = Number(process.env.ACP_WS_PORT ?? 5174);
+const PLAYGROUND_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(PLAYGROUND_DIR, "..");
+
+configureAcpClientInfo(
+    buildAcpClientInfoFromPackage(
+        JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as {
+            name?: string;
+            version?: string;
+            displayName?: string;
+        },
+    ),
+);
+
+const DEMO_MODE =
+    process.env.ACP_UI_DEMO === "1" ||
+    process.env.ACP_UI_DEMO === "true" ||
+    process.env.ACP_UI_SCREENSHOT === "1" ||
+    process.env.ACP_UI_SCREENSHOT === "true";
+const DEMO_FIXTURE = process.env.ACP_UI_DEMO_FIXTURE ?? "showcase";
+const DEMO_SEED = process.env.ACP_UI_DEMO_SEED ?? "cursor-model";
+const DEMO_REPLAY = !(
+    process.env.ACP_UI_DEMO_REPLAY === "0" || process.env.ACP_UI_DEMO_REPLAY === "false"
+);
+
+const contentWidthPercentSettingKey = "ib-acp-ui.contentWidthPercent";
+
+function clampContentWidthPercent(value: number): number {
+    if (!Number.isFinite(value)) {
+        return 100;
+    }
+    return Math.min(100, Math.max(10, value));
+}
+
+function vscodeUserSettingsPath(): string {
+    const home = resolveUserHomeDir();
+    if (process.platform === "darwin") {
+        return join(home, "Library", "Application Support", "Code", "User", "settings.json");
+    }
+    return join(home, ".config", "Code", "User", "settings.json");
+}
+
+function stripJsoncComments(input: string): string {
+    let out = "";
+    let inString = false;
+    let escaped = false;
+    let i = 0;
+    while (i < input.length) {
+        const ch = input[i];
+        if (inString) {
+            out += ch;
+            if (escaped) {
+                escaped = false;
+            } else if (ch === "\\") {
+                escaped = true;
+            } else if (ch === '"') {
+                inString = false;
+            }
+            i++;
+            continue;
+        }
+        if (ch === '"') {
+            inString = true;
+            out += ch;
+            i++;
+            continue;
+        }
+        if (ch === "/" && input[i + 1] === "/") {
+            while (i < input.length && input[i] !== "\n") {
+                i++;
+            }
+            continue;
+        }
+        if (ch === "/" && input[i + 1] === "*") {
+            i += 2;
+            while (i < input.length && !(input[i] === "*" && input[i + 1] === "/")) {
+                i++;
+            }
+            i += 2;
+            continue;
+        }
+        out += ch;
+        i++;
+    }
+    return out;
+}
+
+function parseSettingsJson(text: string): unknown {
+    const json = stripJsoncComments(text).replace(/,\s*([}\]])/g, "$1");
+    return JSON.parse(json) as unknown;
+}
+
+function loadContentWidthPercent(): number {
+    const fromEnv = Number(process.env.ACP_UI_CONTENT_WIDTH_PERCENT);
+    if (Number.isFinite(fromEnv) && fromEnv > 0) {
+        return clampContentWidthPercent(fromEnv);
+    }
+    try {
+        const settingsPath = vscodeUserSettingsPath();
+        if (!existsSync(settingsPath)) {
+            return 100;
+        }
+        const parsed = parseSettingsJson(readFileSync(settingsPath, "utf8"));
+        if (typeof parsed !== "object" || parsed === null) {
+            return 100;
+        }
+        const value = (parsed as Record<string, unknown>)[contentWidthPercentSettingKey];
+        if (typeof value !== "number") {
+            return 100;
+        }
+        return clampContentWidthPercent(value);
+    } catch {
+        return 100;
+    }
+}
+
+const contentWidthRatio = loadContentWidthPercent() / 100;
+
+const rpcLogEnv = process.env.ACP_RPC_LOG;
+const defaultRpcLogFile = join(PLAYGROUND_DIR, "acp-rpc.ndjson");
+const rpcLogPath: string | null = ((): string | null => {
+    if (rpcLogEnv === "0" || rpcLogEnv === "false" || rpcLogEnv === "") {
+        return null;
+    }
+    if (rpcLogEnv === undefined) {
+        return defaultRpcLogFile;
+    }
+    if (rpcLogEnv === "1" || rpcLogEnv === "true") {
+        return defaultRpcLogFile;
+    }
+    return rpcLogEnv;
+})();
+
+const sharedRpcSink =
+    rpcLogPath === null ? new NullAcpRpcNdjsonSink() : new FileAcpRpcNdjsonSink(rpcLogPath);
+
+if (rpcLogPath !== null) {
+    console.log(`ACP JSON-RPC log: ${rpcLogPath}`);
+}
+
+// ── Fixture playback (recorded NDJSON sessions) ─────────────────────────────
+
+type JsonRpcNotification = { jsonrpc: "2.0"; method: string; params: unknown };
+type JsonRpcResponse = {
+    jsonrpc: "2.0";
+    id: number | string;
+    result: Record<string, unknown>;
+};
+
+const fixtureLineDelayMs =
+    process.env.ACP_UI_DEMO === "1" ||
+    process.env.ACP_UI_DEMO === "true" ||
+    process.env.ACP_UI_SCREENSHOT === "1" ||
+    process.env.ACP_UI_SCREENSHOT === "true"
+        ? 0
+        : 100;
+const maxWorkspaceFileAutocompleteEntries = 1500;
+const ignoredWorkspaceDirs = new Set([
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "out",
+    "coverage",
+    ".next",
+]);
+
+function workspaceFilesForAutocomplete(workspaceRoot: string): string[] | undefined {
+    const out: string[] = [];
+    const stack: string[] = [workspaceRoot];
+    while (stack.length > 0 && out.length < maxWorkspaceFileAutocompleteEntries) {
+        const current = stack.pop();
+        if (current === undefined) {
+            continue;
+        }
+        const entries = readdirSync(current, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name.startsWith(".") && entry.name !== ".github") {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+            }
+            if (entry.isDirectory()) {
+                if (ignoredWorkspaceDirs.has(entry.name)) {
+                    continue;
+                }
+                stack.push(join(current, entry.name));
+                continue;
+            }
+            if (!entry.isFile()) {
+                continue;
+            }
+            const absolutePath = join(current, entry.name);
+            const relativePath = absolutePath.slice(workspaceRoot.length).replace(/^\/+/, "");
+            if (relativePath.length > 0) {
+                out.push(relativePath);
+            }
+            if (out.length >= maxWorkspaceFileAutocompleteEntries) {
+                break;
+            }
+        }
+    }
+    out.sort((a, b) => a.localeCompare(b));
+    return out.length > 0 ? out : undefined;
+}
+
+function resolveFixture(body: string): string | null {
+    const candidate = body.trim();
+    if (!/^[a-z0-9-]+$/.test(candidate)) {
+        return null;
+    }
+    const fixturePrefix = "fixture-";
+    if (candidate.startsWith(fixturePrefix) && candidate.length > fixturePrefix.length) {
+        const stem = candidate.slice(fixturePrefix.length);
+        if (/^[a-z0-9-]+$/.test(stem)) {
+            const chatPath = join(PLAYGROUND_DIR, "fixtures", "chats", `${stem}.ndjson`);
+            if (existsSync(chatPath)) {
+                return chatPath;
+            }
+        }
+    }
+    const mockPrefix = "mock-";
+    if (candidate.startsWith(mockPrefix) && candidate.length > mockPrefix.length) {
+        const stem = candidate.slice(mockPrefix.length);
+        if (/^[a-z0-9-]+$/.test(stem)) {
+            const mockPath = join(PLAYGROUND_DIR, "mock", `${stem}.ndjson`);
+            if (existsSync(mockPath)) {
+                return mockPath;
+            }
+        }
+    }
+    const fixturePath = join(PLAYGROUND_DIR, `${candidate}.ndjson`);
+    return existsSync(fixturePath) ? fixturePath : null;
+}
+
+async function replayFixture(
+    fixturePath: string,
+    send: (msg: ExtensionToWebviewMessage) => void,
+): Promise<string> {
+    const lines = readFileSync(fixturePath, "utf-8")
+        .split("\n")
+        .filter((l) => l.trim().length > 0);
+
+    let stopReason = "end_turn";
+    const toolKindTracking = createToolCallKindTracking();
+
+    for (let i = 0; i < lines.length; i++) {
+        if (i > 0) {
+            await new Promise<void>((resolve) => setTimeout(resolve, fixtureLineDelayMs));
+        }
+
+        const msg = JSON.parse(lines[i]) as JsonRpcNotification | JsonRpcResponse;
+
+        if ("method" in msg && msg.method === "session/update") {
+            const params = (msg as JsonRpcNotification).params as {
+                update: acp.SessionUpdate;
+            };
+            const messages = sessionUpdateToWebviewMessages(params.update, toolKindTracking);
+            for (const webviewMessage of messages) {
+                send(webviewMessage);
+                await new Promise<void>((resolve) => setImmediate(resolve));
+            }
+            continue;
+        }
+
+        if ("method" in msg && msg.method === "session/request_permission") {
+            const params = (msg as JsonRpcNotification).params as acp.RequestPermissionRequest;
+            const requestId = `perm-replay-${i}`;
+            for (const webviewMessage of extensionMessagesForPermissionRequest(requestId, params)) {
+                send(webviewMessage);
+                await new Promise<void>((resolve) => setImmediate(resolve));
+            }
+            continue;
+        }
+
+        if (!("method" in msg) && "result" in msg) {
+            const result = (msg as JsonRpcResponse).result;
+            if (typeof result.stopReason === "string") {
+                stopReason = result.stopReason;
+            }
+        }
+    }
+
+    return stopReason;
+}
+
+// ── Agent config ────────────────────────────────────────────────────────────
+
+function loadAgentConfigs(): AcpAgentSpawnConfig[] {
+    if (DEMO_MODE) {
+        return [
+            {
+                name: "Cursor",
+                command: "true",
+                args: [],
+            },
+        ];
+    }
+    const configPath = join(PLAYGROUND_DIR, "acp-agent.json");
+    if (!existsSync(configPath)) {
+        console.error(`ACP agent config not found: ${configPath}`);
+        console.error(
+            "Add acp-agent.json: a JSON array of agents (name, command, optional args, env), or one agent object.",
+        );
+        process.exit(1);
+    }
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(readFileSync(configPath, "utf-8"));
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Failed to read or parse ACP agent config ${configPath}: ${message}`);
+        process.exit(1);
+    }
+    const list = parseAcpAgentsJsonFileContent(parsed);
+    if (list === undefined || list.length === 0) {
+        console.error(`Invalid ACP agent config in ${configPath}.`);
+        process.exit(1);
+    }
+    return list;
+}
+
+const agentConfigs = loadAgentConfigs();
+const firstAgentConfig = agentConfigs[0];
+if (firstAgentConfig === undefined) {
+    throw new Error("loadAgentConfigs returned empty");
+}
+
+function loadNamedComposerSeed(name: string): ReadmeSessionSeed {
+    const fixturePath = join(PLAYGROUND_DIR, "fixtures", `${name}-seed.json`);
+    if (!existsSync(fixturePath)) {
+        return { configOptions: null, modelSelection: null };
+    }
+    try {
+        return parseReadmeSessionSeedFromJson(readFileSync(fixturePath, "utf-8"));
+    } catch {
+        return { configOptions: null, modelSelection: null };
+    }
+}
+
+function loadReadmeSessionSeed(): ReadmeSessionSeed {
+    const fixturePath = join(PLAYGROUND_DIR, "fixtures", "readme-seed.json");
+    if (existsSync(fixturePath)) {
+        try {
+            const seed = parseReadmeSessionSeedFromJson(readFileSync(fixturePath, "utf-8"));
+            if (seed.configOptions !== null || seed.modelSelection !== null) {
+                return seed;
+            }
+        } catch {
+            /* fall through */
+        }
+    }
+    const mockPath = join(PLAYGROUND_DIR, "mock", "readme.ndjson");
+    if (!existsSync(mockPath)) {
+        return { modelSelection: null, configOptions: null };
+    }
+    try {
+        return parseReadmeSessionSeedFromNdjson(readFileSync(mockPath, "utf-8"));
+    } catch {
+        return { modelSelection: null, configOptions: null };
+    }
+}
+
+// ── Fixture catalog (HTTP + gallery page) ────────────────────────────────────
+
+type PlaygroundFixtureEntry = {
+    id: string;
+    label: string;
+    description: string;
+};
+
+type PlaygroundFixtureCatalog = {
+    chats: PlaygroundFixtureEntry[];
+    seeds: PlaygroundFixtureEntry[];
+};
+
+const CHAT_FIXTURE_META: Record<string, { label: string; description: string }> = {
+    showcase: {
+        label: "Showcase",
+        description: "Markdown, tool calls, thoughts, and a plan block in one trace.",
+    },
+    markdown: {
+        label: "Markdown",
+        description: "Colored headings and syntax-highlighted fenced code.",
+    },
+    tools: {
+        label: "Tool calls",
+        description: "Read output, terminal runs, and file diffs.",
+    },
+    plan: {
+        label: "Plan",
+        description: "Structured agent plan with status and priority.",
+    },
+};
+
+const SEED_FIXTURE_META: Record<string, { label: string; description: string }> = {
+    "cursor-model": {
+        label: "Cursor-style picker",
+        description: "Composer 2 with a derived Fast toggle.",
+    },
+    "opus-model": {
+        label: "Agent-ordered picker",
+        description: "Opus 4.8 with Thinking, Context, Effort, and Fast.",
+    },
+    readme: {
+        label: "Full Cursor session",
+        description: "Captured session/new bootstrap with bracket-encoded models.",
+    },
+};
+
+function humanizeFixtureId(id: string): string {
+    return id
+        .split(/[-_]+/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+}
+
+function listPlaygroundFixtures(): PlaygroundFixtureCatalog {
+    const chats: PlaygroundFixtureEntry[] = [];
+    const chatsDir = join(PLAYGROUND_DIR, "fixtures", "chats");
+    if (existsSync(chatsDir)) {
+        for (const name of readdirSync(chatsDir).sort()) {
+            if (!name.endsWith(".ndjson")) {
+                continue;
+            }
+            const id = name.slice(0, -".ndjson".length);
+            const meta = CHAT_FIXTURE_META[id];
+            chats.push({
+                id,
+                label: meta?.label ?? humanizeFixtureId(id),
+                description: meta?.description ?? `Replay ${name} through the playground bridge.`,
+            });
+        }
+    }
+
+    const seeds: PlaygroundFixtureEntry[] = [];
+    const fixturesDir = join(PLAYGROUND_DIR, "fixtures");
+    if (existsSync(fixturesDir)) {
+        for (const name of readdirSync(fixturesDir).sort()) {
+            if (!name.endsWith("-seed.json")) {
+                continue;
+            }
+            const id = name.slice(0, -"-seed.json".length);
+            const meta = SEED_FIXTURE_META[id];
+            seeds.push({
+                id,
+                label: meta?.label ?? humanizeFixtureId(id),
+                description: meta?.description ?? `Load ${name} as the composer model/config seed.`,
+            });
+        }
+    }
+
+    return { chats, seeds };
+}
+
+function vscodeThemeVariablesForInit(): Record<string, string> | undefined {
+    try {
+        const picked = pickWebviewMarkdownThemeVariables(
+            resolvePlaygroundThemeCssVariables().variables,
+        );
+        return Object.keys(picked).length > 0 ? picked : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+// ── WebSocket server ──────────────────────────────────────────────────────────
+
+const httpServer = createServer((req, res) => {
+    if (req.url === "/api/fixtures" && req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(listPlaygroundFixtures()));
+        return;
+    }
+    if (req.url === "/api/playground-theme" && req.method === "GET") {
+        try {
+            const theme = resolvePlaygroundThemeCssVariables();
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(theme));
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: message }));
+        }
+        return;
+    }
+    res.writeHead(404);
+    res.end();
+});
+const wss = new WebSocketServer({ server: httpServer });
+
+wss.on("connection", (ws: WebSocket) => {
+    const sessionId = randomUUID();
+    console.log(`client connected  session=${sessionId}`);
+
+    let bridge: AcpSessionBridge | null = null;
+    /** Last model chosen in the UI; applied on the next `connect` (including after `/clear`). */
+    let userPreferredModelId: string | null = null;
+    let selectedAgentName = firstAgentConfig.name;
+    let connectInFlight: Promise<void> | null = null;
+    let connectGeneration = 0;
+    let bootstrapSent = false;
+    let sessionDemoSeed: string | undefined;
+    let sessionDemoFixture: string | undefined;
+    let sessionDemoReplay: boolean | undefined;
+
+    const hostRuntime = createNodeAcpSessionHostRuntime({
+        rpcNdjsonSink: sharedRpcSink,
+        workspaceRoot: process.cwd(),
+    });
+
+    function send(msg: ExtensionToWebviewMessage): void {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(msg));
+        }
+    }
+
+    function resolveDemoFixturePath(name: string): string | null {
+        const chatFixture = join(PLAYGROUND_DIR, "fixtures", "chats", `${name}.ndjson`);
+        if (existsSync(chatFixture)) {
+            return chatFixture;
+        }
+        const legacyReplay = join(PLAYGROUND_DIR, "fixtures", `${name}-replay.ndjson`);
+        if (existsSync(legacyReplay)) {
+            return legacyReplay;
+        }
+        return resolveFixture(`mock-${name}`);
+    }
+
+    function composerSeedForInit(): ReadmeSessionSeed {
+        const cachedSeed = readCachedComposerSeed(selectedAgentName);
+        const readmeSeed = loadReadmeSessionSeed();
+        const seedId = sessionDemoSeed ?? (DEMO_MODE ? DEMO_SEED : undefined);
+        if (seedId !== undefined) {
+            return loadNamedComposerSeed(seedId);
+        }
+        return {
+            configOptions: cachedSeed.configOptions ?? readmeSeed.configOptions ?? null,
+            modelSelection: cachedSeed.modelSelection ?? readmeSeed.modelSelection ?? null,
+        };
+    }
+
+    async function maybeReplayInitFixture(): Promise<void> {
+        const fixtureName = sessionDemoFixture ?? (DEMO_MODE ? DEMO_FIXTURE : undefined);
+        if (fixtureName === undefined) {
+            return;
+        }
+        const shouldReplay =
+            sessionDemoReplay ?? (sessionDemoFixture !== undefined ? true : DEMO_REPLAY);
+        if (!shouldReplay) {
+            return;
+        }
+        const fixturePath = resolveDemoFixturePath(fixtureName);
+        if (fixturePath === null) {
+            return;
+        }
+        console.log(`demo: replaying ${fixturePath}`);
+        try {
+            const stopReason = await replayFixture(fixturePath, send);
+            send({ type: "turnComplete", stopReason });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            send({
+                type: "error",
+                message: `Demo fixture replay error: ${message}`,
+            });
+        }
+    }
+
+    function activeAgentConfig(): AcpAgentSpawnConfig {
+        const found = agentConfigs.find((c) => c.name === selectedAgentName);
+        return found ?? firstAgentConfig;
+    }
+
+    function disposeBridge(): void {
+        connectGeneration += 1;
+        connectInFlight = null;
+        if (bridge !== null) {
+            bridge.dispose();
+            bridge = null;
+        }
+    }
+
+    async function runConnectAgent(generation: number): Promise<void> {
+        const cfg = activeAgentConfig();
+        const next = new AcpSessionBridge(cfg, send, hostRuntime);
+        const preferred = userPreferredModelId ?? undefined;
+        await next.connect({ preferredModelId: preferred });
+        if (generation !== connectGeneration) {
+            next.dispose();
+            return;
+        }
+        bridge = next;
+    }
+
+    async function connectAgent(): Promise<void> {
+        if (bridge !== null) {
+            return;
+        }
+        const generation = connectGeneration;
+        if (connectInFlight !== null) {
+            const inFlight = connectInFlight;
+            await inFlight;
+            if (bridge !== null) {
+                return;
+            }
+            if (connectInFlight === inFlight) {
+                return;
+            }
+            return connectAgent();
+        }
+        const started = runConnectAgent(generation);
+        connectInFlight = started;
+        try {
+            await started;
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            send({
+                type: "error",
+                message: `Failed to connect to agent: ${message}`,
+            });
+            disposeBridge();
+        } finally {
+            if (connectInFlight === started) {
+                connectInFlight = null;
+            }
+        }
+    }
+
+    const handleMessage = async (raw: string): Promise<void> => {
+        let rawObj: unknown;
+        try {
+            rawObj = JSON.parse(raw) as unknown;
+        } catch {
+            return;
+        }
+        const parsed = tryParseWebviewMessage(rawObj);
+        if (parsed === null) {
+            return;
+        }
+
+        if (parsed.type === "ready") {
+            if (bootstrapSent) {
+                return;
+            }
+            bootstrapSent = true;
+            sessionDemoSeed = parsed.demoSeed;
+            sessionDemoFixture = parsed.demoFixture;
+            sessionDemoReplay = parsed.demoReplay;
+            const workspaceFiles = workspaceFilesForAutocomplete(process.cwd());
+            const seed = composerSeedForInit();
+            const demoSession =
+                DEMO_MODE || sessionDemoSeed !== undefined || sessionDemoFixture !== undefined;
+            const vscodeThemeVariables = vscodeThemeVariablesForInit();
+            send({
+                type: "init",
+                sessionId,
+                title: demoSession ? "ACP UI (demo)" : "ACP UI (playground)",
+                workspaceLabel: formatPathWithTilde(process.cwd(), resolveUserHomeDir()),
+                homeDir: resolveUserHomeDir(),
+                agentVersionLabel: undefined,
+                acpAgentName: selectedAgentName,
+                ...(workspaceFiles !== undefined ? { workspaceFiles } : {}),
+                ...(seed.configOptions !== null
+                    ? { sessionConfigOptionsSeed: seed.configOptions }
+                    : {}),
+                ...(seed.modelSelection !== null ? { sessionModels: seed.modelSelection } : {}),
+                ...(vscodeThemeVariables !== undefined ? { vscodeThemeVariables } : {}),
+                contentWidthRatio,
+                lockSessionAgent: true,
+            });
+            if (DEMO_MODE || sessionDemoFixture !== undefined) {
+                void maybeReplayInitFixture();
+            }
+            return;
+        }
+
+        if (parsed.type === "resetSession") {
+            disposeBridge();
+            send({ type: "sessionReset" });
+            const resetSeed = composerSeedForInit();
+            if (resetSeed.configOptions !== null) {
+                send({
+                    type: "sessionConfigOptions",
+                    options: resetSeed.configOptions,
+                });
+            } else if (resetSeed.modelSelection !== null) {
+                send({ type: "sessionModels", ...resetSeed.modelSelection });
+            } else {
+                send({ type: "sessionConfigOptionsLoading" });
+            }
+            if (!DEMO_MODE) {
+                void connectAgent();
+            }
+            return;
+        }
+
+        if (parsed.type === "permissionResponse") {
+            bridge?.handlePermissionResponse(parsed);
+            return;
+        }
+
+        if (parsed.type === "saveHistory") {
+            return;
+        }
+
+        if (parsed.type === "setSessionModel") {
+            userPreferredModelId = parsed.modelId;
+            if (bridge) {
+                try {
+                    await bridge.setSessionModel(parsed.modelId);
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    send({
+                        type: "error",
+                        message: `Model change failed: ${message}`,
+                    });
+                }
+            }
+            return;
+        }
+
+        if (parsed.type === "setSessionConfigOption") {
+            if (bridge) {
+                try {
+                    await bridge.setSessionConfigOption(parsed.configId, parsed.value);
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    send({
+                        type: "error",
+                        message: `Config change failed: ${message}`,
+                    });
+                }
+            }
+            return;
+        }
+
+        if (parsed.type === "send") {
+            const fixturePath = resolveFixture(parsed.body);
+            if (fixturePath !== null) {
+                console.log(`fixture: replaying ${fixturePath}`);
+                try {
+                    const stopReason = await replayFixture(fixturePath, send);
+                    send({ type: "turnComplete", stopReason });
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    send({
+                        type: "error",
+                        message: `Fixture replay error: ${message}`,
+                    });
+                }
+                return;
+            }
+
+            if (!bridge) {
+                if (DEMO_MODE) {
+                    send({
+                        type: "error",
+                        message:
+                            "Demo mode does not send live prompts. Use fixture replay (mock-readme) instead.",
+                    });
+                    return;
+                }
+                await connectAgent();
+            }
+            if (!bridge) {
+                return;
+            }
+            if (bridge.isPrompting) {
+                await bridge.cancel();
+            }
+            await bridge.prompt(parsed.body);
+            return;
+        }
+
+        if (parsed.type === "cancel" && bridge) {
+            await bridge.cancel();
+        }
+    };
+
+    ws.on("message", (data) => {
+        const text =
+            typeof data === "string"
+                ? data
+                : Buffer.isBuffer(data)
+                  ? data.toString()
+                  : Array.isArray(data)
+                    ? Buffer.concat(data).toString()
+                    : Buffer.from(data).toString();
+        void handleMessage(text);
+    });
+
+    ws.on("close", () => {
+        disposeBridge();
+        console.log(`client disconnected session=${sessionId}`);
+    });
+});
+
+httpServer.listen(PORT, () => {
+    console.log(`WebSocket bridge listening on ws://localhost:${PORT}`);
+    if (DEMO_MODE) {
+        console.log(`Demo mode: seed=${DEMO_SEED}, fixture=${DEMO_FIXTURE}, replay=${DEMO_REPLAY}`);
+    }
+    for (const c of agentConfigs) {
+        const argLine = c.args.length > 0 ? ` ${c.args.join(" ")}` : "";
+        console.log(`Agent "${c.name}": ${c.command}${argLine}`);
+    }
+    console.log(`Open http://localhost:5173 after starting the Vite dev server`);
+    console.log(`Fixture gallery: http://localhost:5173/fixtures`);
+});

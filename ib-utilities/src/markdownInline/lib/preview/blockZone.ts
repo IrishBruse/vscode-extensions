@@ -1,0 +1,541 @@
+import * as monaco from "monaco-editor/editor/editor.api";
+import { createRuleZoneBody } from "../markdown/rule/style";
+import { resolveImageUrl } from "./imageUrl";
+import { renderMermaidDiagram } from "./mermaid";
+import type { Scope, TextRange } from "../document/types";
+
+export interface BlockZoneHost {
+    onReveal: (offset: number) => void;
+    onLink?: (href: string) => void;
+    onOpenMermaidPreview?: (openLine: number) => void;
+    onLayout(key: string): void;
+    documentUrl: string;
+    lineHeight: number;
+}
+
+export interface BlockZoneRecord {
+    readonly key: string;
+    readonly zone: monaco.editor.IViewZone;
+}
+
+const INLINE_CELL = new Set<Scope["kind"]>([
+    "strong",
+    "emphasis",
+    "strikethrough",
+    "inlineCode",
+    "link",
+]);
+
+export function headingLevel(scope: Scope): number {
+    const raw = scope.level ?? 1;
+    return raw >= 1 && raw <= 6 ? Math.trunc(raw) : 1;
+}
+
+export function contentClass(scope: Scope): string | undefined {
+    switch (scope.kind) {
+        case "heading":
+            return `inline-md-h${headingLevel(scope)}`;
+        case "strong":
+            return "inline-md-strong";
+        case "emphasis":
+            return "inline-md-em";
+        case "strikethrough":
+            return "inline-md-strike";
+        case "inlineCode":
+            return "inline-md-code";
+        case "link":
+            return "inline-md-link";
+        default:
+            return undefined;
+    }
+}
+
+function trimmedTextRange(source: string, range: TextRange): TextRange {
+    let start = range.start;
+    let end = range.end;
+    while (start < end && (source[start] === " " || source[start] === "\t")) {
+        start += 1;
+    }
+    while (end > start && (source[end - 1] === " " || source[end - 1] === "\t")) {
+        end -= 1;
+    }
+    return { start, end };
+}
+
+function caretIn(x: number, y: number): { node: Node; offset: number } | undefined {
+    const doc = document as Document & {
+        caretPositionFromPoint?(x: number, y: number): { offsetNode: Node; offset: number } | null;
+        caretRangeFromPoint?(x: number, y: number): Range | null;
+    };
+    const position = doc.caretPositionFromPoint?.(x, y);
+    if (position) {
+        return { node: position.offsetNode, offset: position.offset };
+    }
+    const range = doc.caretRangeFromPoint?.(x, y);
+    if (!range) {
+        return undefined;
+    }
+    return { node: range.startContainer, offset: range.startOffset };
+}
+
+function sourceOffsetAt(node: Node, offset: number): number | undefined {
+    const element = node instanceof Element ? node : node.parentElement;
+    const marked = element?.closest("[data-from]");
+    if (!(marked instanceof HTMLElement)) {
+        return undefined;
+    }
+    const from = Number(marked.dataset.from);
+    if (!Number.isFinite(from)) {
+        return undefined;
+    }
+    return from + offset;
+}
+
+export function tableCellOffset(event: MouseEvent, cell: HTMLElement, fallback: number): number {
+    const start = Number(cell.dataset.start);
+    const end = Number(cell.dataset.end);
+    const caret = caretIn(event.clientX, event.clientY);
+    const fromCaret =
+        caret && cell.contains(caret.node) ? sourceOffsetAt(caret.node, caret.offset) : undefined;
+    if (
+        fromCaret !== undefined &&
+        Number.isFinite(start) &&
+        Number.isFinite(end) &&
+        fromCaret >= start &&
+        fromCaret <= end
+    ) {
+        return fromCaret;
+    }
+    if (Number.isFinite(start)) {
+        return start;
+    }
+    return fallback;
+}
+
+function appendFormatted(
+    parent: HTMLElement,
+    source: string,
+    start: number,
+    end: number,
+    scopes: readonly Scope[],
+): void {
+    const relevant = scopes
+        .filter((scope) => INLINE_CELL.has(scope.kind) && scope.start >= start && scope.end <= end)
+        .sort((left, right) => left.start - right.start || right.end - left.end);
+    let cursor = start;
+    while (cursor < end) {
+        const next = relevant.find((scope) => scope.start >= cursor);
+        const plainEnd = next && next.start < end ? next.start : end;
+        if (plainEnd > cursor) {
+            const text = document.createElement("span");
+            text.dataset.from = String(cursor);
+            text.textContent = source.slice(cursor, plainEnd);
+            parent.append(text);
+            cursor = plainEnd;
+        }
+        if (!next || next.start >= end) {
+            break;
+        }
+        const node = document.createElement("span");
+        const className = contentClass(next);
+        if (className) {
+            node.className = className;
+        }
+        if (next.kind === "link" && next.url) {
+            node.dataset.href = next.url;
+        }
+        appendFormatted(node, source, next.contentStart, next.contentEnd, scopes);
+        parent.append(node);
+        cursor = next.end > cursor ? next.end : cursor + 1;
+    }
+}
+
+function lineNumberNode(lineNumber: number): HTMLDivElement {
+    const number = document.createElement("div");
+    number.className = "inline-md-zone-number";
+    number.textContent = String(lineNumber);
+    return number;
+}
+
+const IMAGE_MAX_WIDTH = 480;
+const IMAGE_MAX_HEIGHT = 240;
+
+export function imageZoneKey(url: string | undefined, from: number, documentUrl: string): string {
+    const src = url ? resolveImageUrl(url, documentUrl) : undefined;
+    return src ? `image:${from}:${src}` : `image:${from}:missing`;
+}
+
+function fittedImageHeight(width: number, height: number): number {
+    if (width <= 0 || height <= 0) {
+        return 0;
+    }
+    const scale = Math.min(1, IMAGE_MAX_WIDTH / width, IMAGE_MAX_HEIGHT / height);
+    return Math.min(IMAGE_MAX_HEIGHT, Math.ceil(height * scale));
+}
+
+function imageLabel(alt: string): string {
+    if (alt.length > 0) {
+        return alt;
+    }
+    return "Image";
+}
+
+function fallbackElement(
+    alt: string,
+    from: number,
+    onReveal: (offset: number) => void,
+): HTMLSpanElement {
+    const fallback = document.createElement("span");
+    fallback.className = "inline-md-image-fallback";
+    fallback.textContent = imageLabel(alt);
+    fallback.dataset.from = String(from);
+    fallback.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onReveal(from + 1);
+    });
+    return fallback;
+}
+
+export function blockZone(
+    scope: Scope,
+    from: number,
+    lineNumber: number,
+    host: BlockZoneHost,
+): BlockZoneRecord {
+    if (scope.kind === "thematicBreak") {
+        const frame = createRuleZoneBody(scope.end, host.onReveal);
+        return {
+            key: `hr:${from}`,
+            zone: {
+                afterLineNumber: lineNumber - 1,
+                heightInPx: host.lineHeight,
+                domNode: frame,
+                marginDomNode: lineNumberNode(lineNumber),
+                suppressMouseDown: true,
+                showInHiddenAreas: true,
+            },
+        };
+    }
+    const alt = scope.alt ?? "";
+    const src = scope.url ? resolveImageUrl(scope.url, host.documentUrl) : undefined;
+    const frame = document.createElement("div");
+    frame.className = "inline-md-block";
+    const key = imageZoneKey(scope.url, from, host.documentUrl);
+    const zone: monaco.editor.IViewZone = {
+        afterLineNumber: lineNumber - 1,
+        heightInPx: host.lineHeight,
+        domNode: frame,
+        marginDomNode: lineNumberNode(lineNumber),
+        suppressMouseDown: true,
+        showInHiddenAreas: true,
+    };
+    if (!src) {
+        frame.append(fallbackElement(alt, from, host.onReveal));
+        return { key, zone };
+    }
+    let settled = false;
+    const showFallback = (): void => {
+        if (settled) {
+            return;
+        }
+        settled = true;
+        frame.replaceChildren(fallbackElement(alt, from, host.onReveal));
+    };
+    const showImage = (width: number, height: number): void => {
+        if (settled) {
+            return;
+        }
+        const next = fittedImageHeight(width, height);
+        if (next <= 0) {
+            showFallback();
+            return;
+        }
+        settled = true;
+        const image = document.createElement("img");
+        image.className = "inline-md-image";
+        image.alt = alt;
+        image.dataset.from = String(from);
+        image.addEventListener("mousedown", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            host.onReveal(from + 1);
+        });
+        image.src = src;
+        frame.replaceChildren(image);
+        if (Math.abs(next - (zone.heightInPx ?? 0)) <= 1) {
+            return;
+        }
+        zone.heightInPx = next;
+        host.onLayout(key);
+    };
+    const probe = new Image();
+    probe.addEventListener("load", () => {
+        showImage(probe.naturalWidth, probe.naturalHeight);
+    });
+    probe.addEventListener("error", () => {
+        showFallback();
+    });
+    probe.src = src;
+    return { key, zone };
+}
+
+export function createMermaidZone(
+    scope: Scope,
+    content: string,
+    key: string,
+    lineNumber: number,
+    host: BlockZoneHost,
+): BlockZoneRecord {
+    const openLine = lineNumber - 1;
+    const frame = document.createElement("div");
+    frame.className = "inline-md-mermaid";
+    const openPreview = document.createElement("button");
+    openPreview.type = "button";
+    openPreview.className = "inline-md-mermaid-open-preview";
+    openPreview.textContent = "Open Preview";
+    openPreview.title = "Open Mermaid preview";
+    openPreview.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        host.onOpenMermaidPreview?.(openLine);
+    });
+    frame.addEventListener("mousedown", (event) => {
+        if (
+            event.target instanceof HTMLElement &&
+            event.target.closest(".inline-md-mermaid-open-preview")
+        ) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        host.onReveal(scope.contentStart + 1);
+    });
+    const diagram = document.createElement("div");
+    diagram.className = "inline-md-mermaid-diagram";
+    frame.append(openPreview);
+    frame.append(diagram);
+    const zone: monaco.editor.IViewZone = {
+        afterLineNumber: lineNumber - 1,
+        heightInPx: 120,
+        domNode: frame,
+        marginDomNode: lineNumberNode(lineNumber),
+        suppressMouseDown: true,
+        showInHiddenAreas: true,
+    };
+    const fitZoneHeight = (): void => {
+        if (!frame.isConnected) {
+            return;
+        }
+        const measured = Math.ceil(frame.scrollHeight);
+        if (measured > 0 && Math.abs(measured - (zone.heightInPx ?? 0)) > 1) {
+            zone.heightInPx = measured;
+            host.onLayout(key);
+        }
+    };
+    void renderMermaidDiagram(diagram, content).then((height) => {
+        if (!frame.isConnected || height <= 0) {
+            return;
+        }
+        zone.heightInPx = height;
+        requestAnimationFrame(fitZoneHeight);
+    });
+    return { key, zone };
+}
+
+export type TableAlign = "left" | "center" | "right";
+
+export function tableAlignments(source: string, start: number, end: number): TableAlign[] {
+    const lines = source.slice(start, end).split(/\r?\n/);
+    for (const line of lines) {
+        const parts = line
+            .split("|")
+            .map((cell) => cell.trim())
+            .filter((cell) => cell.length > 0);
+        if (parts.length === 0 || !parts.every((cell) => /^:?-+:?$/.test(cell))) {
+            continue;
+        }
+        return parts.map((cell) => {
+            const left = cell.startsWith(":");
+            const right = cell.endsWith(":");
+            if (left && right) {
+                return "center";
+            }
+            if (right) {
+                return "right";
+            }
+            return "left";
+        });
+    }
+    return [];
+}
+
+function alignClass(align: TableAlign | undefined): string {
+    if (align === "center" || align === "right") {
+        return `inline-md-align-${align}`;
+    }
+    return "";
+}
+
+export function tableRow(
+    source: string,
+    scopes: readonly Scope[],
+    cells: readonly TextRange[],
+    cellTag: "th" | "td",
+    aligns: readonly TableAlign[] = [],
+): HTMLTableRowElement {
+    const row = document.createElement("tr");
+    cells.forEach((cell, index) => {
+        const node = document.createElement(cellTag);
+        const trimmed = trimmedTextRange(source, cell);
+        node.dataset.start = String(trimmed.start);
+        node.dataset.end = String(trimmed.end);
+        const className = alignClass(aligns[index]);
+        if (className) {
+            node.className = className;
+        }
+        appendFormatted(node, source, trimmed.start, trimmed.end, scopes);
+        row.append(node);
+    });
+    return row;
+}
+
+function ruleRow(columns: number): HTMLTableRowElement {
+    const row = document.createElement("tr");
+    row.className = "inline-md-table-rule";
+    for (let index = 0; index < columns; index += 1) {
+        row.append(document.createElement("td"));
+    }
+    return row;
+}
+
+export interface TableOverlayRecord {
+    readonly key: string;
+    readonly domNode: HTMLElement;
+}
+
+export interface TableZonePaint {
+    readonly partial: boolean;
+    readonly model: monaco.editor.ITextModel;
+    readonly bodyLineNumbers: ReadonlySet<number>;
+}
+
+export function tableZoneKey(scope: Scope): string {
+    return `table:${scope.start}:${scope.end}`;
+}
+
+function rowSourceLine(
+    model: monaco.editor.ITextModel,
+    source: string,
+    cells: readonly TextRange[],
+): number {
+    const cell = cells[0];
+    if (!cell) {
+        return 1;
+    }
+    const offset = Math.max(0, Math.min(cell.start, source.length));
+    return model.getPositionAt(offset).lineNumber;
+}
+
+function filteredBodyRows(
+    bodyRows: readonly (readonly TextRange[])[],
+    source: string,
+    paint: TableZonePaint | undefined,
+): readonly (readonly TextRange[])[] {
+    if (!paint?.partial) {
+        return bodyRows;
+    }
+    return bodyRows.filter((cells) => {
+        const line = rowSourceLine(paint.model, source, cells);
+        return paint.bodyLineNumbers.has(line);
+    });
+}
+
+function fillTableElement(
+    table: HTMLTableElement,
+    scope: Scope,
+    source: string,
+    scopes: readonly Scope[],
+    paint: TableZonePaint | undefined,
+): void {
+    const rows = scope.rows ?? [];
+    const aligns = tableAlignments(source, scope.start, scope.end);
+    const head = rows[0];
+    const bodyRows = filteredBodyRows(rows.slice(1), source, paint);
+    const columns = Math.max(head?.length ?? 0, ...rows.map((row) => row.length));
+    if (head) {
+        const thead = document.createElement("thead");
+        thead.append(tableRow(source, scopes, head, "th", aligns));
+        table.append(thead);
+    }
+    if (columns > 0) {
+        const tbody = document.createElement("tbody");
+        tbody.append(ruleRow(columns));
+        for (const cells of bodyRows) {
+            tbody.append(tableRow(source, scopes, cells, "td", aligns));
+        }
+        table.append(tbody);
+    }
+}
+
+function attachTableFrameListeners(frame: HTMLElement, from: number, host: BlockZoneHost): void {
+    frame.addEventListener("mousedown", (event) => {
+        const element =
+            event.target instanceof Element
+                ? event.target
+                : event.target instanceof Node
+                  ? event.target.parentElement
+                  : null;
+        const link = element?.closest(".inline-md-link");
+        const href = link instanceof HTMLElement ? link.dataset.href : undefined;
+        event.preventDefault();
+        event.stopPropagation();
+        if (href && host.onLink) {
+            host.onLink(href);
+            return;
+        }
+        const cell = element?.closest("td, th");
+        const offset =
+            cell instanceof HTMLElement ? tableCellOffset(event, cell, from + 1) : from + 1;
+        host.onReveal(offset);
+    });
+}
+
+export function updateTableZone(
+    frame: HTMLElement,
+    scope: Scope,
+    source: string,
+    scopes: readonly Scope[],
+    paint: TableZonePaint | undefined,
+): void {
+    const signature = paint?.partial
+        ? [...paint.bodyLineNumbers].sort((left, right) => left - right).join(",")
+        : "all";
+    if (frame.dataset.paintLines === signature) {
+        return;
+    }
+    frame.dataset.paintLines = signature;
+    const table = frame.querySelector("table");
+    if (!(table instanceof HTMLTableElement)) {
+        return;
+    }
+    table.replaceChildren();
+    fillTableElement(table, scope, source, scopes, paint);
+}
+
+export function tableZone(
+    scope: Scope,
+    source: string,
+    scopes: readonly Scope[],
+    from: number,
+    host: BlockZoneHost,
+    paint?: TableZonePaint,
+): TableOverlayRecord {
+    const frame = document.createElement("div");
+    frame.className = "inline-md-table";
+    attachTableFrameListeners(frame, from, host);
+    const table = document.createElement("table");
+    fillTableElement(table, scope, source, scopes, paint);
+    frame.append(table);
+    return { key: tableZoneKey(scope), domNode: frame };
+}
