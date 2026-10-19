@@ -72,6 +72,8 @@ export type ChatComposerProps = {
   /** Base64 image attachments pending on the next send. */
   pendingImages: AcpUiPromptImage[];
   onRemoveImage: (index: number) => void;
+  /** Opens the fullscreen image viewer for one pending image (data URL). */
+  onOpenImage: (src: string) => void;
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
@@ -104,6 +106,7 @@ export function ChatComposer({
   onPaste,
   pendingImages,
   onRemoveImage,
+  onOpenImage,
   composerInputRef,
 }: ChatComposerProps): ReactElement {
   const textareaDisabled = inputBlocked;
@@ -312,6 +315,7 @@ export function ChatComposer({
                   className="composer-image-thumb"
                   src={promptImageSrc(image)}
                   alt={`Pasted image ${index + 1}`}
+                  onClick={() => onOpenImage(promptImageSrc(image))}
                 />
                 <button
                   type="button"

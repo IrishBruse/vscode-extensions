@@ -131,6 +131,7 @@
   object-fit: cover;
   border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
   border-radius: var(--acp-ui-radius-md);
+  cursor: zoom-in;
 }
 
 .composer-image-remove {

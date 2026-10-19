@@ -48,6 +48,7 @@ import {
 import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog";
 import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog";
 import { EmptyChatState } from "./components/EmptyChatState";
+import { ImageViewer } from "./components/ImageViewer";
 import { PermissionDialog } from "./components/PermissionDialog";
 import { TraceList } from "./components/TraceList";
 import { SessionHistoryLoader } from "./components/SessionHistoryLoader";
@@ -159,6 +160,7 @@ export function AcpUiApp({
   const [composerSuggestionIndex, setComposerSuggestionIndex] = useState(0);
   const [composerAutocompleteDismissed, setComposerAutocompleteDismissed] = useState(false);
   const [pendingImages, setPendingImages] = useState<AcpUiPromptImage[]>([]);
+  const [viewerImageSrc, setViewerImageSrc] = useState<string | null>(null);
 
   const scrollTraceToBottomIfPinned = useCallback((): void => {
     if (suppressStickToBottomRef.current) {
@@ -848,11 +850,15 @@ export function AcpUiApp({
               onPaste={onComposerPaste}
               pendingImages={pendingImages}
               onRemoveImage={onRemovePendingImage}
+              onOpenImage={setViewerImageSrc}
               composerInputRef={composerTextareaRef}
             />
           </div>
         </div>
       </div>
+      {viewerImageSrc !== null ? (
+        <ImageViewer src={viewerImageSrc} onClose={() => setViewerImageSrc(null)} />
+      ) : null}
     </Fragment>
   );
 }

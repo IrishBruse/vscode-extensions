@@ -9,6 +9,7 @@ Update any bullet that does not follow this form.
 - **Add**: Composer agent picker switches agents before the first message.
 - **Add**: Paste images from the clipboard into the chat composer; thumbnails render in the composer and ACP agents advertising image prompts receive them as image content blocks.
 - **Add**: Empty new-chat page shows a **Provider** select and recent chats for that provider; new chats are titled `New <provider> chat` and the picker switches provider until the first message.
+- **Add**: Click a pasted image thumbnail in the composer to view it fullscreen; click anywhere or press Escape to close.
 - **Change**: Chat UI under 800px wide collapses side padding to 4px and uses the full panel width for transcript and composer.
 - **Change**: Chat UI follows the current VS Code design language (corner radius, spacing, fonts, and focus states).
 - **Fix**: Playground honors `ib-acp-ui.contentWidthPercent` (or `ACP_UI_CONTENT_WIDTH_PERCENT`) so the content column matches the extension.
