@@ -5,12 +5,12 @@ Tooling is Vite+ (`vp`) with npm workspaces.
 
 ## Extensions
 
-| Package | Status |
-| --- | --- |
-| `ib-utilities` | Active |
-| `ib-acp-ui` | Active |
+| Package              | Status                                         |
+| -------------------- | ---------------------------------------------- |
+| `ib-utilities`       | Active                                         |
+| `ib-acp-ui`          | Active                                         |
 | `ib-markdown-inline` | Placeholder (future extract from ib-utilities) |
-| `ib-mermaid` | Placeholder (future extract from ib-utilities) |
+| `ib-mermaid`         | Placeholder (future extract from ib-utilities) |
 
 ## Setup
 
