@@ -35,6 +35,7 @@ npm run test
 vp check
 npm run release
 npm run install
+npm run install:all
 npm run release -- --package ib-utilities patch
 npm run install -- --package ib-acp-ui
 ```

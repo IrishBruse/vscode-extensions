@@ -41,7 +41,7 @@ Every extension package uses these names:
 | `test`         | Package tests (`vp test run` …)                            |
 | `verify`       | `build` + `test` + `vp check`                              |
 
-Root owns `check`, `lint`, `format`, plus `npm run release` and `npm run install`.
+Root owns `check`, `lint`, `format`, plus `npm run release`, `npm run install`, and `npm run install:all`.
 Interactive prompts live in the `@ib/dev` package under `dev/`.
 Do not redefine `check` / `lint` / `format` in packages.
 Package-only scripts stay in that package's `package.json` and `AGENTS.md`.

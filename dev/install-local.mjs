@@ -13,6 +13,7 @@ function parseArgs(argv) {
     let packageName = null;
     let cli = null;
     let skipPackage = false;
+    let all = false;
 
     for (let index = 0; index < args.length; index += 1) {
         const arg = args[index];
@@ -38,12 +39,16 @@ function parseArgs(argv) {
             skipPackage = true;
             continue;
         }
+        if (arg === "--all") {
+            all = true;
+            continue;
+        }
         if (!arg.startsWith("--") && !packageName) {
             packageName = arg;
         }
     }
 
-    return { packageName, cli, skipPackage };
+    return { packageName, cli, skipPackage, all };
 }
 
 function commandExists(name) {
@@ -63,13 +68,21 @@ function resolveCli(preferred) {
     return cli;
 }
 
-async function promptExtension(packageName) {
+async function resolveExtensions({ packageName, all }) {
+    if (all) {
+        const extensions = listExtensions();
+        if (extensions.length === 0) {
+            throw new Error("No installable extensions found under ib-*/");
+        }
+        return extensions;
+    }
+
     if (packageName) {
         const extension = findExtension(packageName);
         if (!extension) {
             throw new Error(`Unknown extension package: ${packageName}`);
         }
-        return extension;
+        return [extension];
     }
 
     const extensions = listExtensions();
@@ -78,7 +91,7 @@ async function promptExtension(packageName) {
     }
 
     if (extensions.length === 1) {
-        return extensions[0];
+        return [extensions[0]];
     }
 
     const choice = await select(
@@ -89,7 +102,7 @@ async function promptExtension(packageName) {
         })),
     );
 
-    return findExtension(choice);
+    return [findExtension(choice)];
 }
 
 function run(command, cwd = repoRoot) {
@@ -97,14 +110,7 @@ function run(command, cwd = repoRoot) {
     execSync(command, { cwd, stdio: "inherit" });
 }
 
-async function main() {
-    if (process.env.npm_command === "install") {
-        return;
-    }
-
-    const { packageName, cli: cliArg, skipPackage } = parseArgs(process.argv);
-    const extension = await promptExtension(packageName);
-    const cli = resolveCli(cliArg);
+function installExtension(extension, { cli, skipPackage }) {
     const pkg = readJson(extension.packageJsonPath);
     const vsixPath = join(extension.dir, `${pkg.name}-${pkg.version}.vsix`);
 
@@ -120,6 +126,24 @@ async function main() {
 
     run(`${cli} --install-extension ${JSON.stringify(vsixPath)} --force`, extension.dir);
     console.log(`\nInstalled ${vsixPath} via ${cli}`);
+}
+
+async function main() {
+    if (process.env.npm_command === "install") {
+        return;
+    }
+
+    const { packageName, cli: cliArg, skipPackage, all } = parseArgs(process.argv);
+    if (all && packageName) {
+        throw new Error("Use either --all or --package, not both.");
+    }
+
+    const extensions = await resolveExtensions({ packageName, all });
+    const cli = resolveCli(cliArg);
+
+    for (const extension of extensions) {
+        installExtension(extension, { cli, skipPackage });
+    }
 }
 
 void main().catch((error) => {

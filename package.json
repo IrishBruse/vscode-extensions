@@ -20,6 +20,7 @@
         "verify": "npm run verify --workspaces --if-present",
         "package:vsix": "npm run package:vsix --workspaces --if-present",
         "install": "node dev/install-local.mjs",
+        "install:all": "node dev/install-local.mjs --all",
         "release": "node dev/release.mjs"
     },
     "devDependencies": {

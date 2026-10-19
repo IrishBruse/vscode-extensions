@@ -19,7 +19,7 @@
         "build": "npm run build:webview && npm run build:extension",
         "watch": "vp pack --watch --sourcemap",
         "package": "npm run build:webview && vp pack --minify",
-        "package:vsix": "vsce package --out $(node -p \"const p=require('./package.json');p.name+'-'+p.version+'.vsix'\") --skip-license",
+        "package:vsix": "vsce package --no-dependencies --skip-license",
         "install:local": "node ../dev/install-local.mjs --package ib-acp-ui",
         "test": "vp test run",
         "verify": "npm run build && npm run test && vp check",

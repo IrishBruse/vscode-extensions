@@ -18,7 +18,7 @@
         "build": "vp pack && node src/markdownInline/build.mjs",
         "watch": "vp pack --watch",
         "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
-        "package:vsix": "vsce package --no-dependencies --out $(node -p \"const p=require('./package.json');p.name+'-'+p.version+'.vsix'\") --skip-license",
+        "package:vsix": "vsce package --no-dependencies --skip-license",
         "install": "node ../dev/install-local.mjs --package ib-utilities",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
@@ -204,7 +204,8 @@
                 {
                     "id": "ib-utilities.localPorts",
                     "name": "Ports",
-                    "contextualTitle": "Localhost"
+                    "contextualTitle": "Localhost",
+                    "icon": "media/ports_icon.svg"
                 }
             ],
             "scm": [
