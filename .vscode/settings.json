@@ -1,4 +1,8 @@
 {
+    "task.allowAutomaticTasks": "on",
+    "editor.codeActionsOnSave": {
+        "source.fixAll.oxc": "explicit"
+    },
     "editor.defaultFormatter": "oxc.oxc-vscode",
     "[javascript]": {
         "editor.defaultFormatter": "oxc.oxc-vscode"
@@ -20,10 +24,8 @@
     },
     "oxc.disableNestedConfig": true,
     "oxc.fmt.disableNestedConfig": true,
+    "oxc.typeAware": true,
     "npm.scriptRunner": "vp",
     "editor.formatOnSave": true,
-    "editor.formatOnSaveMode": "file",
-    "editor.codeActionsOnSave": {
-        "source.fixAll.oxc": "explicit"
-    }
+    "editor.formatOnSaveMode": "file"
 }

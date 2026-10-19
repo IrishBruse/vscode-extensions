@@ -1,36 +1,43 @@
 {
-  "name": "vscode-extensions",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Monorepo for IrishBruse VS Code extensions",
-  "license": "MIT",
-  "author": "Ethan Conneely",
-  "workspaces": [
-    "ib-*",
-    "ib-utilities/src/markdownInline"
-  ],
-  "scripts": {
-    "prepare": "vp config",
-    "check": "vp check",
-    "lint": "vp lint",
-    "format": "vp fmt --write",
-    "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
-    "verify": "npm run verify --workspaces --if-present"
-  },
-  "devDependencies": {
-    "typescript": "^7.0.2",
-    "vite-plus": "1.3.0"
-  },
-  "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "npm",
-      "version": ">=10.0.0",
-      "onFail": "download"
-    }
-  },
-  "packageManager": "npm@11.7.0"
+    "name": "vscode-extensions",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Monorepo for IrishBruse VS Code extensions",
+    "license": "MIT",
+    "author": "Ethan Conneely",
+    "workspaces": [
+        "ib-*",
+        "ib-utilities/src/markdownInline"
+    ],
+    "scripts": {
+        "prepare": "vp config",
+        "check": "vp check",
+        "lint": "vp lint",
+        "format": "vp fmt --write",
+        "test": "npm run test --workspaces --if-present",
+        "build": "npm run build --workspaces --if-present",
+        "verify": "npm run verify --workspaces --if-present"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.5",
+        "@types/vscode": "^1.140.0",
+        "@vscode/vsce": "^4.0.0",
+        "typescript": "^7.0.2",
+        "vite-plus": "1.3.0"
+    },
+    "overrides": {
+        "@vitest/browser": "5.0.5",
+        "@vitest/browser-preview": "5.0.5",
+        "@vitest/ui": "5.0.5",
+        "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
+        "vitest": "5.0.4"
+    },
+    "devEngines": {
+        "packageManager": {
+            "name": "npm",
+            "version": ">=10.0.0",
+            "onFail": "download"
+        }
+    },
+    "packageManager": "npm@11.7.0"
 }

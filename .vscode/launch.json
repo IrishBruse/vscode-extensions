@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run ib-utilities",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/ib-utilities",
+                "${workspaceFolder}/ib-utilities/docs"
+            ],
+            "outFiles": ["${workspaceFolder}/ib-utilities/dist/**/*.js"],
+            "preLaunchTask": "ib-utilities: build"
+        },
+        {
+            "name": "Run ib-acp-ui",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}/ib-acp-ui"],
+            "outFiles": ["${workspaceFolder}/ib-acp-ui/dist/**/*.js"],
+            "preLaunchTask": "ib-acp-ui: build"
+        }
+    ]
+}

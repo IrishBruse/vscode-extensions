@@ -34,30 +34,17 @@
         "install:local": "npm run package:vsix && node scripts/install-local.mjs",
         "release": "node scripts/release.mjs",
         "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs",
-        "test:watch": "vp test watch",
-        "prepare": "vp config"
+        "test:watch": "vp test watch"
     },
     "dependencies": {
         "mermaid": "^12.2.0"
     },
     "devDependencies": {
         "@azure/identity": "^4.14.0",
-        "@types/node": "^24.13.3",
-        "@types/vscode": "^1.140.0",
         "@vitest/coverage-v8": "5.0.4",
-        "@vscode/vsce": "^4.0.0",
         "pixelmatch": "^8.0.0",
         "playwright-core": "^1.64.1",
         "pngjs": "^7.0.0",
-        "typescript": "^7.0.2",
-        "vite-plus": "1.3.0",
-        "vitest": "5.0.4"
-    },
-    "overrides": {
-        "@vitest/browser": "5.0.5",
-        "@vitest/browser-preview": "5.0.5",
-        "@vitest/ui": "5.0.5",
-        "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
         "vitest": "5.0.4"
     },
     "contributes": {

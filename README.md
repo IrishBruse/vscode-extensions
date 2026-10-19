@@ -3,6 +3,8 @@
 Monorepo for IrishBruse VS Code extensions.
 Tooling is Vite+ (`vp`) with npm workspaces.
 
+Shared at the repo root: `vite.config.ts` (lint/fmt/check), `tsconfig.base.json`, Vite+/TypeScript/`@types/vscode`/`vsce`, and `.vscode` launch/tasks.
+
 ## Extensions
 
 | Package              | Status                                         |

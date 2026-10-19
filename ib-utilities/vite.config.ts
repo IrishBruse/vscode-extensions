@@ -38,9 +38,6 @@ export default defineConfig({
             copy: [{ from: mermaidMinJs, to: "media/mermaidPreview" }],
         },
     ],
-    staged: {
-        "*": "vp check --fix",
-    },
     test: {
         globals: true,
         environment: "node",
@@ -91,67 +88,6 @@ export default defineConfig({
                     testTimeout: 30_000,
                     hookTimeout: 30_000,
                 },
-            },
-        ],
-    },
-    fmt: {
-        tabWidth: 4,
-    },
-    lint: {
-        plugins: ["oxc", "typescript", "unicorn", "import", "node"],
-        options: {
-            typeAware: true,
-            typeCheck: true,
-        },
-        env: {
-            builtin: true,
-        },
-        rules: {
-            "no-empty": ["error", { allowEmptyCatch: true }],
-            "no-implied-eval": "error",
-            "no-unused-vars": [
-                "error",
-                {
-                    args: "all",
-                    argsIgnorePattern: "^_",
-                    caughtErrors: "all",
-                    caughtErrorsIgnorePattern: "^_",
-                    destructuredArrayIgnorePattern: "^_",
-                    varsIgnorePattern: "^_",
-                    ignoreRestSiblings: true,
-                },
-            ],
-            "vscode/contribution-sync": "error",
-            "vscode/no-dropped-disposable": "error",
-            "vscode/activation-events": "error",
-            "typescript/no-explicit-any": "error",
-            "typescript/no-deprecated": [
-                "error",
-                {
-                    allow: [
-                        { from: "lib", name: "caretRangeFromPoint" },
-                        { from: "lib", name: "charCode" },
-                        { from: "lib", name: "execCommand" },
-                        { from: "lib", name: "keyCode" },
-                        { from: "lib", name: "which" },
-                    ],
-                },
-            ],
-            "typescript/no-misused-promises": "error",
-            "typescript/only-throw-error": "error",
-            "typescript/switch-exhaustiveness-check": [
-                "error",
-                { considerDefaultExhaustiveForUnions: true },
-            ],
-        },
-        jsPlugins: [
-            {
-                name: "vite-plus",
-                specifier: "vite-plus/oxlint-plugin",
-            },
-            {
-                name: "vscode",
-                specifier: "./lint/vscodeExtension.js",
             },
         ],
     },

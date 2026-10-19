@@ -4,6 +4,10 @@ Use Vite+ for install, lint, format, test, and pack.
 The CLI is `vp`.
 Package manager is npm workspaces.
 
+Shared tooling lives at the repo root (`vite.config.ts`, `tsconfig.base.json`, common `devDependencies`).
+Package `vite.config.ts` files keep only pack and test settings.
+Do not re-add `vite-plus`, `typescript`, `@types/vscode`, or `@vscode/vsce` inside packages.
+
 ## Commands
 
 - From the repo root, target a package with `vp -C <name> <command>`.
