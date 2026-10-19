@@ -21,7 +21,6 @@ import {
 import {
     addAcpUiSession,
     getAcpUiSession,
-    listAcpUiSessions,
     renameAcpUiSession,
     setActiveAcpUiSessionId,
     touchAcpUiSession,
@@ -207,8 +206,7 @@ async function openNewAcpUi(
     refreshChatsList: () => void,
     agentConfig: AcpAgentConfig,
 ): Promise<void> {
-    const nextIndex = listAcpUiSessions().length + 1;
-    const created = await addAcpUiSession(`Chat ${nextIndex}`, {
+    const created = await addAcpUiSession(`New ${agentConfig.name} chat`, {
         agentName: agentConfig.name,
     });
     setActiveAcpUiSessionId(created.id);

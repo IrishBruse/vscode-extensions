@@ -16,12 +16,13 @@ import {
   resolveToolIndexByCallId,
 } from "../../../src/acp/mapping/canonicalToolCallId";
 import type {
-  ExtensionToWebviewMessage,
-  AcpUiSlashCommand,
-  PlanEntry,
-  TodoEntry,
-  ToolCallDiffRow,
-  ToolCallStatus,
+    AcpUiRecentSession,
+    ExtensionToWebviewMessage,
+    AcpUiSlashCommand,
+    PlanEntry,
+    TodoEntry,
+    ToolCallDiffRow,
+    ToolCallStatus,
 } from "../../../src/protocol/extensionHostMessages";
 import {
   positiveDurationMs,
@@ -93,6 +94,10 @@ export type ChatState = {
   replayToolStartedAtMsById: Map<string, number>;
   historyCommit: number;
   acpAgentSelection: AcpAgentSelectionState | null;
+  /** Configured ACP agent (provider) names for the empty-chat provider select. */
+  providers: string[];
+  /** Recent chats for the current agent, newest first (empty-chat recents). */
+  recentSessions: AcpUiRecentSession[];
   slashCommands: AcpUiSlashCommand[];
   permissionPrompt: PermissionPromptState | null;
   askQuestionPrompt: AskQuestionPromptState | null;
@@ -118,6 +123,7 @@ export type ChatAction =
   | ExtensionMessageAfterInit
   | { type: "submit"; body: string; imageCount?: number }
   | { type: "pickSessionModel"; modelId: string }
+  | { type: "pickSessionAgent"; agentName: string }
   | {
       type: "pickSessionConfigOption";
       configId: string;
@@ -214,6 +220,8 @@ export function createInitialChatState(): ChatState {
     replayToolStartedAtMsById: new Map(),
     historyCommit: 0,
     acpAgentSelection: null,
+    providers: [],
+    recentSessions: [],
     slashCommands: [],
     permissionPrompt: null,
     askQuestionPrompt: null,
@@ -434,6 +442,8 @@ export function createChatStateFromInit(payload: InitPayload): ChatState {
     sessionHistoryLoading: payload.sessionHistoryLoading === true,
     viewportCacheActive: seeded.trace.length > 0 && payload.sessionHistoryLoading === true,
     acpAgentSelection: buildAcpAgentSelectionFromInit(payload),
+    providers: payload.providers ?? [],
+    recentSessions: payload.recentSessions ?? [],
     lockSessionAgent: payload.lockSessionAgent === true,
     composerPicksLocked: false,
     hideComposerModelControls: payload.hideComposerModelControls === true,
@@ -883,6 +893,18 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       composerPicksLocked: state.lockSessionAgent === true ? state.composerPicksLocked : true,
     };
   }
+  if (action.type === "pickSessionAgent") {
+    if (state.trace.length > 0 || state.acpAgentSelection?.currentName === action.agentName) {
+      return state;
+    }
+    return {
+      ...state,
+      acpAgentSelection: { currentName: action.agentName },
+      modelSelection: null,
+      sessionConfigOptions: null,
+      sessionConfigLoading: true,
+    };
+  }
   if (action.type === "pickSessionModel") {
     if (state.composerPicksLocked || state.modelSelection === null) {
       return state;
@@ -986,6 +1008,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return applySessionConfigOptions(state, action.options);
     case "sessionConfigOptionsLoading":
       return applySessionConfigOptionsLoading(state);
+    case "recentSessions":
+      return { ...state, recentSessions: action.sessions };
     case "sessionHistoryLoading":
       if (action.loading) {
         return { ...state, sessionHistoryLoading: true };

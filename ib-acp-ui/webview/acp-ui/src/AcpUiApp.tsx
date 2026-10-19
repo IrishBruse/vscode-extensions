@@ -47,6 +47,7 @@ import {
 } from "./components/composerKeybindings";
 import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog";
 import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog";
+import { EmptyChatState } from "./components/EmptyChatState";
 import { PermissionDialog } from "./components/PermissionDialog";
 import { TraceList } from "./components/TraceList";
 import { SessionHistoryLoader } from "./components/SessionHistoryLoader";
@@ -73,6 +74,8 @@ export type AcpUiAppProps = {
   postSaveHistory: (entries: string[]) => void;
   postSaveVisibleTrace?: (items: TraceItem[]) => void;
   postOpenNewChat?: () => void;
+  postSetSessionAgent?: (agentName: string) => void;
+  postOpenSession?: (sessionId: string) => void;
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
   postPermissionResponse: (
     payload:
@@ -115,6 +118,8 @@ export function AcpUiApp({
   postSaveHistory,
   postSaveVisibleTrace,
   postOpenNewChat,
+  postSetSessionAgent,
+  postOpenSession,
   postOpenWorkspacePath,
   postPermissionResponse,
   postCursorAskQuestionResponse,
@@ -713,6 +718,20 @@ export function AcpUiApp({
           <div ref={traceContentRef} className="acp-ui-content-column">
             {state.sessionHistoryLoading && state.trace.length === 0 ? (
               <SessionHistoryLoader />
+            ) : null}
+            {state.trace.length === 0 && !state.sessionHistoryLoading ? (
+              <EmptyChatState
+                providers={state.providers}
+                currentProvider={state.acpAgentSelection?.currentName ?? ""}
+                recentSessions={state.recentSessions}
+                onPickProvider={(agentName) => {
+                  dispatch({ type: "pickSessionAgent", agentName });
+                  postSetSessionAgent?.(agentName);
+                }}
+                onOpenSession={(sessionId) => {
+                  postOpenSession?.(sessionId);
+                }}
+              />
             ) : null}
             <TraceList
               items={state.trace}

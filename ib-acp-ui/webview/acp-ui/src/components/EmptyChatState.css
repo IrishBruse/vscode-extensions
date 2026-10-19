@@ -1,0 +1,68 @@
+.empty-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-20);
+  width: min(22rem, 100%);
+  margin: 14vh auto 0;
+}
+
+.empty-chat-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-4);
+  min-width: 0;
+}
+
+.empty-chat-label {
+  font-size: var(--acp-ui-font-size-label);
+  line-height: 1;
+  color: var(--acp-ui-text-secondary);
+}
+
+.empty-chat-select {
+  width: 100%;
+  padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
+  color: var(--acp-ui-text-primary);
+  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
+  border: var(--acp-ui-stroke-width) solid
+    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
+  border-radius: var(--acp-ui-radius-md);
+  font-family: inherit;
+  font-size: var(--acp-ui-font-size-small);
+}
+
+.empty-chat-recents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-4);
+}
+
+.empty-chat-recent {
+  width: 100%;
+  padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
+  text-align: left;
+  color: var(--acp-ui-text-primary);
+  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
+  border: var(--acp-ui-stroke-width) solid
+    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
+  border-radius: var(--acp-ui-radius-md);
+  font-family: inherit;
+  font-size: var(--acp-ui-font-size-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.empty-chat-recent:hover {
+  background-color: var(--vscode-list-hoverBackground, var(--acp-ui-border-chrome));
+}
+
+.empty-chat-recent-empty {
+  margin: 0;
+  font-size: var(--acp-ui-font-size-small);
+  color: var(--acp-ui-text-secondary);
+}

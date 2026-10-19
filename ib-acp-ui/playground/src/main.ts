@@ -210,6 +210,12 @@ async function bootstrap(): Promise<void> {
                 },
                 undefined,
                 undefined,
+                (agentName) => {
+                    host.post({ type: "setSessionAgent", agentName });
+                },
+                (sessionId) => {
+                    host.post({ type: "openSession", sessionId });
+                },
                 (path, options) => {
                     host.post({
                         type: "openWorkspacePath",

@@ -51,6 +51,8 @@ export function mountChatView(
   }) => void,
   initialChatState?: ChatState,
   postOpenNewChat?: () => void,
+  postSetSessionAgent?: (agentName: string) => void,
+  postOpenSession?: (sessionId: string) => void,
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void,
   postSaveVisibleTrace?: (items: TraceItem[]) => void,
 ): ChatView {
@@ -84,6 +86,8 @@ export function mountChatView(
       postSaveHistory={postSaveHistory}
       postSaveVisibleTrace={postSaveVisibleTrace}
       postOpenNewChat={postOpenNewChat}
+      postSetSessionAgent={postSetSessionAgent}
+      postOpenSession={postOpenSession}
       postOpenWorkspacePath={postOpenWorkspacePath}
       postPermissionResponse={postPermissionResponse}
       postCursorAskQuestionResponse={postCursorAskQuestionResponse}

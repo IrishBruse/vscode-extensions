@@ -127,6 +127,12 @@ async function mountView(): Promise<void> {
     () => {
       host.post({ type: "openNewChat" });
     },
+    (agentName) => {
+      host.post({ type: "setSessionAgent", agentName });
+    },
+    (sessionId) => {
+      host.post({ type: "openSession", sessionId });
+    },
     (path, options) => {
       host.post({
         type: "openWorkspacePath",

@@ -704,6 +704,7 @@ wss.on("connection", (ws: WebSocket) => {
                 homeDir: resolveUserHomeDir(),
                 agentVersionLabel: undefined,
                 acpAgentName: selectedAgentName,
+                providers: agentConfigs.map((c) => c.name),
                 ...(workspaceFiles !== undefined ? { workspaceFiles } : {}),
                 ...(seed.configOptions !== null
                     ? { sessionConfigOptionsSeed: seed.configOptions }
@@ -736,6 +737,33 @@ wss.on("connection", (ws: WebSocket) => {
             if (!DEMO_MODE) {
                 void connectAgent();
             }
+            return;
+        }
+
+        if (parsed.type === "setSessionAgent") {
+            if (!agentConfigs.some((c) => c.name === parsed.agentName)) {
+                send({ type: "error", message: `Unknown ACP agent: ${parsed.agentName}` });
+                return;
+            }
+            if (selectedAgentName === parsed.agentName) {
+                return;
+            }
+            selectedAgentName = parsed.agentName;
+            userPreferredModelId = null;
+            disposeBridge();
+            const seed = composerSeedForInit();
+            if (seed.configOptions !== null) {
+                send({ type: "sessionConfigOptions", options: seed.configOptions });
+            } else if (seed.modelSelection !== null) {
+                send({ type: "sessionModels", ...seed.modelSelection });
+            } else {
+                send({ type: "sessionConfigOptionsLoading" });
+            }
+            void connectAgent();
+            return;
+        }
+
+        if (parsed.type === "openSession") {
             return;
         }
 

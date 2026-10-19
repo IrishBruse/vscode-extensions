@@ -54,6 +54,13 @@ export type AcpUiSlashCommand = {
 /** How a compact tool path link should open in the workbench. */
 export type WorkspacePathOpenTarget = "file" | "auto";
 
+/** One recent chat listed in the empty-chat state, newest first. */
+export type AcpUiRecentSession = {
+    id: string;
+    title: string;
+    updatedAt: number;
+};
+
 /**
  * Messages sent from a webview (or other UI host) to the extension host.
  */
@@ -112,6 +119,10 @@ export type WebviewToExtensionMessage =
     | { type: "saveVisibleTrace"; items: AcpUiVisibleTraceItem[] }
     /** Open a new chat with the default agent (extension host handles creation). */
     | { type: "openNewChat" }
+    /** Bind this chat to a different ACP agent while the transcript is still empty. */
+    | { type: "setSessionAgent"; agentName: string }
+    /** Open an existing chat session by local session id. */
+    | { type: "openSession"; sessionId: string }
     /** Open a workspace path from a compact tool link (`auto` reveals folders, opens files). */
     | {
           type: "openWorkspacePath";
@@ -134,6 +145,10 @@ export type ExtensionToWebviewMessage =
           workspaceFiles?: string[];
           agentVersionLabel?: string;
           acpAgentName?: string;
+          /** Configured ACP agent (provider) names for the empty-chat provider select. */
+          providers?: string[];
+          /** Recent chats for `acpAgentName`, newest first (empty-chat recents). */
+          recentSessions?: AcpUiRecentSession[];
           /** Optional `--vscode-*` overrides applied on `document.documentElement`. */
           vscodeThemeVariables?: Record<string, string>;
           sessionModels?: AcpUiSessionModelSelection;
@@ -261,6 +276,8 @@ export type ExtensionToWebviewMessage =
           referenceImagePaths?: string[];
       }
     | { type: "slashCommands"; commands: AcpUiSlashCommand[] }
+    /** Refreshes the empty-chat recents list for the current agent. */
+    | { type: "recentSessions"; sessions: AcpUiRecentSession[] }
     /** Whether the agent advertises image support for `session/prompt` content blocks. */
     | { type: "promptImageSupport"; supported: boolean }
     | { type: "appendPlan"; entries: PlanEntry[] }
@@ -433,6 +450,20 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
     }
     if (messageType === "saveVisibleTrace" && Array.isArray(record.items)) {
         return { type: "saveVisibleTrace", items: normalizeVisibleTrace(record.items) };
+    }
+    if (
+        messageType === "setSessionAgent" &&
+        typeof record.agentName === "string" &&
+        record.agentName.length > 0
+    ) {
+        return { type: "setSessionAgent", agentName: record.agentName };
+    }
+    if (
+        messageType === "openSession" &&
+        typeof record.sessionId === "string" &&
+        record.sessionId.length > 0
+    ) {
+        return { type: "openSession", sessionId: record.sessionId };
     }
     if (messageType === "openNewChat") {
         return { type: "openNewChat" };

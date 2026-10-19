@@ -29,8 +29,13 @@ import { resolveUserHomeDir } from "../platform/resolveUserHomeDir";
 import { resolveWorkspacePath } from "../platform/resolveWorkspacePath";
 import { createDefaultAcpSessionHostRuntime } from "../platform/vscode/defaultHostRuntime";
 import { resolveMarkdownThemeVariables } from "../platform/vscode/resolveMarkdownThemeVariables";
-import type { ExtensionToWebviewMessage } from "../protocol/extensionHostMessages";
+import type {
+    AcpUiRecentSession,
+    ExtensionToWebviewMessage,
+} from "../protocol/extensionHostMessages";
 import { tryParseWebviewMessage } from "../protocol/extensionHostMessages";
+import { setActiveAgentName } from "./acpUiActiveAgent";
+import { openOrRevealAcpUiEditor } from "./acpUiPanel";
 import {
     moveAcpUiCustomEditorUri,
     setAcpUiCustomEditorTabTitle,
@@ -46,8 +51,10 @@ import {
 import {
     clearAcpUiSessionRuntimeSessionId,
     getAcpUiSession,
+    listAcpUiSessionsForAgent,
     persistAcpUiSessionTitleHeader,
     renameAcpUiSession,
+    setAcpUiSessionAgentName,
     setAcpUiSessionRuntimeSessionId,
     setAcpUiSessionTitleInMemory,
     updateAcpUiSessionTitle,
@@ -55,6 +62,9 @@ import {
 import { getAcpUiExtensionActivation } from "./extensionServices";
 
 const maxWorkspaceFileAutocompleteEntries = 1500;
+const maxRecentSessionsInEmptyState = 8;
+/** Matches the auto-generated title of a chat that has not been used yet. */
+const emptyChatTitlePattern = /^New .* chat$/;
 
 type SessionControllerOptions = {
     context: ExtensionContext;
@@ -173,6 +183,60 @@ export class AcpUiSessionController {
         this.post({ type: "sessionConfigOptionsLoading" });
     }
 
+    private recentSessionsForAgent(
+        agentName: string | undefined,
+        excludeSessionId: string,
+    ): AcpUiRecentSession[] {
+        if (agentName === undefined) {
+            return [];
+        }
+        return listAcpUiSessionsForAgent(agentName)
+            .filter((row) => row.id !== excludeSessionId)
+            .sort((a, b) => b.updatedAt - a.updatedAt)
+            .slice(0, maxRecentSessionsInEmptyState)
+            .map((row) => ({ id: row.id, title: row.title, updatedAt: row.updatedAt }));
+    }
+
+    private async switchSessionAgent(agentName: string): Promise<void> {
+        if (this.agentConfig?.name === agentName) {
+            return;
+        }
+        const next = getAcpAgentConfigByNameMerged(agentName);
+        if (next === undefined) {
+            this.post({
+                type: "error",
+                message: `Unknown ACP agent: ${agentName}`,
+            });
+            return;
+        }
+        this.agentConfig = next;
+        this.disposeBridge();
+        this.pendingModelId = undefined;
+        this.pendingConfigOption = undefined;
+        const current = getAcpUiSession(this.sessionId);
+        const oldUri = current?.uri;
+        if (current !== undefined && emptyChatTitlePattern.test(current.title)) {
+            const nextTitle = `New ${next.name} chat`;
+            const renamed = await renameAcpUiSession(this.sessionId, nextTitle);
+            if (renamed) {
+                const renamedRecord = getAcpUiSession(this.sessionId);
+                if (renamedRecord !== undefined && oldUri !== undefined) {
+                    moveAcpUiCustomEditorUri(oldUri, renamedRecord.uri);
+                    setAcpUiCustomEditorTabTitle(renamedRecord.uri, nextTitle);
+                }
+            }
+        }
+        await setAcpUiSessionAgentName(this.sessionId, next.name);
+        void setActiveAgentName(next.name);
+        this.options.refreshChatsList?.();
+        this.post({
+            type: "recentSessions",
+            sessions: this.recentSessionsForAgent(next.name, this.sessionId),
+        });
+        this.postSessionConfigSeedOrLoading();
+        void this.ensureBridgeConnected();
+    }
+
     private async buildInitPayload(
         header: AcpUiSessionDocument,
     ): Promise<Omit<Extract<ExtensionToWebviewMessage, { type: "init" }>, "type">> {
@@ -205,6 +269,8 @@ export class AcpUiSessionController {
             homeDir: resolveUserHomeDir(),
             agentVersionLabel,
             acpAgentName: defaultAgent?.name,
+            providers: configs.map((config) => config.name),
+            recentSessions: this.recentSessionsForAgent(defaultAgent?.name, header.id),
             lockSessionAgent: true,
             ...(workspaceFiles !== undefined ? { workspaceFiles } : {}),
             ...(header.history.length > 0 ? { history: header.history } : {}),
@@ -403,6 +469,16 @@ export class AcpUiSessionController {
 
         if (parsed.type === "openNewChat") {
             void commands.executeCommand("ib-acp-ui.openChat");
+            return;
+        }
+
+        if (parsed.type === "setSessionAgent") {
+            await this.switchSessionAgent(parsed.agentName);
+            return;
+        }
+
+        if (parsed.type === "openSession") {
+            await openOrRevealAcpUiEditor(this.options.context, parsed.sessionId, "");
             return;
         }
 

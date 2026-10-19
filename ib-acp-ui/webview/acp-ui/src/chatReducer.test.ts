@@ -618,4 +618,38 @@ describe("chatReducer", () => {
     expect(state.sessionConfigLoading).toBe(false);
     expect(state.sessionConfigOptions?.[0]?.currentValue).toBe("claude-opus-4-8");
   });
+
+  it("seeds providers and recents from init and applies recents refreshes", () => {
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "New Cursor chat",
+      acpAgentName: "Cursor",
+      providers: ["Cursor", "OpenCode"],
+      recentSessions: [{ id: "s2", title: "Old chat", updatedAt: 5 }],
+    });
+    expect(state.providers).toEqual(["Cursor", "OpenCode"]);
+    expect(state.recentSessions).toEqual([{ id: "s2", title: "Old chat", updatedAt: 5 }]);
+    state = chatReducer(state, {
+      type: "recentSessions",
+      sessions: [{ id: "s3", title: "Newer chat", updatedAt: 9 }],
+    });
+    expect(state.recentSessions).toEqual([{ id: "s3", title: "Newer chat", updatedAt: 9 }]);
+  });
+
+  it("switches the agent only while the transcript is empty", () => {
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "New Cursor chat",
+      acpAgentName: "Cursor",
+    });
+    state = chatReducer(state, { type: "pickSessionAgent", agentName: "OpenCode" });
+    expect(state.acpAgentSelection?.currentName).toBe("OpenCode");
+    expect(state.sessionConfigOptions).toBeNull();
+    expect(state.sessionConfigLoading).toBe(true);
+    state = chatReducer(state, { type: "appendAgentText", text: "Hello" });
+    state = chatReducer(state, { type: "pickSessionAgent", agentName: "Cursor" });
+    expect(state.acpAgentSelection?.currentName).toBe("OpenCode");
+  });
 });
