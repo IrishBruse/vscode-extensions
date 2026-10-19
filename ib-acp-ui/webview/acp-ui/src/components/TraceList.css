@@ -18,6 +18,17 @@
   word-break: break-word;
 }
 
+.user-prompt-images {
+  display: inline-block;
+  margin-right: var(--acp-ui-space-8);
+  padding: 1px var(--acp-ui-space-6);
+  font-size: var(--acp-ui-font-size-label);
+  color: var(--acp-ui-text-secondary);
+  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
+  border-radius: var(--acp-ui-radius-md);
+  white-space: nowrap;
+}
+
 .agent-markdown-pending {
   font-family: var(--acp-ui-font-sans);
   font-size: var(--acp-markdown-font-size, var(--acp-ui-font-size-body));

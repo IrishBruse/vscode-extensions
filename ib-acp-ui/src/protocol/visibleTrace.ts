@@ -24,7 +24,7 @@ export type AcpUiVisibleTraceMeta = {
 };
 
 export type AcpUiVisibleTraceItem =
-    | { type: "user"; text: string }
+    | { type: "user"; text: string; imageCount?: number }
     | { type: "thought"; text: string; durationMs?: number }
     | { type: "agent"; text: string }
     | {
@@ -59,6 +59,10 @@ function optionalString(value: unknown): string | undefined {
 /** Positive finite millisecond durations only (0 / negative are treated as missing). */
 export function positiveDurationMs(value: unknown): number | undefined {
     return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function positiveInteger(value: unknown): number | undefined {
+    return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 /** Compact clock label for thought and command durations (for example `450ms`, `1.2s`). */
@@ -143,7 +147,15 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
         if (typeof value.text !== "string") {
             return null;
         }
-        return { type: value.type, text: value.text };
+        if (value.type === "agent") {
+            return { type: "agent", text: value.text };
+        }
+        const imageCount = positiveInteger(value.imageCount);
+        return {
+            type: "user",
+            text: value.text,
+            ...(imageCount !== undefined ? { imageCount } : {}),
+        };
     }
     if (value.type === "thought") {
         if (typeof value.text !== "string") {

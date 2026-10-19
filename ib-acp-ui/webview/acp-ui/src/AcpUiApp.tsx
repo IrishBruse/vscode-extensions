@@ -2,6 +2,7 @@ import "./AcpUiApp.css";
 import "./scrollRegions.css";
 import {
   Fragment,
+  type ClipboardEvent,
   type DragEvent,
   type KeyboardEvent,
   type ReactElement,
@@ -16,6 +17,7 @@ import {
 } from "react";
 import { cycleSessionModePick } from "../../../src/acp/session/sessionConfigOptions";
 import type {
+  AcpUiPromptImage,
   AcpUiSlashCommand,
   ToolCallVerbosity,
   WorkspacePathOpenTarget,
@@ -53,11 +55,16 @@ import {
   collectPathsFromDataTransfer,
   dataTransferLooksLikePathDrop,
 } from "./droppedFilePaths";
+import {
+  clipboardHasImages,
+  collectImagesFromClipboard,
+  maxPasteImageCount,
+} from "./pastedImages";
 
 export type AcpUiAppProps = {
   init: InitPayload;
   initialChatState?: ChatState;
-  postSend: (body: string) => void;
+  postSend: (body: string, images?: AcpUiPromptImage[]) => void;
   postCancel: () => void;
   postRenameSession: (title: string) => void;
   postResetSession: () => void;
@@ -146,6 +153,7 @@ export function AcpUiApp({
   const [fileDragActive, setFileDragActive] = useState(false);
   const [composerSuggestionIndex, setComposerSuggestionIndex] = useState(0);
   const [composerAutocompleteDismissed, setComposerAutocompleteDismissed] = useState(false);
+  const [pendingImages, setPendingImages] = useState<AcpUiPromptImage[]>([]);
 
   const scrollTraceToBottomIfPinned = useCallback((): void => {
     if (suppressStickToBottomRef.current) {
@@ -403,7 +411,8 @@ export function AcpUiApp({
       return;
     }
     const body = draft;
-    if (body.trim().length === 0) {
+    const images = pendingImages;
+    if (body.trim().length === 0 && images.length === 0) {
       return;
     }
     const asCommand = body.toLowerCase();
@@ -449,8 +458,9 @@ export function AcpUiApp({
       return next;
     });
     stickToBottomRef.current = true;
-    dispatch({ type: "submit", body });
-    postSend(body);
+    dispatch({ type: "submit", body, ...(images.length > 0 ? { imageCount: images.length } : {}) });
+    postSend(body, images.length > 0 ? images : undefined);
+    setPendingImages([]);
   };
 
   const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -645,6 +655,32 @@ export function AcpUiApp({
     });
   };
 
+  const onRemovePendingImage = useCallback((index: number): void => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const onComposerPaste = (event: ClipboardEvent<HTMLTextAreaElement>): void => {
+    const dt = event.clipboardData;
+    if (dt === null || !clipboardHasImages(dt)) {
+      return;
+    }
+    event.preventDefault();
+    if (state.promptImageSupported === false) {
+      dispatch({
+        type: "commandFeedback",
+        message: "This agent does not support pasted images.",
+      });
+      return;
+    }
+    void collectImagesFromClipboard(dt).then((images) => {
+      if (images.length > 0) {
+        setPendingImages((prev) =>
+          [...prev, ...images].slice(Math.max(0, prev.length - maxPasteImageCount)),
+        );
+      }
+    });
+  };
+
   return (
     <Fragment>
       <div className="acp-ui-error" role="alert" hidden={state.errorText === null}>
@@ -790,6 +826,9 @@ export function AcpUiApp({
               onSubmit={submit}
               onCancel={postCancel}
               onKeyDown={onComposerKeyDown}
+              onPaste={onComposerPaste}
+              pendingImages={pendingImages}
+              onRemoveImage={onRemovePendingImage}
               composerInputRef={composerTextareaRef}
             />
           </div>

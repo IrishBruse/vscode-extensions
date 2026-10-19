@@ -297,6 +297,15 @@ describe("chatReducer", () => {
     expect(state.promptInFlight).toBe(false);
   });
 
+  it("records image attachments on submit", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "look", imageCount: 2 });
+    expect(state.trace).toEqual([{ type: "user", text: "look", imageCount: 2 }]);
+
+    state = chatReducer(state, { type: "promptImageSupport", supported: false });
+    expect(state.promptImageSupported).toBe(false);
+  });
+
   it("clears model config on loading and restores on sessionConfigOptions", () => {
     const withOptions = chatReducer(
       {

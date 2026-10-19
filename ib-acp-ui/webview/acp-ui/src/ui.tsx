@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { WorkspacePathOpenTarget } from "../../../src/protocol/extensionHostMessages";
+import type { AcpUiPromptImage, WorkspacePathOpenTarget } from "../../../src/protocol/extensionHostMessages";
 import { createRoot } from "react-dom/client";
 import type { ChatState, ExtensionMessageAfterInit, InitPayload, TraceItem } from "./chatReducer";
 import { AcpUiApp } from "./AcpUiApp";
@@ -17,7 +17,7 @@ export type ChatView = {
 export function mountChatView(
   root: HTMLElement,
   init: InitPayload,
-  postSend: (body: string) => void,
+  postSend: (body: string, images?: AcpUiPromptImage[]) => void,
   postCancel: () => void,
   postRenameSession: (title: string) => void,
   postResetSession: () => void,

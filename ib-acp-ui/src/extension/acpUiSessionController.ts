@@ -451,7 +451,7 @@ export class AcpUiSessionController {
                         await b.cancel();
                     }
                     try {
-                        await b.prompt(parsed.body);
+                        await b.prompt(parsed.body, parsed.images);
                     } finally {
                         await this.flushDeferredSessionTitleWrite();
                     }

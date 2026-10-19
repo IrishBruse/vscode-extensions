@@ -3,6 +3,7 @@ import { RequestError } from "@agentclientprotocol/sdk";
 import type {
     ExtensionToWebviewMessage,
     WebviewToExtensionMessage,
+    AcpUiPromptImage,
 } from "../../protocol/extensionHostMessages";
 import type { AcpAgentSpawnConfig } from "../domain/agentSpawnConfig";
 import { resolveAuthMethodId } from "../domain/agentSpawnConfig";
@@ -417,6 +418,10 @@ export class AcpSessionBridge {
     async connect(options?: AcpSessionConnectOptions): Promise<void> {
         this.seedConfigOptionsBeforeConnect();
         const init = await this.agentProcess.start();
+        this.postToWebview({
+            type: "promptImageSupport",
+            supported: this.agentProcess.supportsImagePrompt(),
+        });
         await this.ensureAuthenticated(init);
         const runtimeSessionId = options?.runtimeSessionId?.trim();
         const useLoad = shouldLoadRuntimeSession(
@@ -721,7 +726,7 @@ export class AcpSessionBridge {
     }
 
     /** Sends a user prompt. The bridge forwards all session updates to the UI. */
-    async prompt(text: string): Promise<void> {
+    async prompt(text: string, images: readonly AcpUiPromptImage[] = []): Promise<void> {
         if (!this.acpSessionId) {
             this.postToWebview({
                 type: "error",
@@ -733,7 +738,7 @@ export class AcpSessionBridge {
         this.readToolCallQueue = [];
         this.prompting = true;
         try {
-            const result = await this.agentProcess.prompt(this.acpSessionId, text);
+            const result = await this.agentProcess.prompt(this.acpSessionId, text, images);
             this.postToWebview({
                 type: "turnComplete",
                 stopReason: result.stopReason,

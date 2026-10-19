@@ -1,5 +1,6 @@
 import {
   Fragment,
+  type ClipboardEvent,
   type KeyboardEvent,
   type ReactElement,
   type RefObject,
@@ -32,10 +33,11 @@ import {
   isSessionModeConfigOption,
   resolveComposerPlaceholder,
 } from "../../../../src/acp/session/sessionModeIndicator";
-import type { AcpUiSlashCommand } from "../../../../src/protocol/extensionHostMessages";
+import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../src/protocol/extensionHostMessages";
 import { buildComposerAutocompleteState, wrapIndex } from "./composerAutocomplete";
 import { ConfigOptionControls, ComposerConfigLoading } from "./ConfigOptionControls";
 import { SessionModeIndicator } from "./SessionModeIndicator";
+import { promptImageSrc } from "../pastedImages";
 
 export type ChatComposerProps = {
   activityLabel: string | null;
@@ -65,6 +67,11 @@ export type ChatComposerProps = {
   onSubmit: () => void;
   onCancel: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  /** Paste handler on the textarea; captures image clips as attachments. */
+  onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
+  /** Base64 image attachments pending on the next send. */
+  pendingImages: AcpUiPromptImage[];
+  onRemoveImage: (index: number) => void;
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
@@ -94,6 +101,9 @@ export function ChatComposer({
   onSubmit,
   onCancel,
   onKeyDown,
+  onPaste,
+  pendingImages,
+  onRemoveImage,
   composerInputRef,
 }: ChatComposerProps): ReactElement {
   const textareaDisabled = inputBlocked;
@@ -290,6 +300,31 @@ export function ChatComposer({
         <span className="composer-top-bar-hint">/ commands · @ files</span>
       </div>
       <div className="composer-input-wrap">
+        {pendingImages.length > 0 ? (
+          <div className="composer-image-row" role="list" aria-label="Attached images">
+            {pendingImages.map((image, index) => (
+              <span
+                key={`${index}:${image.mimeType}:${image.data.length}`}
+                className="composer-image-chip"
+                role="listitem"
+              >
+                <img
+                  className="composer-image-thumb"
+                  src={promptImageSrc(image)}
+                  alt={`Pasted image ${index + 1}`}
+                />
+                <button
+                  type="button"
+                  className="composer-image-remove"
+                  aria-label={`Remove pasted image ${index + 1}`}
+                  onClick={() => onRemoveImage(index)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
         <textarea
           ref={composerInputRef}
           className="composer-input"
@@ -301,6 +336,7 @@ export function ChatComposer({
           disabled={textareaDisabled}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={onKeyDown}
+          onPaste={onPaste}
         />
       </div>
       <div className="composer-footer">

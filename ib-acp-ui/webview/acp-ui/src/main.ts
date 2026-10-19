@@ -93,8 +93,8 @@ async function mountView(): Promise<void> {
   view = mountChatView(
     mount as HTMLElement,
     init,
-    (body) => {
-      host.post({ type: "send", body });
+    (body, images) => {
+      host.post({ type: "send", body, ...(images !== undefined && images.length > 0 ? { images } : {}) });
     },
     () => {
       host.post({ type: "cancel" });

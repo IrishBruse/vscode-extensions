@@ -234,6 +234,11 @@ export function TraceList({
               className={`user-prompt-bar${gapClass}`}
               aria-label="User message"
             >
+              {item.imageCount !== undefined && item.imageCount > 0 ? (
+                <span className="user-prompt-images" role="presentation">
+                  {item.imageCount === 1 ? "1 image" : `${item.imageCount} images`}
+                </span>
+              ) : null}
               {item.text}
             </section>,
           );

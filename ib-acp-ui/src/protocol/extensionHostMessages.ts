@@ -3,6 +3,15 @@ import type { AcpUiSessionModelSelection } from "../acp/session/sessionModels";
 import type { AcpUiVisibleTraceItem } from "./visibleTrace";
 import { normalizeVisibleTrace } from "./visibleTrace";
 
+/** Base64 image attached to a prompt from the composer. */
+export type AcpUiPromptImage = {
+    data: string;
+    mimeType: string;
+};
+
+/** Maximum image attachments accepted on one `send` message. */
+export const maxPromptImages = 8;
+
 /** Replayable session log events (user submit + post-init extension messages). */
 export type AcpUiHistoryReplayEvent =
     | { type: "submit"; body: string }
@@ -58,7 +67,7 @@ export type WebviewToExtensionMessage =
           /** Playground dev: replay the fixture on load (default true when `demoFixture` is set). */
           demoReplay?: boolean;
       }
-    | { type: "send"; body: string }
+    | { type: "send"; body: string; images?: AcpUiPromptImage[] }
     | { type: "cancel" }
     | { type: "renameSession"; title: string }
     /** Dispose the current agent session and start a fresh one (same editor / WS connection). */
@@ -252,6 +261,8 @@ export type ExtensionToWebviewMessage =
           referenceImagePaths?: string[];
       }
     | { type: "slashCommands"; commands: AcpUiSlashCommand[] }
+    /** Whether the agent advertises image support for `session/prompt` content blocks. */
+    | { type: "promptImageSupport"; supported: boolean }
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }
     | { type: "turnComplete"; stopReason: string }
@@ -268,6 +279,33 @@ export function isPotentiallyExtensionPostMessageData(
     raw: unknown,
 ): raw is Record<string, unknown> {
     return raw !== null && typeof raw === "object";
+}
+
+/**
+ * Parses an untrusted image attachment list from a webview `send` message.
+ */
+export function promptImagesFromUnknown(value: unknown): AcpUiPromptImage[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const out: AcpUiPromptImage[] = [];
+    for (const item of value) {
+        if (out.length >= maxPromptImages) {
+            break;
+        }
+        if (item === null || typeof item !== "object") {
+            continue;
+        }
+        const row = item as Record<string, unknown>;
+        if (typeof row.data !== "string" || row.data.length === 0) {
+            continue;
+        }
+        if (typeof row.mimeType !== "string" || !row.mimeType.startsWith("image/")) {
+            continue;
+        }
+        out.push({ data: row.data, mimeType: row.mimeType });
+    }
+    return out;
 }
 
 /**
@@ -295,7 +333,8 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
         return ready;
     }
     if (messageType === "send" && typeof record.body === "string") {
-        return { type: "send", body: record.body };
+        const images = promptImagesFromUnknown(record.images);
+        return { type: "send", body: record.body, ...(images.length > 0 ? { images } : {}) };
     }
     if (messageType === "cancel") {
         return { type: "cancel" };

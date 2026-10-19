@@ -813,7 +813,7 @@ wss.on("connection", (ws: WebSocket) => {
             if (bridge.isPrompting) {
                 await bridge.cancel();
             }
-            await bridge.prompt(parsed.body);
+            await bridge.prompt(parsed.body, parsed.images);
             return;
         }
 

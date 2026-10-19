@@ -166,8 +166,12 @@ async function bootstrap(): Promise<void> {
             view = mountChatView(
                 root,
                 initPayload,
-                (body) => {
-                    host.post({ type: "send", body });
+                (body, images) => {
+                    host.post({
+                        type: "send",
+                        body,
+                        ...(images !== undefined && images.length > 0 ? { images } : {}),
+                    });
                 },
                 () => {
                     host.post({ type: "cancel" });

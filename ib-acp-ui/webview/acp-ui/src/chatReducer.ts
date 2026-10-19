@@ -47,7 +47,7 @@ export type TraceToolItem = {
 };
 
 export type TraceItem =
-  | { type: "user"; text: string }
+  | { type: "user"; text: string; imageCount?: number }
   | { type: "thought"; text: string; durationMs?: number }
   | { type: "agent"; text: string }
   | TraceToolItem
@@ -110,11 +110,13 @@ export type ChatState = {
   thoughtStartedAtMs: number | null;
   /** Client clock start for tool rows waiting on a completed/failed status. */
   toolStartedAtMsById: Map<string, number>;
+  /** Whether the agent advertises image prompts; null before the agent connects. */
+  promptImageSupported: boolean | null;
 };
 
 export type ChatAction =
   | ExtensionMessageAfterInit
-  | { type: "submit"; body: string }
+  | { type: "submit"; body: string; imageCount?: number }
   | { type: "pickSessionModel"; modelId: string }
   | {
       type: "pickSessionConfigOption";
@@ -221,6 +223,7 @@ export function createInitialChatState(): ChatState {
     hideComposerModelControls: false,
     thoughtStartedAtMs: null,
     toolStartedAtMsById: new Map(),
+    promptImageSupported: null,
   };
 }
 
@@ -864,7 +867,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     const afterThought = stateAfterLeavingOpenThoughtStream(state);
     return {
       ...afterThought,
-      trace: [...afterThought.trace, { type: "user", text: action.body }],
+      trace: [
+        ...afterThought.trace,
+        {
+          type: "user",
+          text: action.body,
+          ...(action.imageCount !== undefined ? { imageCount: action.imageCount } : {}),
+        },
+      ],
       promptInFlight: true,
       errorText: null,
       openStreamIndex: null,
@@ -1035,6 +1045,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       );
     case "slashCommands":
       return { ...state, slashCommands: action.commands };
+    case "promptImageSupport":
+      return { ...state, promptImageSupported: action.supported };
     case "permissionRequest":
       return {
         ...state,

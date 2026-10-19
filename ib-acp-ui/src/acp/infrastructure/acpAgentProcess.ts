@@ -8,6 +8,7 @@ import {
 } from "../domain/agentSpawnConfig";
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
 import type { AcpRpcNdjsonDirection, AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
+import type { AcpUiPromptImage } from "../../protocol/extensionHostMessages";
 
 /** Node `fs` and VS Code `FileSystemError` both use distinct codes for a missing path. */
 function isFileNotFoundError(error: unknown): boolean {
@@ -344,6 +345,10 @@ export class AcpAgentProcess {
         return this.initResponse?.agentCapabilities?.loadSession === true;
     }
 
+    supportsImagePrompt(): boolean {
+        return this.initResponse?.agentCapabilities?.promptCapabilities?.image === true;
+    }
+
     supportsDeleteSessions(): boolean {
         const sessionCapabilities = this.initResponse?.agentCapabilities?.sessionCapabilities as
             | { delete?: unknown }
@@ -425,14 +430,23 @@ export class AcpAgentProcess {
         return this.connection.setSessionConfigOption(params);
     }
 
-    async prompt(sessionId: string, text: string): Promise<acp.PromptResponse> {
+    async prompt(
+        sessionId: string,
+        text: string,
+        images: readonly AcpUiPromptImage[] = [],
+    ): Promise<acp.PromptResponse> {
         if (!this.connection) {
             throw new Error("Agent not started");
         }
-        return this.connection.prompt({
-            sessionId,
-            prompt: [{ type: "text", text }],
-        });
+        const prompt: acp.ContentBlock[] = images.map((image) => ({
+            type: "image",
+            data: image.data,
+            mimeType: image.mimeType,
+        }));
+        if (text.length > 0 || prompt.length === 0) {
+            prompt.push({ type: "text", text });
+        }
+        return this.connection.prompt({ sessionId, prompt });
     }
 
     async cancel(sessionId: string): Promise<void> {
