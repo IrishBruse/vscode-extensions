@@ -18,8 +18,8 @@
         "build": "vp pack && node src/markdownInline/build.mjs",
         "watch": "vp pack --watch",
         "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
-        "package:vsix": "vsce package --out $(node -p \"const p=require('./package.json');p.name+'-'+p.version+'.vsix'\") --skip-license",
-        "install:local": "node ../dev/install-local.mjs --package ib-utilities",
+        "package:vsix": "vsce package --no-dependencies --out $(node -p \"const p=require('./package.json');p.name+'-'+p.version+'.vsix'\") --skip-license",
+        "install": "node ../dev/install-local.mjs --package ib-utilities",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
         "release": "node ../dev/release.mjs --package ib-utilities",
@@ -39,11 +39,11 @@
         "mermaid": "^12.2.0"
     },
     "devDependencies": {
-        "@vitest/coverage-v8": "5.0.4",
+        "@vitest/coverage-v8": "5.0.5",
         "pixelmatch": "^8.0.0",
         "playwright-core": "^1.64.1",
         "pngjs": "^7.0.0",
-        "vitest": "5.0.4"
+        "vitest": "5.0.5"
     },
     "contributes": {
         "configuration": {

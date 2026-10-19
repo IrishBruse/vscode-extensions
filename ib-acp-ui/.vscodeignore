@@ -1,36 +1,7 @@
-# Dev tooling
-.vscode/**
-.vscode-test/**
-.git/**
-.github/**
-.cursor/**
-node_modules/**
-**/*.map
-*.vsix
-
-# Source and dev apps (runtime uses dist/ + media/)
-src/**
-webview/**
-playground/**
-scripts/**
-docs/**
-.tmp/
-.vite-hooks/
-.node-version
-
-# Build, test, and lint config
-tsconfig.json
-vite.config.ts
-package-lock.json
-
-# Repo metadata
-.cursorignore
-.gitignore
-.nvmrc
-AGENTS.md
-ARCHITECTURE.md
-icon.svg
-
-# Tests
-**/*.test.ts
-**/*.test.tsx
+**
+!CHANGELOG.md
+!README.md
+!icon.png
+!package.json
+!dist/**/!(*.map)
+!media/**/!(*.map)

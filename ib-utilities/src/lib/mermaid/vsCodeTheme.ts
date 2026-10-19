@@ -254,6 +254,8 @@ export function getThemeVariables(
 ): Record<string, string | boolean> {
     const variables: Record<string, string | boolean> = {
         darkMode: tokens.dark,
+        dropShadow: "none",
+        nodeShadow: false,
     };
 
     const setValue = (key: string, color: string | undefined) => {

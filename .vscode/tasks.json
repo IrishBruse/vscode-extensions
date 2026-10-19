@@ -10,75 +10,6 @@
             "problemMatcher": []
         },
         {
-            "label": "ib-utilities: watch",
-            "type": "npm",
-            "script": "watch",
-            "path": "ib-utilities/",
-            "problemMatcher": [],
-            "isBackground": true,
-            "presentation": {
-                "reveal": "never",
-                "group": "watchers"
-            },
-            "runOptions": { "runOn": "folderOpen" }
-        },
-        {
-            "label": "ib-utilities: markdown-inline build",
-            "type": "npm",
-            "script": "build-markdown-inline",
-            "path": "ib-utilities/",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "ib-utilities: markdown-inline dev",
-            "type": "npm",
-            "script": "dev:markdown-inline",
-            "path": "ib-utilities/",
-            "isBackground": true,
-            "problemMatcher": {
-                "owner": "vite",
-                "pattern": { "regexp": "^$" },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": ".",
-                    "endsPattern": "Local:\\s+http://localhost:\\d+/"
-                }
-            },
-            "presentation": {
-                "reveal": "never",
-                "group": "watchers"
-            },
-            "runOptions": { "runOn": "folderOpen" }
-        },
-        {
-            "label": "ib-utilities: markdown-inline open",
-            "type": "shell",
-            "command": "echo ${input:openInlineMarkdown}",
-            "options": {
-                "shell": {
-                    "executable": "/bin/sh",
-                    "args": ["-c"]
-                }
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "never",
-                "echo": false,
-                "focus": false,
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "ib-utilities: markdown-inline",
-            "dependsOn": [
-                "ib-utilities: markdown-inline dev",
-                "ib-utilities: markdown-inline open"
-            ],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
             "label": "ib-acp-ui: build",
             "type": "npm",
             "script": "build",
@@ -87,7 +18,19 @@
             "problemMatcher": []
         },
         {
-            "label": "ib-acp-ui: watch extension",
+            "label": "ib-utilities: watch",
+            "type": "npm",
+            "script": "watch",
+            "path": "ib-utilities/",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "never",
+                "group": "watchers"
+            }
+        },
+        {
+            "label": "ib-acp-ui: watch",
             "type": "npm",
             "script": "watch",
             "path": "ib-acp-ui/",
@@ -95,51 +38,8 @@
             "problemMatcher": [],
             "presentation": {
                 "reveal": "never",
-                "group": "watchers",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "ib-acp-ui: watch:webview",
-            "type": "npm",
-            "script": "watch:webview",
-            "path": "ib-acp-ui/",
-            "isBackground": true,
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "never",
-                "group": "watchers",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "ib-acp-ui: watch all",
-            "dependsOn": ["ib-acp-ui: watch extension", "ib-acp-ui: watch:webview"],
-            "dependsOrder": "parallel",
-            "problemMatcher": [],
-            "runOptions": { "runOn": "folderOpen" }
-        },
-        {
-            "label": "ib-acp-ui: playground",
-            "type": "npm",
-            "script": "dev:playground",
-            "path": "ib-acp-ui/",
-            "problemMatcher": [],
-            "isBackground": true,
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated",
                 "group": "watchers"
-            },
-            "runOptions": { "runOn": "folderOpen" }
-        }
-    ],
-    "inputs": [
-        {
-            "id": "openInlineMarkdown",
-            "type": "command",
-            "command": "simpleBrowser.show",
-            "args": ["http://localhost:5175/"]
+            }
         }
     ]
 }

@@ -1,69 +1,60 @@
 # Changelog
 
+Entries use **Add** / **Fix** / **Remove** / **Change** (bold label, colon, short sentence).
+Update any bullet that does not follow this form.
+
 ## Unreleased
 
-- Install ACP agents from the official registry (**Browse Agent Registry**) instead of relying on hardcoded settings defaults.
-  Supports `npx`, `uvx`, and binary distributions; installs live in extension storage.
-  Manual `ib-acp-ui.agents` remains an advanced override that wins on name collision.
-  Composer agent picker switches agents before the first message.
-- When the chat webview is narrower than 800px, collapse side padding to 4px and force the content column to full width so transcript and composer use the panel width.
-- Restyled the chat UI to the current VS Code design language.
-  Added a design-token layer that mirrors the VS Code corner radius, spacing, and font size tokens.
-  Chrome and message text now use the UI sans-serif font; code, diffs, and tool output stay monospace.
-  Rounded corners, padding, and focus states now follow the VS Code scale.
-- The playground now honors the `ib-acp-ui.contentWidthPercent` setting
-  (from VS Code settings or the `ACP_UI_CONTENT_WIDTH_PERCENT` env var), so the content
-  column lines up with the real extension instead of defaulting to full width.
+- **Add**: Install ACP agents from the official registry (**Browse Agent Registry**) with `npx`, `uvx`, and binary installs in extension storage; manual `ib-acp-ui.agents` still wins on name collision.
+- **Add**: Composer agent picker switches agents before the first message.
+- **Change**: Chat UI under 800px wide collapses side padding to 4px and uses the full panel width for transcript and composer.
+- **Change**: Chat UI follows the current VS Code design language (corner radius, spacing, fonts, and focus states).
+- **Fix**: Playground honors `ib-acp-ui.contentWidthPercent` (or `ACP_UI_CONTENT_WIDTH_PERCENT`) so the content column matches the extension.
 
 ## 0.5.0 - 2026-07-07
 
-- Added `minimal` tool call verbosity: groups tool calls with a summary line and shows only the last three detail lines (Cursor-style).
-  `compact` now shows one line per tool call with no group summary.
-  `verbose` is unchanged (full blocks with previews and diffs).
-- Added a copy button on markdown code blocks (hover to reveal, with brief copied feedback).
-- Store chats under `chats/<sessionId>/` with title-based `.acp` files so renames do not collide.
-- Session `.acp` files are now a single JSON document with a `history` array (composer messages only).
-  RPC traffic is logged to the `ACP UI RPC` output channel instead of session files.
-- Send `clientInfo` on ACP initialize so agents receive package metadata.
-  Protocol version mismatches surface actionable errors.
-- Chats sidebar lists agent sessions when supported, falls back to local files, and stays visible while refreshing.
-- Wire `session/delete` through the SDK with local tombstones when remote delete is unavailable.
-- Added `npm run install:local` to build and install the extension into local VS Code.
-- Markdown table headers use the VS Code theme foreground color.
-- Fixed Chats delete so removed sessions stay gone after refresh.
-- Fixed mid-prompt reconnect when sending a message after an agent-driven title update.
-- Fixed ACP session lifecycle bugs in delete, connect, and UI config sync.
+- **Add**: `minimal` tool call verbosity groups tool calls with a summary and shows the last three detail lines.
+- **Change**: `compact` tool calls show one line each with no group summary; `verbose` is unchanged.
+- **Add**: Copy button on markdown code blocks (hover to reveal, brief copied feedback).
+- **Change**: Chats live under `chats/<sessionId>/` with title-based `.acp` files so renames do not collide.
+- **Change**: Session `.acp` files are a single JSON document with a `history` array; RPC traffic goes to the `ACP UI RPC` output channel.
+- **Add**: `clientInfo` on ACP initialize so agents receive package metadata; protocol version mismatches surface actionable errors.
+- **Add**: Chats sidebar lists agent sessions when supported, falls back to local files, and stays visible while refreshing.
+- **Add**: `session/delete` through the SDK with local tombstones when remote delete is unavailable.
+- **Add**: `npm run install:local` builds and installs the extension into local VS Code.
+- **Fix**: Markdown table headers use the VS Code theme foreground color.
+- **Fix**: Chats delete keeps removed sessions gone after refresh.
+- **Fix**: Mid-prompt reconnect when sending a message after an agent-driven title update.
+- **Fix**: ACP session lifecycle bugs in delete, connect, and UI config sync.
 
 ## 0.4.0 - 2026-07-06
 
-- Added `ib-acp-ui.toolCallVerbosity` setting (`verbose` or `compact`) to switch tool calls between full blocks and single-line summaries.
-- Added `ib-acp-ui.contentWidthPercent` setting (10 to 100) to control how much horizontal space the transcript and composer use.
-  `100` is full width, `50` is half width with equal side margins.
-- Group slash-command autocomplete by skill source with separate source labels for user and global skills.
-- Restyled markdown tables to match VS Code settings lists (borderless, monospace, plain cell text).
-- Compact mode keeps terminal commands separate from read/grep groups and truncates long command output with a tail preview plus hidden-line hint.
-- Pin the conversation scrollbar to the far right of the chat panel while keeping transcript and composer content centered.
-- Show the loading indicator immediately when a prompt is sent.
+- **Add**: `ib-acp-ui.toolCallVerbosity` setting (`verbose` or `compact`) for full blocks vs single-line tool call summaries.
+- **Add**: `ib-acp-ui.contentWidthPercent` setting (10 to 100) for transcript and composer width.
+- **Add**: Slash-command autocomplete grouped by skill source with user and global labels.
+- **Change**: Markdown tables match VS Code settings lists (borderless, monospace, plain cell text).
+- **Change**: Compact mode keeps terminal commands separate from read/grep groups and truncates long command output with a tail preview.
+- **Change**: Conversation scrollbar pins to the far right of the chat panel while content stays centered.
+- **Add**: Loading indicator shows immediately when a prompt is sent.
 
 ## 0.3.0 - 2026-07-06
 
-- Added disk-backed `.acp` session files with JSONL event persistence, autosave, and a custom editor.
-    - Log ACP RPC traffic into session files and pretty-print persisted session JSON.
-- Resume chats on reopen via ACP `session/load`, with JSONL transcript replay as a fallback.
-- Drive the Chats sidebar from ACP `session/list` for the active agent, with loading state during resume.
-- Added composer session config, model picker in the footer, model variant selection, and cached options on reconnect.
-- Added session mode indicator with `Shift+Tab` mode cycling.
-- Added agent `authenticate` / `logout` flows when auth methods are advertised.
-- Added new-chat shortcut, improved composer autocomplete, and markdown colors derived from the editor theme.
+- **Add**: Disk-backed `.acp` session files with JSONL event persistence, autosave, and a custom editor.
+- **Add**: Resume chats on reopen via ACP `session/load`, with JSONL transcript replay as a fallback.
+- **Add**: Chats sidebar driven by ACP `session/list` for the active agent, with loading state during resume.
+- **Add**: Composer session config, model picker, model variant selection, and cached options on reconnect.
+- **Add**: Session mode indicator with `Shift+Tab` mode cycling.
+- **Add**: Agent `authenticate` / `logout` flows when auth methods are advertised.
+- **Add**: New-chat shortcut, improved composer autocomplete, and markdown colors from the editor theme.
 
 ## 0.2.1 - 2026-04-14
 
-- Maintenance patch release with no user-facing feature changes.
+- **Change**: Maintenance patch release with no user-facing feature changes.
 
 ## 0.2.0 - 2026-04-14
 
-- Added built-in composer commands `/rename` and `/show-thinking`.
-- Added keyboard/session rename support in Chats (`F2` + command + context menu).
-- Added built-in command documentation in `BUILTIN_COMMANDS.md` and linked it from `README.md`.
-- Renamed the VS Code output channel to `ACP UI RPC`.
-- Removed file-based RPC logging from extension activation to avoid log file creation failures.
+- **Add**: Built-in composer commands `/rename` and `/show-thinking`.
+- **Add**: Keyboard and session rename in Chats (`F2`, command, and context menu).
+- **Add**: Built-in command documentation in `BUILTIN_COMMANDS.md`, linked from `README.md`.
+- **Change**: VS Code output channel renamed to `ACP UI RPC`.
+- **Remove**: File-based RPC logging from extension activation.

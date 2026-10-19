@@ -2,6 +2,8 @@
 
 An idle mermaid fence shows the diagram.
 
+Diagram nodes have no white drop shadow.
+
 Open Preview floats in the top right of the code block.
 
 When the caret is in the fence, Open Preview stays in the top right of the code block.

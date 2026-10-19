@@ -30,18 +30,18 @@ Run scripts across packages with `npm run <script> --workspaces --if-present`.
 
 Every extension package uses these names:
 
-| Script          | Role                                                  |
-| --------------- | ----------------------------------------------------- |
-| `build`         | Dev build for that package                            |
-| `watch`         | Watch the extension host bundle (`vp pack --watch`)   |
-| `package`       | Production pack (used by `vscode:prepublish`)         |
-| `package:vsix`  | Build a `.vsix` with vsce                             |
-| `install:local` | Interactive local install via `dev/install-local.mjs` |
-| `release`       | Interactive release via `dev/release.mjs`             |
-| `test`          | Package tests (`vp test run` …)                       |
-| `verify`        | `build` + `test` + `vp check`                         |
+| Script         | Role                                                       |
+| -------------- | ---------------------------------------------------------- |
+| `build`        | Dev build for that package                                 |
+| `watch`        | Watch the extension host bundle (`vp pack --watch`)        |
+| `package`      | Production pack (used by `vscode:prepublish`)              |
+| `package:vsix` | Build a `.vsix` with vsce                                  |
+| `install`      | Interactive local VSIX install via `dev/install-local.mjs` |
+| `release`      | Interactive release via `dev/release.mjs`                  |
+| `test`         | Package tests (`vp test run` …)                            |
+| `verify`       | `build` + `test` + `vp check`                              |
 
-Root owns `check`, `lint`, `format`, plus `npm run release` and `npm run install:local`.
+Root owns `check`, `lint`, `format`, plus `npm run release` and `npm run install`.
 Interactive prompts live in the `@ib/dev` package under `dev/`.
 Do not redefine `check` / `lint` / `format` in packages.
 Package-only scripts stay in that package's `package.json` and `AGENTS.md`.
@@ -59,6 +59,14 @@ Add a tool name for one tool, for example `vp toolchain vite`.
 - `vp check` formats, lints, and type-checks from the root config.
 - Run package scripts with `vp -C <name> run <script>` or `vp run <script>` when defined.
 - If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
+
+## Changelog
+
+Keep each package `CHANGELOG.md` `## Unreleased` section current with user-facing feature work.
+Skip development-only changes (tooling, tests, refactors, agent/docs churn).
+One short bullet per theme.
+Use **Add** / **Fix** / **Remove** / **Change**.
+Release moves Unreleased into the stamped version.
 
 ## Packages are deep modules
 

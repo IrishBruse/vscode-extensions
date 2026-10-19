@@ -9,13 +9,11 @@ Do not cross-import them yet.
 
 Use `agent-browser` for testing markdownInline at http://localhost:5175/
 
-Update `CHANGELOG.md` with changes skip development only changes.
-
 ## Package-specific scripts
 
 From the monorepo root: `npm run <script> -w ib-utilities` or `vp -C ib-utilities run <script>`.
 
-Shared scripts (`build`, `watch`, `package`, `package:vsix`, `install:local`, `release`, `test`, `verify`) are documented in the root `AGENTS.md`.
+Shared scripts (`build`, `watch`, `package`, `package:vsix`, `install`, `release`, `test`, `verify`) are documented in the root `AGENTS.md`.
 
 - `test` runs the unit project only (`vp test run --project unit`)
 - `test:coverage` / `test:watch` are unit-project helpers

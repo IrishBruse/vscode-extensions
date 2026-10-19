@@ -99,22 +99,43 @@ function parseArgs(argv) {
 }
 
 function changelogHasVersion(extension, version) {
-    return readText(extension.changelogPath).includes(`## ${version}`);
+    return new RegExp(`^## ${version.replaceAll(".", "\\.")}(?:\\s|$)`, "m").test(
+        readText(extension.changelogPath),
+    );
 }
 
-function ensureChangelog(extension, version) {
+function promoteUnreleased(extension, version) {
     if (changelogHasVersion(extension, version)) {
         return;
     }
 
-    console.error(
-        `\n${extension.relativeDir}/CHANGELOG.md is missing a "## ${version}" section. Add it, then run release again.`,
+    const changelog = readText(extension.changelogPath);
+    const unreleasedMatch = changelog.match(/^## Unreleased\r?\n([\s\S]*?)(?=^## |z)/m);
+    if (!unreleasedMatch) {
+        console.error(
+            `\n${extension.relativeDir}/CHANGELOG.md is missing an "## Unreleased" section.`,
+        );
+        process.exit(1);
+    }
+
+    const body = unreleasedMatch[1].trim();
+    if (body.length === 0) {
+        console.error(
+            `\n${extension.relativeDir}/CHANGELOG.md "## Unreleased" is empty. Add entries, then run release again.`,
+        );
+        process.exit(1);
+    }
+
+    const promoted = changelog.replace(
+        /^## Unreleased\r?\n[\s\S]*?(?=^## |z)/m,
+        `## Unreleased\n\n## ${version}\n\n${body}\n\n`,
     );
-    process.exit(1);
+    writeText(extension.changelogPath, promoted);
+    console.log(`Moved Unreleased entries into ## ${version}.`);
 }
 
 function prepareForStamp(extension, version) {
-    ensureChangelog(extension, version);
+    promoteUnreleased(extension, version);
     run(`npm run verify -w ${extension.name}`);
 }
 
@@ -284,13 +305,17 @@ function stampVersion(extension, version) {
     console.log(`\nStamped ${extension.name}@${version}.`);
 }
 
-function restoreWorkingTreeFiles(packageSnapshot, lockSnapshot, extension) {
+function restoreWorkingTreeFiles(packageSnapshot, lockSnapshot, changelogSnapshot, extension) {
     if (packageSnapshot !== null) {
         writeText(extension.packageJsonPath, packageSnapshot);
     }
 
     if (lockSnapshot !== null) {
         writeText(join(repoRoot, "package-lock.json"), lockSnapshot);
+    }
+
+    if (changelogSnapshot !== null) {
+        writeText(extension.changelogPath, changelogSnapshot);
     }
 }
 
@@ -337,10 +362,11 @@ async function main() {
         process.exit(1);
     }
 
-    const packageSnapshot = !publishOnly && !isRetry ? readText(extension.packageJsonPath) : null;
+    const takeSnapshots = !publishOnly && !isRetry;
+    const packageSnapshot = takeSnapshots ? readText(extension.packageJsonPath) : null;
     const lockPath = join(repoRoot, "package-lock.json");
-    const lockSnapshot =
-        !publishOnly && !isRetry && existsSync(lockPath) ? readText(lockPath) : null;
+    const lockSnapshot = takeSnapshots && existsSync(lockPath) ? readText(lockPath) : null;
+    const changelogSnapshot = takeSnapshots ? readText(extension.changelogPath) : null;
     let published = false;
 
     try {
@@ -382,9 +408,9 @@ async function main() {
         }
     } catch (error) {
         if (!published && packageSnapshot !== null) {
-            restoreWorkingTreeFiles(packageSnapshot, lockSnapshot, extension);
+            restoreWorkingTreeFiles(packageSnapshot, lockSnapshot, changelogSnapshot, extension);
             console.error(
-                "\nRestored package.json and package-lock.json to their pre-stamp versions.",
+                "\nRestored package.json, package-lock.json, and CHANGELOG.md to their pre-stamp versions.",
             );
         }
 

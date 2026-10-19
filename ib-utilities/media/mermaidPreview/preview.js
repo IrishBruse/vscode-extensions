@@ -169,6 +169,8 @@
         mermaid.initialize({
             startOnLoad: false,
             theme: "base",
+            look: "classic",
+            flowchart: { look: "classic" },
             themeVariables: window.IbMermaidVsCodeTheme.getThemeVariables(tokens),
             themeCSS: window.IbMermaidVsCodeTheme.getThemeCSS(tokens),
             securityLevel: "strict",

@@ -22,20 +22,21 @@ vp install
 
 ## Shared scripts
 
-Root: `check`, `lint`, `format`, `build`, `test`, `verify`, `package:vsix`, `install:local`, `release`.
+Root: `check`, `lint`, `format`, `build`, `test`, `verify`, `package:vsix`, `install`, `release`.
 
-Every package: `build`, `watch`, `package`, `package:vsix`, `install:local`, `release`, `test`, `verify`.
+Every package: `build`, `watch`, `package`, `package:vsix`, `install`, `release`, `test`, `verify`.
 
-Interactive `release` / `install:local` live in `dev/` (`@ib/dev`) and can target any `ib-*` extension.
+Interactive `release` / `install` live in `dev/` (`@ib/dev`) and can target any `ib-*` extension.
+Use `npm run install` (not bare `npm install`) for the VSIX installer.
 
 ```bash
 npm run build
 npm run test
 vp check
 npm run release
-npm run install:local
+npm run install
 npm run release -- --package ib-utilities patch
-npm run install:local -- --package ib-acp-ui
+npm run install -- --package ib-acp-ui
 ```
 
 ## Package-only

@@ -122,7 +122,7 @@ npm run verify
 - **Build:** `npm run build`
 - **Tests:** `npm run test`
 - **Lint:** `npm run lint`
-- **Install locally:** `npm run install:local` (packages a VSIX and installs it via `cursor` or `code`; override with `VSCODE_CLI`)
+- **Install locally:** `npm run install` (packages a VSIX and installs it via `code`; override with `--cli` or `VSCODE_CLI`)
 
 See [`AGENTS.md`](./AGENTS.md) for contributor notes (including `fnm` for Node versions).
 

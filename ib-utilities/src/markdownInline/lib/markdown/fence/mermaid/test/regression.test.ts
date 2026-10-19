@@ -54,6 +54,29 @@ describe("mermaid open preview", () => {
         await browser?.close();
     });
 
+    it("keeps diagram nodes free of neo drop shadows", async () => {
+        const shadow = await page.evaluate(() => {
+            const root = document.querySelector(".inline-md-mermaid-diagram");
+            if (!(root instanceof HTMLElement)) {
+                return null;
+            }
+            const neo = root.querySelectorAll('.node[data-look="neo"]').length;
+            const filtered = [...root.querySelectorAll("rect, polygon, circle, path")].filter(
+                (node) => {
+                    if (!(node instanceof SVGElement)) {
+                        return false;
+                    }
+                    const filter = getComputedStyle(node).filter;
+                    return filter !== "none" && filter.includes("drop-shadow");
+                },
+            ).length;
+            return { neo, filtered };
+        });
+        expect(shadow).not.toBeNull();
+        expect(shadow!.neo).toBe(0);
+        expect(shadow!.filtered).toBe(0);
+    });
+
     it("floats Open Preview in the top right of the code block", async () => {
         const boxes = await page.evaluate(() => {
             const frame = document.querySelector(".inline-md-mermaid");

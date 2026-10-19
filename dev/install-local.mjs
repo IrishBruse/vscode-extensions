@@ -6,6 +6,7 @@ import { findExtension, getRepoRoot, listExtensions, readJson } from "./extensio
 import { select } from "./ui.mjs";
 
 const repoRoot = getRepoRoot();
+const defaultCli = "code";
 
 function parseArgs(argv) {
     const args = argv.slice(2);
@@ -54,8 +55,12 @@ function commandExists(name) {
     }
 }
 
-function availableEditors() {
-    return ["cursor", "code"].filter(commandExists);
+function resolveCli(preferred) {
+    const cli = preferred || process.env.VSCODE_CLI || process.env.CODE_CLI || defaultCli;
+    if (!commandExists(cli)) {
+        throw new Error(`Editor CLI not found on PATH: ${cli}`);
+    }
+    return cli;
 }
 
 async function promptExtension(packageName) {
@@ -87,42 +92,19 @@ async function promptExtension(packageName) {
     return findExtension(choice);
 }
 
-async function promptEditor(preferred) {
-    if (preferred) {
-        if (!commandExists(preferred)) {
-            throw new Error(`Editor CLI not found on PATH: ${preferred}`);
-        }
-        return preferred;
-    }
-
-    if (process.env.VSCODE_CLI || process.env.CODE_CLI) {
-        return process.env.VSCODE_CLI || process.env.CODE_CLI;
-    }
-
-    const editors = availableEditors();
-    if (editors.length === 0) {
-        throw new Error("Could not find cursor or code on PATH. Pass --cli <name>.");
-    }
-
-    if (editors.length === 1) {
-        return editors[0];
-    }
-
-    return select(
-        "Install with which editor CLI?",
-        editors.map((name) => ({ label: name, value: name })),
-    );
-}
-
 function run(command, cwd = repoRoot) {
     console.log(`\n> ${command}`);
     execSync(command, { cwd, stdio: "inherit" });
 }
 
 async function main() {
+    if (process.env.npm_command === "install") {
+        return;
+    }
+
     const { packageName, cli: cliArg, skipPackage } = parseArgs(process.argv);
     const extension = await promptExtension(packageName);
-    const cli = await promptEditor(cliArg);
+    const cli = resolveCli(cliArg);
     const pkg = readJson(extension.packageJsonPath);
     const vsixPath = join(extension.dir, `${pkg.name}-${pkg.version}.vsix`);
 

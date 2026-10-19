@@ -125,7 +125,12 @@ describe("mermaidEditor/vsCodeTheme", () => {
             for (const [key, value] of Object.entries(variables)) {
                 expect(value, key).not.toBeUndefined();
                 expect(["string", "boolean"]).toContain(typeof value);
-                if (typeof value === "string" && key !== "fontFamily" && !key.endsWith("Opacity")) {
+                if (
+                    typeof value === "string" &&
+                    key !== "fontFamily" &&
+                    key !== "dropShadow" &&
+                    !key.endsWith("Opacity")
+                ) {
                     expect(isValidHexColor(value), key).toBe(true);
                 }
             }
@@ -139,6 +144,12 @@ describe("mermaidEditor/vsCodeTheme", () => {
             expect(variables.cScale0).toBeDefined();
             expect(variables.cScaleLabel1).toBe(variables.textColor);
             expect(variables.cScaleInv2).toBe(variables.primaryBorderColor);
+        });
+
+        it("disables mermaid node drop shadows", () => {
+            const variables = getThemeVariables(getMockTokens(), mockPickColor);
+            expect(variables.dropShadow).toBe("none");
+            expect(variables.nodeShadow).toBe(false);
         });
 
         it("uses muted cScale colors instead of saturated chart palette", () => {

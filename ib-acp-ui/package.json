@@ -27,8 +27,8 @@
         "build:webview": "vp build --config webview/acp-ui/vite.config.ts",
         "build:extension": "vp pack --sourcemap",
         "watch:webview": "vp build --watch --config webview/acp-ui/vite.config.ts",
-        "dev:playground": "concurrently --names FE,BE --prefix-colors cyan,yellow 'vite --config playground/vite.config.ts' 'tsx --watch playground/server.ts'",
-        "dev:playground:demo": "ACP_UI_DEMO=1 concurrently --names FE,BE --prefix-colors cyan,yellow 'vite --config playground/vite.config.ts' 'tsx --watch playground/server.ts'",
+        "dev:playground": "vp run playground",
+        "dev:playground:demo": "vp run playground:demo",
         "build:fixtures": "tsx scripts/build-showcase-fixtures.ts",
         "sync:playground-theme": "tsx scripts/sync-playground-theme.ts",
         "screenshots": "npm run build:fixtures && tsx scripts/capture-readme-screenshots.ts",
@@ -48,7 +48,6 @@
         "@types/react-dom": "^19.3.0",
         "@types/ws": "^8.18.2",
         "@vitejs/plugin-react": "^6.1.2",
-        "concurrently": "^10.0.6",
         "playwright": "^1.64.1",
         "tsx": "^4.23.15"
     },

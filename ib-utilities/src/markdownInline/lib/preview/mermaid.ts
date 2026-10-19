@@ -24,6 +24,8 @@ function configureMermaid(mermaid: (typeof import("mermaid"))["default"]): void 
     mermaid.initialize({
         startOnLoad: false,
         theme: "base",
+        look: "classic",
+        flowchart: { look: "classic" },
         themeVariables: theme.themeVariables,
         themeCSS: theme.themeCSS,
     });

@@ -19,7 +19,7 @@
         "test": "npm run test --workspaces --if-present",
         "verify": "npm run verify --workspaces --if-present",
         "package:vsix": "npm run package:vsix --workspaces --if-present",
-        "install:local": "node dev/install-local.mjs",
+        "install": "node dev/install-local.mjs",
         "release": "node dev/release.mjs"
     },
     "devDependencies": {
@@ -32,9 +32,10 @@
     "overrides": {
         "@vitest/browser": "5.0.5",
         "@vitest/browser-preview": "5.0.5",
+        "@vitest/coverage-v8": "5.0.5",
         "@vitest/ui": "5.0.5",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
-        "vitest": "5.0.4"
+        "vitest": "5.0.5"
     },
     "devEngines": {
         "packageManager": {

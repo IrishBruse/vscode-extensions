@@ -1,6 +1,6 @@
 import * as monaco from "monaco-editor/editor/editor.api";
 import { toMonacoColor } from "./color";
-import "monaco-editor-min-css";
+import "../../../../../node_modules/monaco-editor/min/vs/editor/editor.main.css";
 import "monaco-editor/editor/browser/coreCommands.js";
 import "monaco-editor/editor/contrib/clipboard/browser/clipboard.js";
 import "monaco-editor/editor/contrib/codelens/browser/codelensController.js";

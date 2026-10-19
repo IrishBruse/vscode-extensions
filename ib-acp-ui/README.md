@@ -109,7 +109,7 @@ npm run test       # vp test
 npm run lint       # vp lint
 npm run format     # vp fmt --write
 npm run verify     # build + check + test
-npm run install:local  # package .vsix and install into local VS Code (`code`)
+npm run install  # package .vsix and install into local VS Code (`code`)
 ```
 
 For a browser-only UI loop without VS Code, use `npm run dev:playground` (see `playground/`).
