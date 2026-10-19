@@ -1,11 +1,10 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
-const vsixPath = join(root, `ib-utilities-${version}.vsix`);
+const root = process.cwd();
+const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const vsixPath = join(root, `${pkg.name}-${pkg.version}.vsix`);
 
 if (!existsSync(vsixPath)) {
     console.error(`VSIX not found: ${vsixPath}`);
@@ -14,14 +13,16 @@ if (!existsSync(vsixPath)) {
 }
 
 function resolveCli() {
-    if (process.env.VSCODE_CLI) {
-        return process.env.VSCODE_CLI;
+    if (process.env.VSCODE_CLI || process.env.CODE_CLI) {
+        return process.env.VSCODE_CLI || process.env.CODE_CLI;
     }
     for (const candidate of ["cursor", "code"]) {
         try {
             execSync(`command -v ${candidate}`, { stdio: "pipe" });
             return candidate;
-        } catch {}
+        } catch {
+            /* try next */
+        }
     }
     return null;
 }
@@ -32,7 +33,7 @@ if (!cli) {
     process.exit(1);
 }
 
-execSync(`${cli} --install-extension ${JSON.stringify(vsixPath)}`, {
+execSync(`${cli} --install-extension ${JSON.stringify(vsixPath)} --force`, {
     cwd: root,
     stdio: "inherit",
 });

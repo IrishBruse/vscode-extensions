@@ -11,7 +11,7 @@ One run builds one source.
 
 | The message names                                                                             | Source                                                               |
 | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| A path under `.tickets/bugs/` or `.tickets/todos/`, or a title that matches one ticket folder | That folder's `bug.md` or `todo.md`. Read it and every linked image. |
+| A path under `ib-utilities/.tickets/bugs/` or `ib-utilities/.tickets/todos/`, or a title that matches one ticket folder | That folder's `bug.md` or `todo.md`. Read it and every linked image. |
 | A `test/` folder beside a markdownInline part                                                 | That folder's `README.md`.                                           |
 | Anything else                                                                                 | The message, including its images.                                   |
 
@@ -27,13 +27,13 @@ A bug ticket, or a source that states a wrong result, follows `.cursor/skills/re
 
 A todo ticket, a feature README, or new Inline Markdown behavior follows `.cursor/skills/markdown-inline-case/SKILL.md`. That ticket or README is the named scenario, so write the check from it in this turn.
 
-Work outside `src/markdownInline` gets one failing check beside the module before production code changes, then the tests that cover that module.
+Work outside `ib-utilities/src/markdownInline` gets one failing check beside the module before production code changes, then the tests that cover that module.
 
 **Done when:** the check for this source exists and, for a wrong result, that check has gone red before production code changes.
 
 ## Done
 
-Playground server rules are in `src/markdownInline/playground/AGENTS.md`.
+Playground server rules are in `ib-utilities/src/markdownInline/playground/AGENTS.md`.
 
 A ticket is finished when every Done when line other than `Not in the source` is true. When every Done when line is `Not in the source`, a bug is finished at its Expected section and a todo is finished at the outcome in its Description.
 
@@ -41,6 +41,6 @@ A feature README is finished when each of its sentences is true.
 
 The reply names the source, the red command, and the green command.
 
-When the source is a ticket folder, `git mv` that folder to `.tickets/archive/<folder-name>/` after those commands exit 0.
+When the source is a ticket folder, `git mv` that folder to `ib-utilities/.tickets/archive/<folder-name>/` after those commands exit 0.
 
-**Done when:** those commands exit 0, the reply names them, and a ticket source sits at `.tickets/archive/<folder-name>/`.
+**Done when:** those commands exit 0, the reply names them, and a ticket source sits at `ib-utilities/.tickets/archive/<folder-name>/`.

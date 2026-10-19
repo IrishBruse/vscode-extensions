@@ -1,10 +1,10 @@
 ---
 name: markdown-inline
-description: "Inline Markdown editor and playground work under src/markdownInline. Use when changing reveal, caret, preview, or other editor behavior. Before the first edit, state the Change line and the Hold line, then continue."
+description: "Inline Markdown editor and playground work under ib-utilities/src/markdownInline. Use when changing reveal, caret, preview, or other editor behavior. Before the first edit, state the Change line and the Hold line, then continue."
 ---
 
-Scope editor behavior to `src/markdownInline`.
-VS Code host integration lives in `src/markdownInline/host`.
+Scope editor behavior to `ib-utilities/src/markdownInline`.
+VS Code host integration lives in `ib-utilities/src/markdownInline/host`.
 Imports from `lib/` stay inside this package. `npm run lint` at the repo root enforces that rule and playground entry-point imports.
 
 ## Modules
@@ -35,7 +35,7 @@ A complaint that already names the feature, the steps, and the wrong result stil
 
 Treat `/home/econn/.config/Code/User/settings.json` as the reference for VS Code user settings when you check theme, colors, or fonts in the playground.
 The playground loads that path on Linux, match behavior to what those settings imply, not to ad hoc values in the repo.
-The playground loads `playground/vscode-iframe-injected-theme.css` (a real copy of VS Code webview iframe `--vscode-*` tokens, see `playground/AGENTS.md`), then applies settings overrides from `settings.json`.
+The playground loads `ib-utilities/src/markdownInline/playground/vscode-iframe-injected-theme.css` (a real copy of VS Code webview iframe `--vscode-*` tokens, see `ib-utilities/src/markdownInline/playground/AGENTS.md`), then applies settings overrides from `settings.json`.
 
 When a fixture path is known, print its local playground link in the reply so the user can open it:
 

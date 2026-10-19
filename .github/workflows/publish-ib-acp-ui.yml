@@ -1,7 +1,7 @@
 on:
     push:
         paths:
-            - "package.json"
+            - "ib-acp-ui/package.json"
     workflow_dispatch:
         inputs:
             force:
@@ -10,12 +10,15 @@ on:
                 default: false
                 type: boolean
 
-name: Deploy Extension
+name: Deploy ib-acp-ui
 
 jobs:
     publish:
         if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip publish]')
         runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ib-acp-ui
         steps:
             - uses: actions/checkout@v4
               with:
@@ -23,14 +26,15 @@ jobs:
 
             - name: Check version changed
               id: version
+              working-directory: .
               run: |
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
                     echo "Force publish requested"
                     echo "skip=false" >> "$GITHUB_OUTPUT"
                     exit 0
                   fi
-                  current=$(jq -r .version package.json)
-                  previous=$(git show HEAD~1:package.json | jq -r .version)
+                  current=$(jq -r .version ib-acp-ui/package.json)
+                  previous=$(git show HEAD~1:ib-acp-ui/package.json | jq -r .version)
                   if [ "$current" = "$previous" ]; then
                     echo "Version unchanged ($current), skipping publish"
                     echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -46,6 +50,7 @@ jobs:
 
             - run: npm ci
               if: steps.version.outputs.skip != 'true'
+              working-directory: .
 
             - run: npx @vscode/vsce publish --skip-license
               if: steps.version.outputs.skip != 'true'

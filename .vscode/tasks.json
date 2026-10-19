@@ -87,9 +87,9 @@
             "problemMatcher": []
         },
         {
-            "label": "ib-acp-ui: watch:extension",
+            "label": "ib-acp-ui: watch extension",
             "type": "npm",
-            "script": "watch:extension",
+            "script": "watch",
             "path": "ib-acp-ui/",
             "isBackground": true,
             "problemMatcher": [],
@@ -113,8 +113,8 @@
             }
         },
         {
-            "label": "ib-acp-ui: watch",
-            "dependsOn": ["ib-acp-ui: watch:extension", "ib-acp-ui: watch:webview"],
+            "label": "ib-acp-ui: watch all",
+            "dependsOn": ["ib-acp-ui: watch extension", "ib-acp-ui: watch:webview"],
             "dependsOrder": "parallel",
             "problemMatcher": [],
             "runOptions": { "runOn": "folderOpen" }

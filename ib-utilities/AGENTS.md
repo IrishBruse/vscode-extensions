@@ -11,33 +11,14 @@ Use `agent-browser` for testing markdownInline at http://localhost:5175/
 
 Update `CHANGELOG.md` with changes skip development only changes.
 
-## Vite+
+## Package-specific scripts
 
-The CLI is `vp`.
-From the monorepo root, prefer `vp -C ib-utilities <command>`.
-`vp dev` and `vp build` run Vite.
-Docs are in `node_modules/vite-plus/docs` and at https://viteplus.dev/guide/.
+From the monorepo root: `npm run <script> -w ib-utilities` or `vp -C ib-utilities run <script>`.
 
-`vp <name>` runs a built-in.
-`vp run <name>` runs a `package.json` script or a `vite.config.ts` task.
-`vp dev` and `vp run dev` are different commands.
+Shared scripts (`build`, `watch`, `package`, `package:vsix`, `install:local`, `test`, `verify`) are documented in the root `AGENTS.md`.
 
-`vp toolchain` shows tool versions. Add a tool name for one tool, for example `vp toolchain vite`.
-`vp toolchain --global` ignores the local `vite-plus` package.
-`vp why <package>` shows why that package is installed.
-
-After a pull, run `vp install` from the monorepo root.
-`vp check` formats, lints, and type-checks.
-`npm run lint` runs `vp lint` and `tsc --noEmit`.
-It does not format.
-`npm run test` runs the unit project only (`vp test run --project unit`).
-`vp test` runs every Vitest project, including the browser project.
-`npm run test:markdown-inline` runs the unit tests under `src/markdownInline`.
-`npm run test:markdown-inline-browser` runs the Inline Markdown integration and regression tests.
-`npm run verify` builds, runs the unit tests, and lints.
-`npm run dev:markdown-inline` starts the playground.
-`npm run check:markdown-inline` type-checks Inline Markdown and runs the browser tests.
-`npm run e2e:markdown-inline` runs the playground end-to-end tests.
-`npm run verify:markdown-inline` runs that check, the Inline Markdown unit tests, and the end-to-end tests.
-If setup or the package manager looks wrong, run `vp env doctor`.
-Include that output when you ask for help.
+- `test` runs the unit project only (`vp test run --project unit`)
+- `test:coverage` / `test:watch` are unit-project helpers
+- `*-markdown-inline` scripts target `@ib-utilities/markdown-inline` and the browser Vitest project
+- `release` runs `scripts/release.mjs`
+- `fetch-markdown-large-fixtures` refreshes large markdown fixtures

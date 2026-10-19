@@ -1,17 +1,17 @@
 ---
-name: bug
-description: Write one bug ticket from the image or text supplied with /bug.
+name: todo
+description: Write one todo ticket from the image or text supplied with /todo.
 disable-model-invocation: true
 ---
 
-# Bug
+# Todo
 
-`/bug` writes one markdown ticket in `.tickets/bugs/` from the image or text in this message.
+`/todo` writes one markdown ticket in `ib-utilities/.tickets/todos/` from the image or text in this message.
 
 ## Source
 
 - **Text:** the words supplied with the command.
-- **Image:** each attached image. Read it and record visible errors, UI state, and on-screen text.
+- **Image:** each attached image. Read it and record the visible task, UI state, and on-screen text.
 
 Use only that source. When a field is absent, write `Not in the source`.
 
@@ -19,7 +19,7 @@ Use only that source. When a field is absent, write `Not in the source`.
 
 ## File
 
-Write `.tickets/bugs/<slug>/bug.md`.
+Write `ib-utilities/.tickets/todos/<slug>/todo.md`.
 
 `<slug>` is the title in lowercase words joined by hyphens. If that folder exists, append `-2`, then `-3`, until the name is free.
 
@@ -27,8 +27,8 @@ Copy each supplied image into that folder as `image-1.<ext>`, `image-2.<ext>`, i
 
 ```markdown
 ---
-type: bug
-title: <defect in one line>
+type: todo
+title: <task in one line>
 created: <YYYY-MM-DD>
 source: <text | image | both>
 ---
@@ -37,27 +37,19 @@ source: <text | image | both>
 
 ## Description
 
-<What is wrong, in the source's terms.>
+<Outcome in one sentence, in the source's words.>
 
-## Steps
+<The details that make the task doable without the original message: where it applies, what to change, and any constraint the source states. Quote on-screen text. Keep the source's order.>
 
-1. <Only steps the source states or the image shows>
+## Done when
 
-## Expected
-
-<Stated expectation, or "Not in the source">
-
-## Actual
-
-<What the source shows or says happened>
-
-## Evidence
-
-- <Quoted text or a visible detail from the image>
+- <Only completion conditions the source states or the image shows>
 
 ## Images
 
 - ![](./image-1.<ext>)
 ```
+
+**Done when:** the description names the outcome and includes every detail the source gives for where, what, and constraints.
 
 **Done when:** the ticket is written, each supplied image is copied beside it, and the reply lists those paths.

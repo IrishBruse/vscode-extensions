@@ -14,9 +14,11 @@
         "check": "vp check",
         "lint": "vp lint",
         "format": "vp fmt --write",
-        "test": "npm run test --workspaces --if-present",
         "build": "npm run build --workspaces --if-present",
-        "verify": "npm run verify --workspaces --if-present"
+        "test": "npm run test --workspaces --if-present",
+        "verify": "npm run verify --workspaces --if-present",
+        "package:vsix": "npm run package:vsix --workspaces --if-present",
+        "install:local": "npm run install:local --workspaces --if-present"
     },
     "devDependencies": {
         "@types/node": "^26.6.5",
