@@ -30,18 +30,20 @@ Run scripts across packages with `npm run <script> --workspaces --if-present`.
 
 Every extension package uses these names:
 
-| Script | Role |
-| --- | --- |
-| `build` | Dev build for that package |
-| `watch` | Watch the extension host bundle (`vp pack --watch`) |
-| `package` | Production pack (used by `vscode:prepublish`) |
-| `package:vsix` | Build a `.vsix` with vsce |
-| `install:local` | `package:vsix` then install via root `scripts/install-local.mjs` |
-| `test` | Package tests (`vp test run` …) |
-| `verify` | `build` + `test` + `vp check` |
+| Script          | Role                                                  |
+| --------------- | ----------------------------------------------------- |
+| `build`         | Dev build for that package                            |
+| `watch`         | Watch the extension host bundle (`vp pack --watch`)   |
+| `package`       | Production pack (used by `vscode:prepublish`)         |
+| `package:vsix`  | Build a `.vsix` with vsce                             |
+| `install:local` | Interactive local install via `dev/install-local.mjs` |
+| `release`       | Interactive release via `dev/release.mjs`             |
+| `test`          | Package tests (`vp test run` …)                       |
+| `verify`        | `build` + `test` + `vp check`                         |
 
-Root owns `check`, `lint`, and `format`.
-Do not redefine those in packages.
+Root owns `check`, `lint`, `format`, plus `npm run release` and `npm run install:local`.
+Interactive prompts live in the `@ib/dev` package under `dev/`.
+Do not redefine `check` / `lint` / `format` in packages.
 Package-only scripts stay in that package's `package.json` and `AGENTS.md`.
 
 ### Tool versions
@@ -58,19 +60,6 @@ Add a tool name for one tool, for example `vp toolchain vite`.
 - Run package scripts with `vp -C <name> run <script>` or `vp run <script>` when defined.
 - If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
-## Placeholders
-
-`ib-markdown-inline` and `ib-mermaid` are README-only placeholders.
-They are not workspace packages yet.
-Do not add `package.json` there until extraction.
-Markdown Inline and Mermaid still ship from `ib-utilities`.
-
 ## Packages are deep modules
 
 See each extension's `AGENTS.md` before changing it.
-
-## Project skills and CI
-
-Cursor skills and hooks live in root `.cursor/`.
-GitHub workflows live in root `.github/`.
-Do not put `.cursor` or `.github` under individual packages.

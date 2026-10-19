@@ -9,11 +9,11 @@ One run builds one source.
 
 ## Source
 
-| The message names                                                                             | Source                                                               |
-| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| The message names                                                                                                       | Source                                                               |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | A path under `ib-utilities/.tickets/bugs/` or `ib-utilities/.tickets/todos/`, or a title that matches one ticket folder | That folder's `bug.md` or `todo.md`. Read it and every linked image. |
-| A `test/` folder beside a markdownInline part                                                 | That folder's `README.md`.                                           |
-| Anything else                                                                                 | The message, including its images.                                   |
+| A `test/` folder beside a markdownInline part                                                                           | That folder's `README.md`.                                           |
+| Anything else                                                                                                           | The message, including its images.                                   |
 
 A follow-up image of the same interaction stays on this source.
 

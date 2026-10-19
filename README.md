@@ -7,12 +7,12 @@ Shared at the repo root: `vite.config.ts` (lint/fmt/check), `tsconfig.base.json`
 
 ## Extensions
 
-| Package | Status |
-| --- | --- |
-| `ib-utilities` | Active |
-| `ib-acp-ui` | Active |
+| Package              | Status                                         |
+| -------------------- | ---------------------------------------------- |
+| `ib-utilities`       | Active                                         |
+| `ib-acp-ui`          | Active                                         |
 | `ib-markdown-inline` | Placeholder (future extract from ib-utilities) |
-| `ib-mermaid` | Placeholder (future extract from ib-utilities) |
+| `ib-mermaid`         | Placeholder (future extract from ib-utilities) |
 
 ## Setup
 
@@ -22,16 +22,20 @@ vp install
 
 ## Shared scripts
 
-Root: `check`, `lint`, `format`, `build`, `test`, `verify`, `package:vsix`, `install:local`.
+Root: `check`, `lint`, `format`, `build`, `test`, `verify`, `package:vsix`, `install:local`, `release`.
 
-Every package: `build`, `watch`, `package`, `package:vsix`, `install:local`, `test`, `verify`.
+Every package: `build`, `watch`, `package`, `package:vsix`, `install:local`, `release`, `test`, `verify`.
+
+Interactive `release` / `install:local` live in `dev/` (`@ib/dev`) and can target any `ib-*` extension.
 
 ```bash
 npm run build
 npm run test
 vp check
-npm run package:vsix -w ib-utilities
-npm run install:local -w ib-acp-ui
+npm run release
+npm run install:local
+npm run release -- --package ib-utilities patch
+npm run install:local -- --package ib-acp-ui
 ```
 
 ## Package-only

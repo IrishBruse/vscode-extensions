@@ -6,6 +6,7 @@
     "license": "MIT",
     "author": "Ethan Conneely",
     "workspaces": [
+        "dev",
         "ib-*",
         "ib-utilities/src/markdownInline"
     ],
@@ -18,7 +19,8 @@
         "test": "npm run test --workspaces --if-present",
         "verify": "npm run verify --workspaces --if-present",
         "package:vsix": "npm run package:vsix --workspaces --if-present",
-        "install:local": "npm run install:local --workspaces --if-present"
+        "install:local": "node dev/install-local.mjs",
+        "release": "node dev/release.mjs"
     },
     "devDependencies": {
         "@types/node": "^26.6.5",

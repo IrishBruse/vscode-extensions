@@ -15,3 +15,5 @@ Shared scripts are documented in the root `AGENTS.md`.
 - `dev:playground` / `dev:playground:demo` — local playground
 - `build:fixtures` / `screenshots` / `sync:playground-theme` — docs assets
 - `publish:vscode` / `sync:docs` — marketplace and vendor docs
+
+Prefer root `npm run release` / `npm run install:local` (or this package's `release` / `install:local` wrappers) over `publish:vscode` for interactive flows.

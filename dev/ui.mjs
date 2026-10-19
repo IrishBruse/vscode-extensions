@@ -1,10 +1,13 @@
 import { emitKeypressEvents } from "node:readline";
+import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
 const cyan = "\u001b[36m";
 const bold = "\u001b[1m";
+const dim = "\u001b[2m";
 const resetCyan = "\u001b[39m";
 const resetBold = "\u001b[22m";
+const resetDim = "\u001b[22m";
 const hideCursor = "\u001b[?25l";
 const showCursor = "\u001b[?25h";
 const eraseDown = "\u001b[J";
@@ -89,4 +92,37 @@ export async function select(message, choices) {
         render();
         input.on("keypress", onKeypress);
     });
+}
+
+export async function confirm(message, { initial = false } = {}) {
+    const suffix = initial ? `${dim}[Y/n]${resetDim}` : `${dim}[y/N]${resetDim}`;
+    const rl = createInterface({ input, output });
+    const answer = (await rl.question(`${message} ${suffix} `)).trim();
+    rl.close();
+
+    if (answer.length === 0) {
+        return initial;
+    }
+
+    return /^y(es)?$/i.test(answer);
+}
+
+export async function text(message, { validate } = {}) {
+    const rl = createInterface({ input, output });
+
+    for (;;) {
+        const answer = (await rl.question(`${message} `)).trim();
+        if (!validate) {
+            rl.close();
+            return answer;
+        }
+
+        const error = validate(answer);
+        if (!error) {
+            rl.close();
+            return answer;
+        }
+
+        output.write(`${error}\n`);
+    }
 }

@@ -19,9 +19,10 @@
         "watch": "vp pack --watch",
         "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
         "package:vsix": "vsce package --out $(node -p \"const p=require('./package.json');p.name+'-'+p.version+'.vsix'\") --skip-license",
-        "install:local": "npm run package:vsix && node ../scripts/install-local.mjs",
+        "install:local": "node ../dev/install-local.mjs --package ib-utilities",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
+        "release": "node ../dev/release.mjs --package ib-utilities",
         "build-markdown-inline": "npm run build -w @ib-utilities/markdown-inline",
         "watch-markdown-inline": "npm run watch -w @ib-utilities/markdown-inline",
         "dev:markdown-inline": "npm run dev -w @ib-utilities/markdown-inline",
@@ -32,14 +33,12 @@
         "verify:markdown-inline": "npm run verify -w @ib-utilities/markdown-inline",
         "test:coverage": "vp test run --project unit --coverage",
         "test:watch": "vp test watch",
-        "release": "node scripts/release.mjs",
         "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs"
     },
     "dependencies": {
         "mermaid": "^12.2.0"
     },
     "devDependencies": {
-        "@azure/identity": "^4.14.0",
         "@vitest/coverage-v8": "5.0.4",
         "pixelmatch": "^8.0.0",
         "playwright-core": "^1.64.1",
