@@ -42,7 +42,6 @@
             "runOptions": { "runOn": "folderOpen" },
             "presentation": {
                 "reveal": "never",
-                "showIn": "tasks",
                 "panel": "dedicated",
                 "group": "watchers"
             }
