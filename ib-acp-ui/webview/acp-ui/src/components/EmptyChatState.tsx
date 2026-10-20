@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { AcpUiRecentSession } from "../../../../src/protocol/extensionHostMessages";
+import { formatRelativeTime } from "../relativeTime";
 import "./EmptyChatState.css";
 
 export type EmptyChatStateProps = {
@@ -53,12 +54,15 @@ export function EmptyChatState({
                 <button
                   type="button"
                   className="empty-chat-recent"
-                  title={session.title}
+                  title={`${session.title} — ${new Date(session.updatedAt).toLocaleString()}`}
                   onClick={() => {
                     onOpenSession(session.id);
                   }}
                 >
-                  {session.title}
+                  <span className="empty-chat-recent-title">{session.title}</span>
+                  <span className="empty-chat-recent-time">
+                    {formatRelativeTime(session.updatedAt)}
+                  </span>
                 </button>
               </li>
             ))}

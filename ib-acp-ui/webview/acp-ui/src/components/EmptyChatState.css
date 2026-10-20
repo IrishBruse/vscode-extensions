@@ -53,8 +53,21 @@
   font-size: var(--acp-ui-font-size-small);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: baseline;
+  gap: var(--acp-ui-space-8);
   cursor: pointer;
+}
+
+.empty-chat-recent-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-chat-recent-time {
+  margin-left: auto;
+  flex: none;
+  color: var(--acp-ui-text-secondary);
 }
 
 .empty-chat-recent:hover {

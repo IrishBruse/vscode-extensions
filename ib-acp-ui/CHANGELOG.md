@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: Recent chat rows in the empty-chat state show relative time since the last update on the right.
+
 ## 0.6.0
 
 - **Add**: Install ACP agents from the official registry (**Browse Agent Registry**) with `npx`, `uvx`, and binary installs in extension storage; manual `ib-acp-ui.agents` still wins on name collision.
