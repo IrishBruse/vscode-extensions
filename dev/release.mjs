@@ -219,8 +219,8 @@ async function getBrowserOAuthToken() {
 
 function runVscePublish(extension, env) {
     const command = hasServicePrincipalAuth()
-        ? "npx @vscode/vsce publish --azure-credential"
-        : "npx @vscode/vsce publish";
+        ? "npx @vscode/vsce publish --azure-credential --no-dependencies --skip-license"
+        : "npx @vscode/vsce publish --no-dependencies --skip-license";
 
     console.log(`\n> ${command}`);
 
@@ -296,6 +296,19 @@ function releaseFiles(extension) {
 function commitRelease(extension, version) {
     const files = releaseFiles(extension);
     run(`git add ${files.map((file) => `"${file}"`).join(" ")}`);
+
+    let staged = false;
+    try {
+        execSync("git diff --cached --quiet", { cwd: repoRoot, stdio: "ignore" });
+    } catch {
+        staged = true;
+    }
+
+    if (!staged) {
+        console.log("\nStamp already committed; skipping empty commit.");
+        return;
+    }
+
     run(`git commit -m "${extension.name} ${version}"`);
 }
 
