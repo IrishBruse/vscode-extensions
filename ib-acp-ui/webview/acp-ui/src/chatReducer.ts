@@ -28,6 +28,7 @@ import {
   positiveDurationMs,
   type AcpUiVisibleTraceItem,
 } from "../../../src/protocol/visibleTrace";
+import type { AcpUiTokenUsage } from "./tokenUsage";
 
 export type InitPayload = Extract<ExtensionToWebviewMessage, { type: "init" }>;
 export type ExtensionMessageAfterInit = Exclude<ExtensionToWebviewMessage, { type: "init" }>;
@@ -117,6 +118,8 @@ export type ChatState = {
   toolStartedAtMsById: Map<string, number>;
   /** Whether the agent advertises image prompts; null before the agent connects. */
   promptImageSupported: boolean | null;
+  /** Context window usage from the agent; null until the first `usage_update`. */
+  tokenUsage: AcpUiTokenUsage | null;
 };
 
 export type ChatAction =
@@ -232,6 +235,7 @@ export function createInitialChatState(): ChatState {
     thoughtStartedAtMs: null,
     toolStartedAtMsById: new Map(),
     promptImageSupported: null,
+    tokenUsage: null,
   };
 }
 
@@ -1071,6 +1075,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, slashCommands: action.commands };
     case "promptImageSupport":
       return { ...state, promptImageSupported: action.supported };
+    case "tokenUsage":
+      return { ...state, tokenUsage: { used: action.used, size: action.size } };
     case "permissionRequest":
       return {
         ...state,

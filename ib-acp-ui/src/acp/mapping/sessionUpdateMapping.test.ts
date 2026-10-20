@@ -17,6 +17,15 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendUserText", text: "hello" }]);
     });
 
+    it("maps usage_update to tokenUsage", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "usage_update",
+            used: 12345,
+            size: 200000,
+        });
+        expect(messages).toEqual([{ type: "tokenUsage", used: 12345, size: 200000 }]);
+    });
+
     it("maps agent_thought_chunk duration from _meta when top-level duration is absent", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "agent_thought_chunk",

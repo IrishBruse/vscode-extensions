@@ -33,6 +33,13 @@ describe("chatReducer", () => {
     expect(state.thoughtStartedAtMs).toBeNull();
   });
 
+  it("stores context window usage from tokenUsage", () => {
+    let state = createInitialChatState();
+    expect(state.tokenUsage).toBeNull();
+    state = chatReducer(state, { type: "tokenUsage", used: 12345, size: 200000 });
+    expect(state.tokenUsage).toEqual({ used: 12345, size: 200000 });
+  });
+
   it("keeps agent-provided thought duration over client timing", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));

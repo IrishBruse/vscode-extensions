@@ -901,6 +901,8 @@ export function sessionUpdateToWebviewMessages(
                 },
             ];
         }
+        case "usage_update":
+            return [{ type: "tokenUsage", used: update.used, size: update.size }];
         default:
             return [];
     }

@@ -54,6 +54,14 @@
   }
 }
 
+.composer-token-usage {
+  flex-shrink: 0;
+  font-size: var(--acp-ui-font-size-label);
+  font-family: var(--acp-ui-font-mono);
+  color: var(--acp-ui-text-secondary);
+  white-space: nowrap;
+}
+
 .composer-top-bar-hint {
   flex-shrink: 0;
   font-size: var(--acp-ui-font-size-label);

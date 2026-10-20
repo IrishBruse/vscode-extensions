@@ -851,6 +851,7 @@ export function AcpUiApp({
               pendingImages={pendingImages}
               onRemoveImage={onRemovePendingImage}
               onOpenImage={setViewerImageSrc}
+              tokenUsage={state.tokenUsage}
               composerInputRef={composerTextareaRef}
             />
           </div>

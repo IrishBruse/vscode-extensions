@@ -16,6 +16,7 @@ import {
   pickVariantForGroup,
 } from "../../../../src/acp/session/modelVariantPicker";
 import type { AcpUiSessionModelSelection } from "../../../../src/acp/session/sessionModels";
+import { formatTokenUsage, type AcpUiTokenUsage } from "../tokenUsage";
 import {
   groupedModelChoices,
   modeConfigOption,
@@ -74,6 +75,8 @@ export type ChatComposerProps = {
   onRemoveImage: (index: number) => void;
   /** Opens the fullscreen image viewer for one pending image (data URL). */
   onOpenImage: (src: string) => void;
+  /** Context window usage chip; hidden until the agent reports usage. */
+  tokenUsage: AcpUiTokenUsage | null;
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
@@ -107,6 +110,7 @@ export function ChatComposer({
   pendingImages,
   onRemoveImage,
   onOpenImage,
+  tokenUsage,
   composerInputRef,
 }: ChatComposerProps): ReactElement {
   const textareaDisabled = inputBlocked;
@@ -300,6 +304,14 @@ export function ChatComposer({
         >
           {activityDisplay}
         </div>
+        {tokenUsage !== null ? (
+          <span
+            className="composer-token-usage"
+            title={`Context window: ${tokenUsage.used} of ${tokenUsage.size} tokens`}
+          >
+            {formatTokenUsage(tokenUsage)}
+          </span>
+        ) : null}
         <span className="composer-top-bar-hint">/ commands · @ files</span>
       </div>
       <div className="composer-input-wrap">
