@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+## 0.6.1
+
 - **Add**: Recent chat rows in the empty-chat state show relative time since the last update on the right.
 
 ## 0.6.0
