@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Terminal paste detects clipboard images on Linux when the extension host lacks Wayland session variables.
 - **Fix**: Mermaid diagrams no longer draw a white neo drop shadow on nodes.
 - **Fix**: Inline Markdown shows trailing spaces as small gray circles.
 - **Fix**: Inline Markdown list continuation lines use the editor text color instead of the string token color.
