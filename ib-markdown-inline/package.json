@@ -1,0 +1,36 @@
+{
+    "name": "ib-markdown-inline",
+    "displayName": "Inline Markdown",
+    "version": "0.1.0",
+    "description": "Inline Markdown custom editor for VS Code",
+    "categories": [
+        "Other"
+    ],
+    "license": "MIT",
+    "author": "Ethan Conneely",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/IrishBruse/vscode-extensions"
+    },
+    "publisher": "irishbruse",
+    "main": "./dist/extension.js",
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "build": "vp pack --sourcemap",
+        "watch": "vp pack --watch --sourcemap",
+        "package": "vp pack --minify",
+        "package:vsix": "vsce package --no-dependencies --skip-license",
+        "install": "node ../dev/install-local.mjs --package ib-markdown-inline",
+        "release": "node ../dev/release.mjs --package ib-markdown-inline",
+        "test": "vp test run",
+        "verify": "npm run build && npm run test && vp check"
+    },
+    "contributes": {},
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "icon": "icon.png",
+    "engines": {
+        "vscode": "^1.140.0"
+    }
+}

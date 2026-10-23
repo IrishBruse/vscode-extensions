@@ -1,16 +1,18 @@
-# ib-markdown-inline (placeholder)
+# Inline Markdown
 
-Future standalone VS Code extension for the Inline Markdown custom editor.
+VS Code extension package for the Inline Markdown custom editor.
 
 ## Status
 
-Not a workspace package yet.
-There is no `package.json` here until extraction.
+Active stub: builds and tests with Vite+, but the editor still ships from **ib-utilities** (`ib-utilities/src/markdownInline`).
+Extraction into this package is planned.
 
-## Source today
+## Development
 
-The implementation still ships from `ib-utilities`:
+From the monorepo root:
 
-- `ib-utilities/src/markdownInline`
-
-See also that package's AGENTS.md extraction notes.
+```bash
+vp -C ib-markdown-inline run build
+vp -C ib-markdown-inline run test
+vp -C ib-markdown-inline run verify
+```
