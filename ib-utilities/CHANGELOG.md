@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Remove**: Terminal paste command (clipboard image detection for the terminal).
+
 ## 0.30.0
 
 - **Fix**: Terminal paste detects clipboard images on Linux when the extension host lacks Wayland session variables.

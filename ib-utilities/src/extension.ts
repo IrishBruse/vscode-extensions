@@ -7,7 +7,6 @@ import { openMarkdownSource } from "./commands/openMarkdownSource";
 import { openMermaidPreview } from "./commands/openMermaidPreview";
 import { openMermaidSource } from "./commands/openMermaidSource";
 import { activateRelativeGoTo, relativeGoTo } from "./commands/relativeGoTo";
-import { terminalPaste } from "./commands/terminalPaste";
 import { GitHelpersViewProvider } from "./gitHelpers/GitHelpersView";
 import { registerMarkdownInlineEditor } from "./markdownInline/host";
 import { registerMermaidCustomEditor } from "./mermaidEditor/MermaidCustomEditorProvider";
@@ -25,7 +24,6 @@ export function activate(context: ExtensionContext) {
 
     activateRelativeGoTo(context);
     registerCommandIB(Commands.RelativeGoTo, relativeGoTo, context);
-    registerCommandIB(Commands.TerminalPaste, terminalPaste, context);
     registerCommandIB(Commands.OpenMarkdownInline, openMarkdownInline, context);
     registerCommandIB(Commands.OpenMarkdownSource, openMarkdownSource, context);
     registerCommandIB(Commands.OpenMermaidPreview, openMermaidPreview, context);

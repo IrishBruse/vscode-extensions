@@ -300,11 +300,6 @@
                 "icon": "$(trash)"
             },
             {
-                "command": "ib-utilities.terminalPaste",
-                "title": "Terminal paste (text or image)",
-                "shortTitle": "Terminal paste"
-            },
-            {
                 "command": "ib-utilities.openMarkdownInline",
                 "title": "Open Inline Markdown",
                 "shortTitle": "Inline Markdown",

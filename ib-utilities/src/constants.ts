@@ -27,8 +27,6 @@ export const Commands = {
 
     DeleteSnippet: `ib-utilities.deleteSnippet`,
 
-    TerminalPaste: `ib-utilities.terminalPaste`,
-
     OpenMarkdownInline: `ib-utilities.openMarkdownInline`,
 
     OpenMarkdownSource: `ib-utilities.openMarkdownSource`,
