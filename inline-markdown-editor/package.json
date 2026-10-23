@@ -2,7 +2,7 @@
     "name": "inline-markdown-editor",
     "displayName": "Inline Markdown Editor",
     "version": "0.1.0",
-    "description": "Inline Markdown Editor for VS Code",
+    "description": "Edit Markdown with formatted preview that reveals source where you click.",
     "categories": [
         "Other"
     ],
@@ -16,9 +16,14 @@
     "main": "./dist/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run package",
-        "build": "vp pack && node src/markdownInline/build.mjs",
-        "watch": "vp pack --watch && node src/markdownInline/build.mjs --watch",
-        "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
+        "build": "npm run build:extension && npm run build:webview",
+        "build:extension": "vp pack --sourcemap",
+        "build:webview": "npm run build:editor && npm run build:worker",
+        "build:editor": "vp build --config src/markdownInline/vite.editor.config.ts",
+        "build:worker": "vp build --config src/markdownInline/vite.worker.config.ts",
+        "watch": "vp pack --watch --sourcemap",
+        "watch:webview": "vp build --watch --config src/markdownInline/vite.editor.config.ts",
+        "package": "vp pack --minify --no-sourcemap && npm run build:webview",
         "package:vsix": "vsce package --no-dependencies --skip-license",
         "install": "node ../dev/install-local.mjs --package inline-markdown-editor",
         "release": "node ../dev/release.mjs --package inline-markdown-editor",
@@ -42,12 +47,9 @@
         "monaco-editor": "^0.57.0"
     },
     "devDependencies": {
-        "@vitest/coverage-v8": "5.0.5",
-        "esbuild": "0.28.2",
         "pixelmatch": "^8.0.0",
         "playwright-core": "^1.64.1",
-        "pngjs": "^7.0.0",
-        "vitest": "5.0.5"
+        "pngjs": "^7.0.0"
     },
     "contributes": {
         "configuration": {

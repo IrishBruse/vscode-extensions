@@ -26,6 +26,7 @@ That command remains owned by `ib-utilities`.
 
 Shared scripts are documented in the root `AGENTS.md`.
 
+- `build:extension` / `build:webview` / `build:editor` / `build:worker` — host pack and Monaco editor/worker via `vp build`
 - `test` runs the unit Vitest project (`vp test run --project unit`)
 - `dev:markdown-inline` / `e2e:markdown-inline` run the browser playground and its smoke script
 - `test:markdown-inline-browser` runs integration and regression Vitest projects

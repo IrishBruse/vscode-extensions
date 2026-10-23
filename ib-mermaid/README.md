@@ -1,17 +1,16 @@
-# ib-mermaid (placeholder)
+# Mermaid (planned)
 
-Future standalone VS Code extension for Mermaid preview, language support, and related contributes.
+A future Visual Studio Code extension for Mermaid diagrams.
 
-## Status
+## Today
 
-Not a workspace package yet.
-There is no `package.json` here until extraction.
+Mermaid preview and language support currently ship inside **[IrishBruse's Utilities](../ib-utilities/README.md)**.
 
-## Source today
+Use that extension for:
 
-The implementation still ships from `ib-utilities`:
+- Preview of `.mmd` / `.mermaid` files
+- Mermaid fences inside Markdown
+- Theme-aware live diagrams with zoom, pan, and PNG copy
 
-- `ib-utilities/src/mermaidEditor`
-- Related contributes, media, and syntaxes in that package
-
-See also that package's AGENTS.md extraction notes.
+This folder is a placeholder for a later standalone release.
+It is not an installable extension yet.

@@ -1,5 +1,3 @@
-declare module "monaco-editor-min-css";
-
 declare module "monaco-editor/languages/definitions/yaml/yaml.js" {
     const conf: import("monaco-editor").languages.LanguageConfiguration;
     const language: import("monaco-editor").languages.IMonarchLanguage;
