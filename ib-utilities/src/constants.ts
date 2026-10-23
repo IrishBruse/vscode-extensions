@@ -27,10 +27,6 @@ export const Commands = {
 
     DeleteSnippet: `ib-utilities.deleteSnippet`,
 
-    OpenMarkdownInline: `ib-utilities.openMarkdownInline`,
-
-    OpenMarkdownSource: `ib-utilities.openMarkdownSource`,
-
     OpenMermaidPreview: `ib-utilities.openMermaidPreview`,
 
     OpenMermaidSource: `ib-utilities.openMermaidSource`,

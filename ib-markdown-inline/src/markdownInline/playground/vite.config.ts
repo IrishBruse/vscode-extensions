@@ -4,7 +4,8 @@ import { defineConfig, type HtmlTagDescriptor, type Plugin } from "vite-plus";
 import { readPlaygroundTheme } from "./vscodeUserTheme.ts";
 
 const playgroundDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(playgroundDir, "..", "..", "..");
+const repoRoot = join(playgroundDir, "..", "..", "..", "..");
+const docsMarkdownDir = join(repoRoot, "ib-utilities", "docs", "tests", "markdown");
 
 function vscodeUserThemePlugin(): Plugin {
     return {
@@ -38,7 +39,7 @@ export default defineConfig({
     },
     root: playgroundDir,
     define: {
-        __DOCS_MARKDOWN_FS__: JSON.stringify(join(repoRoot, "docs/tests/markdown")),
+        __DOCS_MARKDOWN_FS__: JSON.stringify(docsMarkdownDir),
         __INLINE_TESTS_FS__: JSON.stringify(join(playgroundDir, "..", "tests")),
         __INLINE_LIB_FS__: JSON.stringify(join(playgroundDir, "..", "lib")),
     },

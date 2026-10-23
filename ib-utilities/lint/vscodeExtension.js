@@ -192,7 +192,11 @@ function contributedSets(packageJson) {
     };
 }
 
-export function createVscodePlugin(packageJson) {
+export function createVscodePlugin(
+    packageJson,
+    pluginName = "vscode",
+    commandPrefix = "ib-utilities.",
+) {
     const { contributedCommands, contributedViews, contributedCustomEditors, contributedSettings } =
         contributedSets(packageJson);
     const activation = parseActivationEvents(packageJson.activationEvents);
@@ -215,7 +219,7 @@ export function createVscodePlugin(packageJson) {
                             name: "Commands",
                             group: "command",
                             contributed: contributedCommands,
-                            prefix: "ib-utilities.",
+                            prefix: commandPrefix,
                         },
                         {
                             name: "Views",
@@ -414,7 +418,7 @@ export function createVscodePlugin(packageJson) {
     });
 
     return definePlugin({
-        meta: { name: "vscode" },
+        meta: { name: pluginName },
         rules: {
             "contribution-sync": contributionSync,
             "no-dropped-disposable": noDroppedDisposable,

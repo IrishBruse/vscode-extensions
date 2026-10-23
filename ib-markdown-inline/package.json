@@ -15,18 +15,78 @@
     "publisher": "irishbruse",
     "main": "./dist/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run package",
-        "build": "vp pack --sourcemap",
-        "watch": "vp pack --watch --sourcemap",
-        "package": "vp pack --minify",
+        "vscode:prepublish": "npm run build-markdown-inline && npm run package",
+        "build": "vp pack && node src/markdownInline/build.mjs",
+        "watch": "vp pack --watch && node src/markdownInline/build.mjs --watch",
+        "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
         "package:vsix": "vsce package --no-dependencies --skip-license",
         "install": "node ../dev/install-local.mjs --package ib-markdown-inline",
         "release": "node ../dev/release.mjs --package ib-markdown-inline",
-        "test": "vp test run",
-        "verify": "npm run build && npm run test && vp check"
+        "test": "vp test run --project unit",
+        "verify": "npm run build && npm run test && vp check",
+        "build-markdown-inline": "npm run build -w @ib-markdown-inline/markdown-inline",
+        "watch-markdown-inline": "npm run watch -w @ib-markdown-inline/markdown-inline",
+        "dev:markdown-inline": "npm run dev -w @ib-markdown-inline/markdown-inline",
+        "check:markdown-inline": "npm run check -w @ib-markdown-inline/markdown-inline",
+        "test:markdown-inline": "npm run test -w @ib-markdown-inline/markdown-inline",
+        "test:markdown-inline-browser": "vp test run --project markdownInline",
+        "e2e:markdown-inline": "npm run e2e -w @ib-markdown-inline/markdown-inline",
+        "verify:markdown-inline": "npm run verify -w @ib-markdown-inline/markdown-inline"
     },
-    "contributes": {},
+    "dependencies": {
+        "mermaid": "^12.2.0"
+    },
+    "devDependencies": {
+        "@vitest/coverage-v8": "5.0.5",
+        "pixelmatch": "^8.0.0",
+        "playwright-core": "^1.64.1",
+        "pngjs": "^7.0.0",
+        "vitest": "5.0.5"
+    },
+    "contributes": {
+        "customEditors": [
+            {
+                "viewType": "ib-markdown-inline.markdownInline",
+                "displayName": "Inline Markdown",
+                "selector": [
+                    {
+                        "filenamePattern": "*.md"
+                    }
+                ],
+                "priority": "option"
+            }
+        ],
+        "commands": [
+            {
+                "command": "ib-markdown-inline.openMarkdownInline",
+                "title": "Open Inline Markdown",
+                "shortTitle": "Inline Markdown",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "ib-markdown-inline.openMarkdownSource",
+                "title": "Open Text Editor",
+                "shortTitle": "Text Editor",
+                "icon": "$(code)"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "ib-markdown-inline.openMarkdownInline",
+                    "when": "resourceExtname == .md && !inDiffEditor && resourceScheme != git && activeCustomEditorId != 'ib-markdown-inline.markdownInline'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ib-markdown-inline.openMarkdownSource",
+                    "when": "resourceExtname == .md && activeCustomEditorId == 'ib-markdown-inline.markdownInline'",
+                    "group": "navigation"
+                }
+            ]
+        }
+    },
     "activationEvents": [
+        "onCustomEditor:ib-markdown-inline.markdownInline",
         "onStartupFinished"
     ],
     "icon": "icon.png",

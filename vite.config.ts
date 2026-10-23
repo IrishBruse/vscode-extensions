@@ -15,10 +15,11 @@ export default defineConfig({
             "ib-acp-ui/playground/**",
             "ib-acp-ui/docs/acp/**",
             "ib-acp-ui/docs/cursor-extensions/**",
-            "ib-utilities/media/markdownInline/**",
+            "ib-markdown-inline/media/markdownInline/**",
         ],
     },
     lint: {
+        ignorePatterns: ["**/media/**", "**/dist/**"],
         plugins: ["oxc", "typescript", "unicorn", "import", "node"],
         options: {
             typeAware: true,
@@ -66,6 +67,40 @@ export default defineConfig({
                     "vscode/contribution-sync": "error",
                     "vscode/no-dropped-disposable": "error",
                     "vscode/activation-events": "error",
+                    "typescript/no-explicit-any": "error",
+                    "typescript/no-deprecated": [
+                        "error",
+                        {
+                            allow: [
+                                { from: "lib", name: "caretRangeFromPoint" },
+                                { from: "lib", name: "charCode" },
+                                { from: "lib", name: "execCommand" },
+                                { from: "lib", name: "keyCode" },
+                                { from: "lib", name: "which" },
+                            ],
+                        },
+                    ],
+                    "typescript/no-misused-promises": "error",
+                    "typescript/only-throw-error": "error",
+                    "typescript/switch-exhaustiveness-check": [
+                        "error",
+                        { considerDefaultExhaustiveForUnions: true },
+                    ],
+                    "no-implied-eval": "error",
+                },
+            },
+            {
+                files: ["ib-markdown-inline/**"],
+                jsPlugins: [
+                    {
+                        name: "vscode-markdown-inline",
+                        specifier: "./ib-markdown-inline/lint/vscodeExtension.js",
+                    },
+                ],
+                rules: {
+                    "vscode-markdown-inline/contribution-sync": "error",
+                    "vscode-markdown-inline/no-dropped-disposable": "error",
+                    "vscode-markdown-inline/activation-events": "error",
                     "typescript/no-explicit-any": "error",
                     "typescript/no-deprecated": [
                         "error",

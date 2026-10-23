@@ -1,11 +1,10 @@
-Packages are deep modules: see [src/markdownInline/README.md](./src/markdownInline/README.md) before adding or importing one.
+Packages are deep modules: see [../ib-markdown-inline/src/markdownInline/README.md](../ib-markdown-inline/src/markdownInline/README.md) before adding or importing one.
 
 ## Extraction
 
-Markdown Inline and Mermaid still ship from this extension.
-Planned splits: `ib-markdown-inline`, `ib-mermaid`.
-Those sibling folders are README-only placeholders.
-Do not cross-import them yet.
+Inline Markdown ships from `ib-markdown-inline`.
+Mermaid still ships from this extension.
+Planned split: `ib-mermaid`.
 
 Use `agent-browser` for testing markdownInline at http://localhost:5175/
 
@@ -17,5 +16,4 @@ Shared scripts (`build`, `watch`, `package`, `package:vsix`, `install`, `release
 
 - `test` runs the unit project only (`vp test run --project unit`)
 - `test:coverage` / `test:watch` are unit-project helpers
-- `*-markdown-inline` scripts target `@ib-utilities/markdown-inline` and the browser Vitest project
-- `fetch-markdown-large-fixtures` refreshes large markdown fixtures
+- `fetch-markdown-large-fixtures` refreshes large markdown fixtures under `docs/tests/markdown/`

@@ -11,7 +11,7 @@ Shared at the repo root: `vite.config.ts` (lint/fmt/check), `tsconfig.base.json`
 | -------------------- | ---------------------------------------------- |
 | `ib-utilities`       | Active                                         |
 | `ib-acp-ui`          | Active                                         |
-| `ib-markdown-inline` | Active stub (editor still in ib-utilities)     |
+| `ib-markdown-inline` | Inline Markdown custom editor                  |
 | `ib-mermaid`         | Placeholder (future extract from ib-utilities) |
 
 ## Setup

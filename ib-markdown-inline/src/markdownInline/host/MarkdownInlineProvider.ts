@@ -25,7 +25,7 @@ import {
 } from "./shouldUseMarkdownCustomEditor";
 import { isSkillMarkdownPath, prefixMarkdownForFastOpen } from "./webviewInitialState";
 
-export const MARKDOWN_INLINE_VIEW_TYPE = "ib-utilities.markdownInline";
+export const MARKDOWN_INLINE_VIEW_TYPE = "ib-markdown-inline.markdownInline";
 
 function getNonce(): string {
     let text = "";

@@ -1,5 +1,5 @@
 {
-    "name": "@ib-utilities/markdown-inline",
+    "name": "@ib-markdown-inline/markdown-inline",
     "private": true,
     "type": "module",
     "scripts": {

@@ -2,13 +2,10 @@ import { ExtensionContext, window } from "vscode";
 import { activateDiskEditorConflict } from "./diskConflict/activateDiskEditorConflict";
 import { activateBranchDiffRevert } from "./lib/git/branchDiffRevert";
 import { syncBranchDiffWorkingTreeFiles } from "./lib/git/branchDiffFiles";
-import { openMarkdownInline } from "./commands/openMarkdownInline";
-import { openMarkdownSource } from "./commands/openMarkdownSource";
 import { openMermaidPreview } from "./commands/openMermaidPreview";
 import { openMermaidSource } from "./commands/openMermaidSource";
 import { activateRelativeGoTo, relativeGoTo } from "./commands/relativeGoTo";
 import { GitHelpersViewProvider } from "./gitHelpers/GitHelpersView";
-import { registerMarkdownInlineEditor } from "./markdownInline/host";
 import { registerMermaidCustomEditor } from "./mermaidEditor/MermaidCustomEditorProvider";
 import { registerMarkdownMermaidFeatures } from "./mermaidEditor/registerMarkdownMermaid";
 import { LocalPortsViewProvider } from "./ports/LocalPortsView";
@@ -24,8 +21,6 @@ export function activate(context: ExtensionContext) {
 
     activateRelativeGoTo(context);
     registerCommandIB(Commands.RelativeGoTo, relativeGoTo, context);
-    registerCommandIB(Commands.OpenMarkdownInline, openMarkdownInline, context);
-    registerCommandIB(Commands.OpenMarkdownSource, openMarkdownSource, context);
     registerCommandIB(Commands.OpenMermaidPreview, openMermaidPreview, context);
     registerCommandIB(Commands.OpenMermaidSource, openMermaidSource, context);
     registerCommandIB(Commands.CopyScmResourcePath, copyScmResourcePath, context);
@@ -33,7 +28,6 @@ export function activate(context: ExtensionContext) {
     registerCommandIB(Commands.CopyGithubHeadFileUrl, copyGithubHeadFileUrl, context);
 
     registerMermaidCustomEditor(context);
-    registerMarkdownInlineEditor(context);
     registerMarkdownMermaidFeatures(context);
     SnippetViewProvider.activate(context);
     activateDiskEditorConflict(context);

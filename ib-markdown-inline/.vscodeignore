@@ -4,3 +4,4 @@
 !icon.png
 !package.json
 !dist/**/!(*.map)
+!media/**/!(*.map)

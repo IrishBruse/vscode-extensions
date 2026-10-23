@@ -14,23 +14,15 @@
     "publisher": "irishbruse",
     "main": "./dist/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run build-markdown-inline && npm run package",
-        "build": "vp pack && node src/markdownInline/build.mjs",
+        "vscode:prepublish": "npm run package",
+        "build": "vp pack",
         "watch": "vp pack --watch",
-        "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
+        "package": "vp pack --minify --no-sourcemap",
         "package:vsix": "vsce package --no-dependencies --skip-license",
         "install": "node ../dev/install-local.mjs --package ib-utilities",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
         "release": "node ../dev/release.mjs --package ib-utilities",
-        "build-markdown-inline": "npm run build -w @ib-utilities/markdown-inline",
-        "watch-markdown-inline": "npm run watch -w @ib-utilities/markdown-inline",
-        "dev:markdown-inline": "npm run dev -w @ib-utilities/markdown-inline",
-        "check:markdown-inline": "npm run check -w @ib-utilities/markdown-inline",
-        "test:markdown-inline": "npm run test -w @ib-utilities/markdown-inline",
-        "test:markdown-inline-browser": "vp test run --project markdownInline",
-        "e2e:markdown-inline": "npm run e2e -w @ib-utilities/markdown-inline",
-        "verify:markdown-inline": "npm run verify -w @ib-utilities/markdown-inline",
         "test:coverage": "vp test run --project unit --coverage",
         "test:watch": "vp test watch",
         "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs"
@@ -89,16 +81,6 @@
             }
         },
         "customEditors": [
-            {
-                "viewType": "ib-utilities.markdownInline",
-                "displayName": "Inline Markdown (ib-utilities)",
-                "selector": [
-                    {
-                        "filenamePattern": "*.md"
-                    }
-                ],
-                "priority": "option"
-            },
             {
                 "viewType": "ib-utilities.mermaidPreview",
                 "displayName": "Mermaid Preview",
@@ -300,18 +282,6 @@
                 "icon": "$(trash)"
             },
             {
-                "command": "ib-utilities.openMarkdownInline",
-                "title": "Open Inline Markdown",
-                "shortTitle": "Inline Markdown",
-                "icon": "$(preview)"
-            },
-            {
-                "command": "ib-utilities.openMarkdownSource",
-                "title": "Open Text Editor",
-                "shortTitle": "Text Editor",
-                "icon": "$(code)"
-            },
-            {
                 "command": "ib-utilities.openMermaidPreview",
                 "title": "Open Preview",
                 "shortTitle": "Open Preview",
@@ -415,16 +385,6 @@
                 {
                     "command": "ib-utilities.revertToDisk",
                     "when": "ib-utilities.diskEditorConflict",
-                    "group": "navigation"
-                },
-                {
-                    "command": "ib-utilities.openMarkdownInline",
-                    "when": "resourceExtname == .md && !inDiffEditor && resourceScheme != git && activeCustomEditorId != 'ib-utilities.markdownInline'",
-                    "group": "navigation"
-                },
-                {
-                    "command": "ib-utilities.openMarkdownSource",
-                    "when": "resourceExtname == .md && activeCustomEditorId == 'ib-utilities.markdownInline'",
                     "group": "navigation"
                 },
                 {
@@ -550,7 +510,6 @@
         }
     },
     "activationEvents": [
-        "onCustomEditor:ib-utilities.markdownInline",
         "onStartupFinished",
         "onView:ib-utilities.gitHelpers",
         "onView:ib-utilities.localPorts"

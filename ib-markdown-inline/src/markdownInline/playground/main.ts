@@ -2,11 +2,11 @@ import "../lib/styles/editor.css";
 import { mountInlineEditor } from "..";
 import { isSkillMarkdownPath } from "../skill";
 
-const DOCS_PREFIX = "../../../docs/tests/markdown/";
+const DOCS_PREFIX = "../../../../ib-utilities/docs/tests/markdown/";
 const LIB_PREFIX = "../lib/";
 const DEFAULT_FIXTURE = "playground.md";
 
-const docsLoaders = import.meta.glob("../../../docs/tests/markdown/**/*.md", {
+const docsLoaders = import.meta.glob("../../../../ib-utilities/docs/tests/markdown/**/*.md", {
     query: "?raw",
     import: "default",
 });

@@ -14,7 +14,7 @@ describe("diskConflict/getActiveFileUri", () => {
 
     it("returns the URI from a custom editor tab", () => {
         const uri = Uri.file("/proj/readme.md");
-        setActiveTab({ input: new TabInputCustom(uri, "ib-utilities.markdownInline") });
+        setActiveTab({ input: new TabInputCustom(uri, "ib-markdown-inline.markdownInline") });
 
         expect(getActiveFileUri()?.fsPath).toBe(uri.fsPath);
     });

@@ -1,0 +1,116 @@
+import { vi } from "vite-plus/test";
+import type { Uri } from "vscode";
+
+vi.mock("vscode", () => ({
+    workspace: {
+        getConfiguration: vi.fn().mockReturnValue({
+            get: vi.fn().mockReturnValue({}),
+        }),
+        asRelativePath: vi.fn((uri: { fsPath: string }) => uri.fsPath),
+        getWorkspaceFolder: vi.fn(),
+        openTextDocument: vi.fn(),
+        textDocuments: [],
+        fs: {
+            writeFile: vi.fn().mockResolvedValue(undefined),
+            readFile: vi.fn().mockResolvedValue(Buffer.from("")),
+            stat: vi.fn().mockResolvedValue({ type: 1 }),
+        },
+    },
+    env: {
+        openExternal: vi.fn().mockResolvedValue(true),
+        clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+        appRoot: "",
+    },
+    window: {
+        activeColorTheme: { kind: 2 },
+        showErrorMessage: vi.fn().mockResolvedValue(undefined),
+        showWarningMessage: vi.fn().mockResolvedValue(undefined),
+        showInformationMessage: vi.fn().mockResolvedValue(undefined),
+        showTextDocument: vi.fn().mockResolvedValue({
+            save: vi.fn().mockResolvedValue(undefined),
+            getText: vi.fn().mockReturnValue(""),
+            positionAt: vi.fn().mockReturnValue({ line: 0, character: 0 }),
+        }),
+        showInputBox: vi.fn().mockResolvedValue(undefined),
+        createTextEditorDecorationType: vi.fn().mockReturnValue({}),
+        activeTextEditor: undefined,
+        tabGroups: { all: [], activeTabGroup: { activeTab: undefined } },
+        onDidChangeActiveColorTheme: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+    },
+    commands: {
+        executeCommand: vi.fn().mockResolvedValue(undefined),
+        registerCommand: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+    },
+    extensions: {
+        all: [],
+        getExtension: vi.fn().mockReturnValue(undefined),
+    },
+    Uri: {
+        from: (components: { scheme: string; path?: string; query?: string }) => {
+            const base = {
+                scheme: components.scheme,
+                path: components.path ?? "",
+                fsPath: components.path ?? "",
+                query: components.query ?? "",
+            };
+            return {
+                ...base,
+                with: (change: { scheme?: string; query?: string }) => ({
+                    ...base,
+                    scheme: change.scheme ?? base.scheme,
+                    query: change.query ?? base.query,
+                    with: vi.fn(),
+                }),
+            };
+        },
+        parse: vi.fn().mockReturnValue({ fsPath: "", toString: vi.fn() }),
+        file: (fsPath: string) => ({
+            scheme: "file",
+            fsPath,
+            path: fsPath,
+            query: "",
+            with: (change: { scheme?: string; query?: string }) => ({
+                scheme: change.scheme ?? "file",
+                fsPath,
+                path: fsPath,
+                query: change.query ?? "",
+            }),
+        }),
+        joinPath: (base: { fsPath: string }, ...parts: string[]) => {
+            const fsPath = [base.fsPath, ...parts].join("/").replace(/\/+/g, "/");
+            return {
+                scheme: "file",
+                fsPath,
+                path: fsPath,
+                query: "",
+            };
+        },
+    },
+    Range: class {
+        constructor(
+            public readonly startLine: number,
+            public readonly startChar: number,
+            public readonly endLine: number,
+            public readonly endChar: number,
+        ) {}
+        get start() {
+            return { line: this.startLine, character: this.startChar };
+        }
+        get end() {
+            return { line: this.endLine, character: this.endChar };
+        }
+    },
+    TabInputText: class {
+        constructor(public readonly uri: Uri) {}
+    },
+    TabInputCustom: class {
+        constructor(
+            public readonly uri: Uri,
+            public readonly viewType: string,
+        ) {}
+    },
+    ViewColumn: {
+        Beside: 2,
+        Active: 1,
+    },
+}));
