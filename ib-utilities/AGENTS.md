@@ -16,4 +16,3 @@ Shared scripts (`build`, `watch`, `package`, `package:vsix`, `install`, `release
 
 - `test` runs the unit project only (`vp test run --project unit`)
 - `test:coverage` / `test:watch` are unit-project helpers
-- `fetch-markdown-large-fixtures` refreshes large markdown fixtures under `docs/tests/markdown/`

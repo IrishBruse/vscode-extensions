@@ -24,8 +24,7 @@
         "verify": "npm run build && npm run test && vp check",
         "release": "node ../dev/release.mjs --package ib-utilities",
         "test:coverage": "vp test run --project unit --coverage",
-        "test:watch": "vp test watch",
-        "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs"
+        "test:watch": "vp test watch"
     },
     "dependencies": {
         "mermaid": "^12.2.0"

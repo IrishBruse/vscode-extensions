@@ -15,7 +15,7 @@
     "publisher": "irishbruse",
     "main": "./dist/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run build-markdown-inline && npm run package",
+        "vscode:prepublish": "npm run package",
         "build": "vp pack && node src/markdownInline/build.mjs",
         "watch": "vp pack --watch && node src/markdownInline/build.mjs --watch",
         "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
@@ -24,26 +24,77 @@
         "release": "node ../dev/release.mjs --package ib-markdown-inline",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
-        "build-markdown-inline": "npm run build -w @ib-markdown-inline/markdown-inline",
-        "watch-markdown-inline": "npm run watch -w @ib-markdown-inline/markdown-inline",
-        "dev:markdown-inline": "npm run dev -w @ib-markdown-inline/markdown-inline",
-        "check:markdown-inline": "npm run check -w @ib-markdown-inline/markdown-inline",
-        "test:markdown-inline": "npm run test -w @ib-markdown-inline/markdown-inline",
+        "dev:markdown-inline": "node src/markdownInline/playground/dev.mjs",
+        "e2e:markdown-inline": "node src/markdownInline/playground/e2e.mjs",
+        "check:markdown-inline": "tsc --noEmit -p src/markdownInline/tsconfig.json && npm run test:markdown-inline-browser",
+        "test:markdown-inline": "vp test run --project unit -- src/markdownInline",
         "test:markdown-inline-browser": "vp test run --project markdownInline",
-        "e2e:markdown-inline": "npm run e2e -w @ib-markdown-inline/markdown-inline",
-        "verify:markdown-inline": "npm run verify -w @ib-markdown-inline/markdown-inline"
+        "verify:markdown-inline": "npm run check:markdown-inline && npm run test:markdown-inline && npm run e2e:markdown-inline",
+        "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs"
     },
     "dependencies": {
-        "mermaid": "^12.2.0"
+        "mermaid": "^12.2.0",
+        "micromark": "^4.0.3",
+        "micromark-extension-gfm-autolink-literal": "^2.1.0",
+        "micromark-extension-gfm-strikethrough": "^2.1.0",
+        "micromark-extension-gfm-table": "^2.1.1",
+        "micromark-extension-gfm-task-list-item": "^2.1.0",
+        "monaco-editor": "^0.57.0"
     },
     "devDependencies": {
         "@vitest/coverage-v8": "5.0.5",
+        "esbuild": "0.28.2",
         "pixelmatch": "^8.0.0",
         "playwright-core": "^1.64.1",
         "pngjs": "^7.0.0",
         "vitest": "5.0.5"
     },
     "contributes": {
+        "configuration": {
+            "title": "Inline Markdown",
+            "properties": {
+                "markdownInlineEditor.colors.heading1": {
+                    "type": "string",
+                    "default": "#D19A66",
+                    "description": "CSS color for level-1 heading preview text."
+                },
+                "markdownInlineEditor.colors.heading2": {
+                    "type": "string",
+                    "default": "#E06C75",
+                    "description": "CSS color for level-2 heading preview text."
+                },
+                "markdownInlineEditor.colors.heading3": {
+                    "type": "string",
+                    "default": "#61AFEF",
+                    "description": "CSS color for level-3 heading preview text."
+                },
+                "markdownInlineEditor.colors.heading4": {
+                    "type": "string",
+                    "default": "#C678DD",
+                    "description": "CSS color for level-4 heading preview text."
+                },
+                "markdownInlineEditor.colors.heading5": {
+                    "type": "string",
+                    "default": "#C678DD",
+                    "description": "CSS color for level-5 heading preview text."
+                },
+                "markdownInlineEditor.colors.heading6": {
+                    "type": "string",
+                    "default": "#C678DD",
+                    "description": "CSS color for level-6 heading preview text."
+                },
+                "markdownInlineEditor.colors.inlineCode": {
+                    "type": "string",
+                    "default": "#C678DD",
+                    "description": "CSS color for inline code preview text."
+                },
+                "markdownInlineEditor.colors.inlineCodeBackground": {
+                    "type": "string",
+                    "default": "#21252bA0",
+                    "description": "CSS color for inline code preview background."
+                }
+            }
+        },
         "customEditors": [
             {
                 "viewType": "ib-markdown-inline.markdownInline",
@@ -86,8 +137,7 @@
         }
     },
     "activationEvents": [
-        "onCustomEditor:ib-markdown-inline.markdownInline",
-        "onStartupFinished"
+        "onCustomEditor:ib-markdown-inline.markdownInline"
     ],
     "icon": "icon.png",
     "engines": {

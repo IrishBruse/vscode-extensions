@@ -42,4 +42,4 @@ npm run install -- --package ib-acp-ui
 
 ## Package-only
 
-See each package `AGENTS.md` for scripts such as markdown-inline helpers (`ib-utilities`) or playground/webview (`ib-acp-ui`).
+See each package `AGENTS.md` for scripts such as markdown-inline playground (`ib-markdown-inline`) or playground/webview (`ib-acp-ui`).

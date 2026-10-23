@@ -5,9 +5,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const playgroundDir = dirname(fileURLToPath(import.meta.url));
-const packageDir = join(playgroundDir, "..");
-const repoRoot = join(packageDir, "..", "..");
-const shotDir = join(repoRoot, ".tmp", "markdown-inline");
+const markdownInlineDir = join(playgroundDir, "..");
+const extensionRoot = join(markdownInlineDir, "..", "..");
+const shotDir = join(extensionRoot, ".tmp", "markdown-inline");
 const pageUrl = "http://127.0.0.1:5175/?fixture=playground.md";
 
 const SNAPSHOT_SCRIPT = `JSON.stringify({
@@ -159,13 +159,13 @@ function stopVite(vite) {
 }
 
 function startVite() {
-    const require = createRequire(join(packageDir, "package.json"));
+    const require = createRequire(join(extensionRoot, "package.json"));
     const vpBin = join(dirname(require.resolve("vite-plus/package.json")), "bin", "vp");
     const vite = spawn(
         vpBin,
         ["dev", "--config", "playground/vite.config.ts", "--port", "5175", "--strictPort"],
         {
-            cwd: packageDir,
+            cwd: markdownInlineDir,
             stdio: "pipe",
             detached: true,
         },

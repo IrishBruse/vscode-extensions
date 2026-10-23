@@ -7,8 +7,7 @@
     "author": "Ethan Conneely",
     "workspaces": [
         "dev",
-        "ib-*",
-        "ib-markdown-inline/src/markdownInline"
+        "ib-*"
     ],
     "scripts": {
         "prepare": "vp config",

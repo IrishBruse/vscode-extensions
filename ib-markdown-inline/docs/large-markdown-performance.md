@@ -1,6 +1,6 @@
 # Large Markdown performance profile
 
-This profile is for `docs/tests/markdown/large/reltio-docs.md` in the playground.
+This profile is for `ib-markdown-inline/docs/tests/markdown/large/reltio-docs.md` in the playground.
 
 Open [the large fixture](http://localhost:5175/?fixture=large%2Freltio-docs.md).
 

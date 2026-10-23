@@ -4,8 +4,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const playgroundDir = dirname(fileURLToPath(import.meta.url));
-const packageDir = join(playgroundDir, "..");
-const require = createRequire(join(packageDir, "package.json"));
+const markdownInlineDir = join(playgroundDir, "..");
+const extensionRoot = join(markdownInlineDir, "..", "..");
+const require = createRequire(join(extensionRoot, "package.json"));
 const vpRoot = dirname(require.resolve("vite-plus/package.json"));
 const vpBin = join(vpRoot, "bin", "vp");
 const vpArgs = ["dev", "--config", "playground/vite.config.ts"];
@@ -15,7 +16,7 @@ let stopping = false;
 
 function start() {
     child = spawn(vpBin, vpArgs, {
-        cwd: packageDir,
+        cwd: markdownInlineDir,
         stdio: "inherit",
         env: process.env,
     });

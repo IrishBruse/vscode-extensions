@@ -27,13 +27,13 @@ A bug ticket, or a source that states a wrong result, follows `.cursor/skills/re
 
 A todo ticket, a feature README, or new Inline Markdown behavior follows `.cursor/skills/markdown-inline-case/SKILL.md`. That ticket or README is the named scenario, so write the check from it in this turn.
 
-Work outside `ib-utilities/src/markdownInline` gets one failing check beside the module before production code changes, then the tests that cover that module.
+Work outside `ib-markdown-inline/src/markdownInline` gets one failing check beside the module before production code changes, then the tests that cover that module.
 
 **Done when:** the check for this source exists and, for a wrong result, that check has gone red before production code changes.
 
 ## Done
 
-Playground server rules are in `ib-utilities/src/markdownInline/playground/AGENTS.md`.
+Playground server rules are in `ib-markdown-inline/src/markdownInline/playground/AGENTS.md`.
 
 A ticket is finished when every Done when line other than `Not in the source` is true. When every Done when line is `Not in the source`, a bug is finished at its Expected section and a todo is finished at the outcome in its Description.
 

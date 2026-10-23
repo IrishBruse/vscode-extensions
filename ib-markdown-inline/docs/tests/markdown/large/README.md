@@ -1,19 +1,19 @@
 # Large real-world Markdown fixtures
 
-Curated downloads from public repos — too big to commit, but useful for scroll, parse, and table stress tests in **Markdown Editor (ib-utilities)**.
+Curated downloads from public repos — too big to commit, but useful for scroll, parse, and table stress tests in **Inline Markdown (ib-markdown-inline)**.
 
 ## Download
 
 From the repo root:
 
 ```bash
-npm run fetch-markdown-large-fixtures
+npm run fetch-markdown-large-fixtures -w ib-markdown-inline
 ```
 
 Or fetch one file:
 
 ```bash
-node docs/tests/markdown/fetch-large-fixtures.mjs reltio-docs.md
+node ib-markdown-inline/docs/tests/markdown/fetch-large-fixtures.mjs reltio-docs.md
 ```
 
 Files land in this folder (`docs/tests/markdown/large/`). They are gitignored after download.
@@ -42,7 +42,7 @@ Files land in this folder (`docs/tests/markdown/large/`). They are gitignored af
 
 1. Download fixtures (above).
 2. Open a file from this folder in VS Code.
-3. **Reopen Editor With... → Markdown Editor (ib-utilities)**.
+3. **Reopen Editor With... → Inline Markdown**.
 
 Small handcrafted fixtures: [../README.md](../README.md).
 

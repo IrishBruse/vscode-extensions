@@ -4,8 +4,9 @@ import { defineConfig, type HtmlTagDescriptor, type Plugin } from "vite-plus";
 import { readPlaygroundTheme } from "./vscodeUserTheme.ts";
 
 const playgroundDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(playgroundDir, "..", "..", "..", "..");
-const docsMarkdownDir = join(repoRoot, "ib-utilities", "docs", "tests", "markdown");
+const extensionRoot = join(playgroundDir, "..", "..", "..");
+const monorepoRoot = join(extensionRoot, "..");
+const docsMarkdownDir = join(extensionRoot, "docs", "tests", "markdown");
 
 function vscodeUserThemePlugin(): Plugin {
     return {
@@ -47,7 +48,7 @@ export default defineConfig({
         port: 5175,
         strictPort: true,
         fs: {
-            allow: [repoRoot],
+            allow: [monorepoRoot],
         },
     },
     plugins: [vscodeUserThemePlugin()],
