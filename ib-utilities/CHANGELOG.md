@@ -6,7 +6,7 @@ Update any bullet that does not follow this form.
 ## Unreleased
 
 - **Remove**: Terminal paste command (clipboard image detection for the terminal).
-- **Remove**: Inline Markdown editor (shipped as the separate `ib-markdown-inline` extension).
+- **Remove**: Inline Markdown Editor (shipped as the separate `inline-markdown-editor` extension).
 
 ## 0.30.0
 

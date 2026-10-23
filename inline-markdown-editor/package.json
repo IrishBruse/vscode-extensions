@@ -1,8 +1,8 @@
 {
-    "name": "ib-markdown-inline",
-    "displayName": "Inline Markdown",
+    "name": "inline-markdown-editor",
+    "displayName": "Inline Markdown Editor",
     "version": "0.1.0",
-    "description": "Inline Markdown custom editor for VS Code",
+    "description": "Inline Markdown Editor for VS Code",
     "categories": [
         "Other"
     ],
@@ -20,8 +20,8 @@
         "watch": "vp pack --watch && node src/markdownInline/build.mjs --watch",
         "package": "vp pack --minify --no-sourcemap && node src/markdownInline/build.mjs",
         "package:vsix": "vsce package --no-dependencies --skip-license",
-        "install": "node ../dev/install-local.mjs --package ib-markdown-inline",
-        "release": "node ../dev/release.mjs --package ib-markdown-inline",
+        "install": "node ../dev/install-local.mjs --package inline-markdown-editor",
+        "release": "node ../dev/release.mjs --package inline-markdown-editor",
         "test": "vp test run --project unit",
         "verify": "npm run build && npm run test && vp check",
         "dev:markdown-inline": "node src/markdownInline/playground/dev.mjs",
@@ -51,7 +51,7 @@
     },
     "contributes": {
         "configuration": {
-            "title": "Inline Markdown",
+            "title": "Inline Markdown Editor",
             "properties": {
                 "markdownInlineEditor.colors.heading1": {
                     "type": "string",
@@ -97,8 +97,8 @@
         },
         "customEditors": [
             {
-                "viewType": "ib-markdown-inline.markdownInline",
-                "displayName": "Inline Markdown",
+                "viewType": "inline-markdown-editor.markdownInline",
+                "displayName": "Inline Markdown Editor",
                 "selector": [
                     {
                         "filenamePattern": "*.md"
@@ -109,13 +109,13 @@
         ],
         "commands": [
             {
-                "command": "ib-markdown-inline.openMarkdownInline",
-                "title": "Open Inline Markdown",
-                "shortTitle": "Inline Markdown",
+                "command": "inline-markdown-editor.openMarkdownInline",
+                "title": "Open Inline Markdown Editor",
+                "shortTitle": "Inline Markdown Editor",
                 "icon": "$(preview)"
             },
             {
-                "command": "ib-markdown-inline.openMarkdownSource",
+                "command": "inline-markdown-editor.openMarkdownSource",
                 "title": "Open Text Editor",
                 "shortTitle": "Text Editor",
                 "icon": "$(code)"
@@ -124,20 +124,20 @@
         "menus": {
             "editor/title": [
                 {
-                    "command": "ib-markdown-inline.openMarkdownInline",
-                    "when": "resourceExtname == .md && !inDiffEditor && resourceScheme != git && activeCustomEditorId != 'ib-markdown-inline.markdownInline'",
+                    "command": "inline-markdown-editor.openMarkdownInline",
+                    "when": "resourceExtname == .md && !inDiffEditor && resourceScheme != git && activeCustomEditorId != 'inline-markdown-editor.markdownInline'",
                     "group": "navigation"
                 },
                 {
-                    "command": "ib-markdown-inline.openMarkdownSource",
-                    "when": "resourceExtname == .md && activeCustomEditorId == 'ib-markdown-inline.markdownInline'",
+                    "command": "inline-markdown-editor.openMarkdownSource",
+                    "when": "resourceExtname == .md && activeCustomEditorId == 'inline-markdown-editor.markdownInline'",
                     "group": "navigation"
                 }
             ]
         }
     },
     "activationEvents": [
-        "onCustomEditor:ib-markdown-inline.markdownInline"
+        "onCustomEditor:inline-markdown-editor.markdownInline"
     ],
     "icon": "icon.png",
     "engines": {

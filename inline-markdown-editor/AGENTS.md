@@ -1,6 +1,6 @@
-# ib-markdown-inline
+# inline-markdown-editor
 
-Inline Markdown custom editor extension.
+Inline Markdown Editor extension.
 
 Implementation lives under `src/markdownInline/`.
 See [src/markdownInline/README.md](./src/markdownInline/README.md) before adding or importing a module.
@@ -8,7 +8,7 @@ See [src/markdownInline/README.md](./src/markdownInline/README.md) before adding
 `src/extension.ts` only activates the host and command wiring.
 Business logic stays in `src/markdownInline/` (`lib/` has no `vscode` imports; `host/` may).
 
-From the monorepo root, prefer `vp -C ib-markdown-inline <command>`.
+From the monorepo root, prefer `vp -C inline-markdown-editor <command>`.
 
 Use `agent-browser` for testing markdownInline at http://localhost:5175/
 

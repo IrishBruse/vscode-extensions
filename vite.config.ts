@@ -15,7 +15,7 @@ export default defineConfig({
             "ib-acp-ui/playground/**",
             "ib-acp-ui/docs/acp/**",
             "ib-acp-ui/docs/cursor-extensions/**",
-            "ib-markdown-inline/media/markdownInline/**",
+            "inline-markdown-editor/media/markdownInline/**",
         ],
     },
     lint: {
@@ -90,17 +90,17 @@ export default defineConfig({
                 },
             },
             {
-                files: ["ib-markdown-inline/**"],
+                files: ["inline-markdown-editor/**"],
                 jsPlugins: [
                     {
-                        name: "vscode-markdown-inline",
-                        specifier: "./ib-markdown-inline/lint/vscodeExtension.js",
+                        name: "vscode-inline-markdown-editor",
+                        specifier: "./inline-markdown-editor/lint/vscodeExtension.js",
                     },
                 ],
                 rules: {
-                    "vscode-markdown-inline/contribution-sync": "error",
-                    "vscode-markdown-inline/no-dropped-disposable": "error",
-                    "vscode-markdown-inline/activation-events": "error",
+                    "vscode-inline-markdown-editor/contribution-sync": "error",
+                    "vscode-inline-markdown-editor/no-dropped-disposable": "error",
+                    "vscode-inline-markdown-editor/activation-events": "error",
                     "typescript/no-explicit-any": "error",
                     "typescript/no-deprecated": [
                         "error",

@@ -72,7 +72,7 @@ async function resolveExtensions({ packageName, all }) {
     if (all) {
         const extensions = listExtensions();
         if (extensions.length === 0) {
-            throw new Error("No installable extensions found under ib-*/");
+            throw new Error("No installable extensions found");
         }
         return extensions;
     }
@@ -87,7 +87,7 @@ async function resolveExtensions({ packageName, all }) {
 
     const extensions = listExtensions();
     if (extensions.length === 0) {
-        throw new Error("No installable extensions found under ib-*/");
+        throw new Error("No installable extensions found");
     }
 
     if (extensions.length === 1) {

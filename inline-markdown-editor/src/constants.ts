@@ -1,7 +1,7 @@
 export const Commands = {
-    OpenMarkdownInline: `ib-markdown-inline.openMarkdownInline`,
+    OpenMarkdownInline: `inline-markdown-editor.openMarkdownInline`,
 
-    OpenMarkdownSource: `ib-markdown-inline.openMarkdownSource`,
+    OpenMarkdownSource: `inline-markdown-editor.openMarkdownSource`,
 
     OpenMermaidMarkdownPreview: `ib-utilities.openMermaidMarkdownPreview`,
 } as const;

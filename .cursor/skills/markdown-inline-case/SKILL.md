@@ -6,7 +6,7 @@ description: "New Inline Markdown case. Use when adding a test case under a part
 # markdown-inline-case
 
 One case lives in the `test/` folder beside that part.
-A list bullet case lives in `ib-markdown-inline/src/markdownInline/lib/markdown/list/bullet/test/`.
+A list bullet case lives in `inline-markdown-editor/src/markdownInline/lib/markdown/list/bullet/test/`.
 
 Before the first edit, write the Change sentence and the Hold sentence from `.cursor/skills/markdown-inline/SKILL.md` in the reply, then continue in that same turn.
 
@@ -55,7 +55,7 @@ Print the local playground link in the reply as soon as the fixture path is know
 `http://127.0.0.1:5175/?fixture=markdown/<part>/test/fixtures/<path>`
 
 Open that same URL.
-`npm run dev:markdown-inline -w ib-markdown-inline` starts the playground when nothing is listening.
+`npm run dev:markdown-inline -w inline-markdown-editor` starts the playground when nothing is listening.
 When it is already up, leave that server running.
 
 Check every sentence in the README against the rendered page.
@@ -70,8 +70,8 @@ Done when every README sentence matches the page, and each saved picture was ope
 Run the new test file:
 
 ```bash
-npm run test:markdown-inline-browser -w ib-markdown-inline -- src/markdownInline/lib/markdown/<part>/test/<file>.test.ts
+npm run test:markdown-inline-browser -w inline-markdown-editor -- src/markdownInline/lib/markdown/<part>/test/<file>.test.ts
 ```
 
-Then run `npm run test:markdown-inline-browser -w ib-markdown-inline`.
+Then run `npm run test:markdown-inline-browser -w inline-markdown-editor`.
 Done when that command exits 0.

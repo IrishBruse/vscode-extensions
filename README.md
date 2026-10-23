@@ -7,12 +7,12 @@ Shared at the repo root: `vite.config.ts` (lint/fmt/check), `tsconfig.base.json`
 
 ## Extensions
 
-| Package              | Status                                         |
-| -------------------- | ---------------------------------------------- |
-| `ib-utilities`       | Active                                         |
-| `ib-acp-ui`          | Active                                         |
-| `ib-markdown-inline` | Inline Markdown custom editor                  |
-| `ib-mermaid`         | Placeholder (future extract from ib-utilities) |
+| Package                  | Status                                         |
+| ------------------------ | ---------------------------------------------- |
+| `ib-utilities`           | Active                                         |
+| `ib-acp-ui`              | Active                                         |
+| `inline-markdown-editor` | Inline Markdown Editor                         |
+| `ib-mermaid`             | Placeholder (future extract from ib-utilities) |
 
 ## Setup
 
@@ -42,4 +42,4 @@ npm run install -- --package ib-acp-ui
 
 ## Package-only
 
-See each package `AGENTS.md` for scripts such as markdown-inline playground (`ib-markdown-inline`) or playground/webview (`ib-acp-ui`).
+See each package `AGENTS.md` for scripts such as markdown-inline playground (`inline-markdown-editor`) or playground/webview (`ib-acp-ui`).

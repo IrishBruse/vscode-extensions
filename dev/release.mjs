@@ -150,7 +150,7 @@ async function promptExtension(packageName) {
 
     const extensions = listExtensions();
     if (extensions.length === 0) {
-        throw new Error("No publishable extensions found under ib-*/");
+        throw new Error("No publishable extensions found");
     }
 
     if (extensions.length === 1) {

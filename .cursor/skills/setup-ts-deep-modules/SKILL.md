@@ -187,6 +187,6 @@ Say to expose several small entry points instead of re-exporting a whole subtree
 Keep it to the copy-me snippet plus one short paragraph for each rule.
 
 Add one context pointer from the repo instruction file (`CLAUDE.md` when it exists, otherwise `AGENTS.md`, and create `AGENTS.md` when neither exists).
-Example: `Packages are deep modules: see [ib-markdown-inline/src/markdownInline/README.md](./ib-markdown-inline/src/markdownInline/README.md) before adding or importing one.`
+Example: `Packages are deep modules: see [inline-markdown-editor/src/markdownInline/README.md](./inline-markdown-editor/src/markdownInline/README.md) before adding or importing one.`
 
 **Done when:** the README exists and discourages barrels, and `CLAUDE.md` or `AGENTS.md` links to it.

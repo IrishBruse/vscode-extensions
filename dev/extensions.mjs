@@ -8,9 +8,13 @@ export function getRepoRoot() {
     return repoRoot;
 }
 
+function isExtensionPackage(pkg) {
+    return pkg.private !== true && Boolean(pkg.publisher) && Boolean(pkg.engines?.vscode);
+}
+
 export function listExtensions() {
     return readdirSync(repoRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && entry.name.startsWith("ib-"))
+        .filter((entry) => entry.isDirectory())
         .map((entry) => {
             const dir = join(repoRoot, entry.name);
             const packageJsonPath = join(dir, "package.json");
@@ -19,7 +23,7 @@ export function listExtensions() {
             }
 
             const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-            if (pkg.private === true || !pkg.publisher || !pkg.engines?.vscode) {
+            if (!isExtensionPackage(pkg)) {
                 return null;
             }
 

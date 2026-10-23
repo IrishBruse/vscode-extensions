@@ -1,8 +1,8 @@
-Packages are deep modules: see [../ib-markdown-inline/src/markdownInline/README.md](../ib-markdown-inline/src/markdownInline/README.md) before adding or importing one.
+Packages are deep modules: see [../inline-markdown-editor/src/markdownInline/README.md](../inline-markdown-editor/src/markdownInline/README.md) before adding or importing one.
 
 ## Extraction
 
-Inline Markdown ships from `ib-markdown-inline`.
+Inline Markdown Editor ships from `inline-markdown-editor`.
 Mermaid still ships from this extension.
 Planned split: `ib-mermaid`.
 

@@ -1,19 +1,19 @@
 # Large real-world Markdown fixtures
 
-Curated downloads from public repos — too big to commit, but useful for scroll, parse, and table stress tests in **Inline Markdown (ib-markdown-inline)**.
+Curated downloads from public repos — too big to commit, but useful for scroll, parse, and table stress tests in **Inline Markdown (inline-markdown-editor)**.
 
 ## Download
 
 From the repo root:
 
 ```bash
-npm run fetch-markdown-large-fixtures -w ib-markdown-inline
+npm run fetch-markdown-large-fixtures -w inline-markdown-editor
 ```
 
 Or fetch one file:
 
 ```bash
-node ib-markdown-inline/docs/tests/markdown/fetch-large-fixtures.mjs reltio-docs.md
+node inline-markdown-editor/docs/tests/markdown/fetch-large-fixtures.mjs reltio-docs.md
 ```
 
 Files land in this folder (`docs/tests/markdown/large/`). They are gitignored after download.

@@ -28,13 +28,13 @@ A keyboard skip is a key press. Place the caret on the line beside the hidden li
 Read the caret and the view on the next frame after the key.
 Tests that share one page put the caret back on the preview position before a later check that needs the preview.
 
-A reveal that opens the wrong block is a unit test beside `ib-markdown-inline/src/markdownInline/lib/visibility.ts` when `markerVisibility` can return the wrong surface.
+A reveal that opens the wrong block is a unit test beside `inline-markdown-editor/src/markdownInline/lib/visibility.ts` when `markerVisibility` can return the wrong surface.
 The playground picture is the report of that bug. The unit test is the check.
 
 When the bug is visible in the Inline Markdown editor or playground, add it to that feature's folder.
 Follow `.cursor/skills/markdown-inline-case/SKILL.md` only while the scenario is still open.
 When the user already named the feature, the steps, and the wrong result, write the check in that same turn. The Change sentence and the Hold sentence are part of that reply.
-The check is `ib-markdown-inline/src/markdownInline/lib/markdown/<part>/test/regression.test.ts`.
+The check is `inline-markdown-editor/src/markdownInline/lib/markdown/<part>/test/regression.test.ts`.
 The sample goes in that folder's `fixtures/`.
 A numbered case may be the next `case-N.md`.
 A skill sample is `<name>/SKILL.md`, and the folder name is the `name` value.
@@ -48,14 +48,14 @@ Open that picture and check it before the compare counts.
 Run only that file:
 
 ```bash
-npm run test:markdown-inline-browser -w ib-markdown-inline -- src/markdownInline/lib/markdown/<part>/test/regression.test.ts
+npm run test:markdown-inline-browser -w inline-markdown-editor -- src/markdownInline/lib/markdown/<part>/test/regression.test.ts
 ```
 
 When a unit test can see the bug, put the check in the existing `*.test.ts` beside the module.
 Run only that test:
 
 ```bash
-npm test -w ib-markdown-inline -- path/to/file.test.ts -t "test name"
+npm test -w inline-markdown-editor -- path/to/file.test.ts -t "test name"
 ```
 
 Red means that command exits non-zero because the new assertion failed, or because the behavior under test threw, and the test file itself loaded.
