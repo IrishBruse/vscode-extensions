@@ -5,6 +5,7 @@ import { syncBranchDiffWorkingTreeFiles } from "./lib/git/branchDiffFiles";
 import { openMermaidPreview } from "./commands/openMermaidPreview";
 import { openMermaidSource } from "./commands/openMermaidSource";
 import { activateRelativeGoTo, relativeGoTo } from "./commands/relativeGoTo";
+import { terminalPaste } from "./commands/terminalPaste";
 import { GitHelpersViewProvider } from "./gitHelpers/GitHelpersView";
 import { registerMermaidCustomEditor } from "./mermaidEditor/MermaidCustomEditorProvider";
 import { registerMarkdownMermaidFeatures } from "./mermaidEditor/registerMarkdownMermaid";
@@ -21,6 +22,7 @@ export function activate(context: ExtensionContext) {
 
     activateRelativeGoTo(context);
     registerCommandIB(Commands.RelativeGoTo, relativeGoTo, context);
+    registerCommandIB(Commands.TerminalPaste, terminalPaste, context);
     registerCommandIB(Commands.OpenMermaidPreview, openMermaidPreview, context);
     registerCommandIB(Commands.OpenMermaidSource, openMermaidSource, context);
     registerCommandIB(Commands.CopyScmResourcePath, copyScmResourcePath, context);

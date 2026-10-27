@@ -224,3 +224,94 @@ describe("mermaid open preview", () => {
         });
     });
 });
+
+const tallFixture = "markdown/fence/mermaid/test/fixtures/case-2.md";
+
+describe("mermaid fits source height", () => {
+    let browser: Browser;
+    let page: Page;
+
+    beforeAll(async () => {
+        const opened = await openPlayground(tallFixture, "Before the tall fence.");
+        browser = opened.browser;
+        page = opened.page;
+        await page.evaluate(() => {
+            const api = (
+                window as unknown as {
+                    __inlineMarkdown: { getDocument(): string; setCursor(offset: number): void };
+                }
+            ).__inlineMarkdown;
+            api.setCursor(api.getDocument().indexOf("Before the tall"));
+        });
+        await page.waitForFunction(() => {
+            const frame = document.querySelector(".inline-md-mermaid");
+            const svg = frame?.querySelector(".inline-md-mermaid-diagram svg");
+            return (
+                frame instanceof HTMLElement &&
+                svg instanceof SVGElement &&
+                svg.getBoundingClientRect().height > 20
+            );
+        });
+    }, 45_000);
+
+    afterAll(async () => {
+        await browser?.close();
+    });
+
+    it("keeps the preview within the source fence height", async () => {
+        const sizes = await page.evaluate(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            const api = (
+                window as unknown as {
+                    __inlineMarkdown: { getDocument(): string };
+                }
+            ).__inlineMarkdown;
+            const source = api.getDocument();
+            const fenceStart = source.indexOf("```mermaid");
+            const fenceEnd = source.indexOf("```", fenceStart + 3);
+            const fenceText = source.slice(fenceStart, fenceEnd + 3);
+            const fenceLines = fenceText.split(/\r?\n/).length;
+            const before = [...document.querySelectorAll("#editor .view-line")].find((line) =>
+                fold(line.textContent).includes("Before the tall"),
+            );
+            const after = [...document.querySelectorAll("#editor .view-line")].find((line) =>
+                fold(line.textContent).includes("After the tall"),
+            );
+            const frame = document.querySelector(".inline-md-mermaid");
+            const svg = frame?.querySelector(".inline-md-mermaid-diagram svg");
+            if (
+                !(before instanceof HTMLElement) ||
+                !(after instanceof HTMLElement) ||
+                !(frame instanceof HTMLElement) ||
+                !(svg instanceof SVGElement)
+            ) {
+                return null;
+            }
+            const lineHeight = before.getBoundingClientRect().height;
+            const frameBox = frame.getBoundingClientRect();
+            const beforeBox = before.getBoundingClientRect();
+            const afterBox = after.getBoundingClientRect();
+            const svgBox = svg.getBoundingClientRect();
+            return {
+                fenceLines,
+                lineHeight,
+                sourceHeight: fenceLines * lineHeight,
+                frameHeight: frameBox.height,
+                frameTop: frameBox.top,
+                beforeBottom: beforeBox.bottom,
+                afterTop: afterBox.top,
+                svgTop: svgBox.top,
+                svgBottom: svgBox.bottom,
+                svgHeight: svgBox.height,
+                frameBottom: frameBox.bottom,
+            };
+        });
+        expect(sizes).not.toBeNull();
+        expect(Math.abs(sizes!.frameHeight - sizes!.sourceHeight)).toBeLessThanOrEqual(1);
+        expect(sizes!.frameTop).toBeGreaterThanOrEqual(sizes!.beforeBottom - 1);
+        expect(sizes!.svgTop).toBeGreaterThanOrEqual(sizes!.frameTop - 1);
+        expect(sizes!.svgBottom).toBeLessThanOrEqual(sizes!.frameBottom + 1);
+        expect(sizes!.svgHeight).toBeGreaterThan(20);
+        expect(sizes!.afterTop).toBeGreaterThanOrEqual(sizes!.frameBottom - 1);
+    });
+});

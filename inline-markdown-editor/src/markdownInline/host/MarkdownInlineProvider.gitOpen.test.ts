@@ -14,7 +14,7 @@ const mutableWindow = window as unknown as {
     tabGroups: { all: { tabs: { input: unknown }[] }[] };
 };
 const mutableWorkspace = workspace as unknown as {
-    textDocuments: { uri: unknown }[];
+    textDocuments: { uri: unknown; getText: () => string }[];
 };
 
 describe("MarkdownInlineProvider git open", () => {
@@ -24,11 +24,14 @@ describe("MarkdownInlineProvider git open", () => {
         vi.mocked(commands.executeCommand).mockClear();
     });
 
-    it("reopens a git panel working tree file as a text diff and does not render", async () => {
+    it("reopens a changed git diff side as the default editor and does not render", async () => {
         const modified = Uri.file("/proj/readme.md");
         const original = Uri.from({ scheme: "git", path: "/proj/readme.md" });
-        mutableWorkspace.textDocuments = [{ uri: modified }, { uri: original }];
-        mutableWindow.tabGroups.all = [{ tabs: [{ input: undefined }] }];
+        mutableWorkspace.textDocuments = [
+            { uri: modified, getText: () => "work" },
+            { uri: original, getText: () => "head" },
+        ];
+        mutableWindow.tabGroups.all = [{ tabs: [{ input: { original, modified } }] }];
 
         const html: string[] = [];
         const panel = {
@@ -50,12 +53,12 @@ describe("MarkdownInlineProvider git open", () => {
         expect(html).toEqual([]);
         expect(panel.dispose).toHaveBeenCalledOnce();
         expect(commands.executeCommand).toHaveBeenCalledWith(
-            "_workbench.diff",
-            original,
+            "vscode.openWith",
             modified,
-            undefined,
-            undefined,
-            { editorOptions: { override: "default" } },
+            "default",
+            {
+                viewColumn: 1,
+            },
         );
     });
 });

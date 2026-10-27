@@ -45,6 +45,33 @@ function collectDiffUris(input: unknown, into: Uri[]): void {
     }
 }
 
+function documentText(uri: Uri): string | undefined {
+    for (const document of workspace.textDocuments ?? []) {
+        if (sameResource(document.uri, uri)) {
+            return document.getText();
+        }
+    }
+    return undefined;
+}
+
+function diffSidesHaveChanges(uri: Uri, sides: Uri[]): boolean {
+    const others = sides.filter((side) => !sameResource(side, uri));
+    if (others.length === 0) {
+        return true;
+    }
+    const ownText = documentText(uri);
+    for (const other of others) {
+        const otherText = documentText(other);
+        if (ownText === undefined || otherText === undefined) {
+            return true;
+        }
+        if (ownText !== otherText) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export function isMarkdownUriInDiffTab(uri: Uri): boolean {
     for (const group of window.tabGroups.all) {
         for (const tab of group.tabs) {
@@ -58,27 +85,24 @@ export function isMarkdownUriInDiffTab(uri: Uri): boolean {
     return false;
 }
 
-function hasNonDirectMarkdownCounterpart(uri: Uri): boolean {
-    for (const document of workspace.textDocuments ?? []) {
-        if (document.uri.path !== uri.path) {
-            continue;
-        }
-        if (sameResource(document.uri, uri)) {
-            continue;
-        }
-        if (!isDirectMarkdownEditUri(document.uri)) {
-            return true;
+function isMarkdownUriInChangedDiffTab(uri: Uri): boolean {
+    for (const group of window.tabGroups.all) {
+        for (const tab of group.tabs) {
+            const sides: Uri[] = [];
+            collectDiffUris(tab.input, sides);
+            if (!sides.some((side) => sameResource(side, uri))) {
+                continue;
+            }
+            if (diffSidesHaveChanges(uri, sides)) {
+                return true;
+            }
         }
     }
     return false;
 }
 
 export function shouldUseMarkdownCustomEditor(uri: Uri): boolean {
-    return (
-        isDirectMarkdownEditUri(uri) &&
-        !isMarkdownUriInDiffTab(uri) &&
-        !hasNonDirectMarkdownCounterpart(uri)
-    );
+    return isDirectMarkdownEditUri(uri) && !isMarkdownUriInChangedDiffTab(uri);
 }
 
 const rawOpenInFlight = new Set<string>();
@@ -90,26 +114,6 @@ export async function openMarkdownWithRawEditor(uri: Uri, viewColumn?: ViewColum
     }
     rawOpenInFlight.add(key);
     try {
-        const counterpart = [...(workspace.textDocuments ?? [])].find((document) => {
-            return (
-                document.uri.path === uri.path &&
-                !sameResource(document.uri, uri) &&
-                !isDirectMarkdownEditUri(document.uri)
-            );
-        })?.uri;
-        if (counterpart && !isMarkdownUriInDiffTab(uri)) {
-            const original = isDirectMarkdownEditUri(uri) ? counterpart : uri;
-            const modified = original === uri ? counterpart : uri;
-            await commands.executeCommand(
-                "_workbench.diff",
-                original,
-                modified,
-                undefined,
-                undefined,
-                { editorOptions: { override: "default" } },
-            );
-            return;
-        }
         await commands.executeCommand(
             "vscode.openWith",
             uri,

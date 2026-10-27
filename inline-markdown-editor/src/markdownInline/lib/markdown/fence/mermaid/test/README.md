@@ -2,6 +2,10 @@
 
 An idle mermaid fence shows the diagram.
 
+The preview height matches the source fence, and the diagram scales inside that space.
+
+The preview does not paint above the first fence line.
+
 Diagram nodes have no white drop shadow.
 
 Open Preview floats in the top right of the code block.

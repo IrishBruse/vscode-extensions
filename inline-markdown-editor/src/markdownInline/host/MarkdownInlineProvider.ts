@@ -201,7 +201,7 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
 
         renderHtml();
 
-        const releaseTimers = [0, 50].map((delay) =>
+        const releaseTimers = [0, 50, 200].map((delay) =>
             setTimeout(() => {
                 void releaseIfNotEditor();
             }, delay),
@@ -214,6 +214,9 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                     }
                 },
             },
+            window.tabGroups.onDidChangeTabs(() => {
+                void releaseIfNotEditor();
+            }),
             editorWebview.webview.onDidReceiveMessage(async (message) => {
                 if (
                     !message ||

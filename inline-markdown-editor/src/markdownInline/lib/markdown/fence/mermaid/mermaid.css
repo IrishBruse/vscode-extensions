@@ -7,10 +7,10 @@
     box-sizing: border-box;
     width: 100%;
     margin: 0;
-    padding: 4px 0 8px;
+    padding: 0;
     border-radius: 4px;
     background: var(--ib-md-code-block-background);
-    overflow: visible;
+    overflow: hidden;
     pointer-events: auto;
     cursor: text;
 }
@@ -35,8 +35,8 @@
 
 .inline-md-mermaid .inline-md-mermaid-open-preview {
     position: absolute;
-    top: 4px;
-    right: 16px;
+    top: 2px;
+    right: 8px;
 }
 
 .inline-md-mermaid-open-preview:hover,
@@ -51,14 +51,18 @@
 }
 
 .inline-md-mermaid-diagram {
-    overflow: visible;
-    max-width: 100%;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .inline-md-mermaid-diagram svg {
     display: block;
+    width: 100%;
+    height: 100%;
     max-width: 100%;
-    height: auto;
+    max-height: 100%;
 }
 
 .inline-md-mermaid-diagram.inline-md-mermaid-error {

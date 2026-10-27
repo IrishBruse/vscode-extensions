@@ -280,14 +280,38 @@ export function blockZone(
     return { key, zone };
 }
 
+export function mermaidZoneHeight(lineCount: number, lineHeight: number): number {
+    return Math.max(1, Math.trunc(lineCount)) * Math.max(1, Math.trunc(lineHeight));
+}
+
+function fitMermaidSvg(diagram: HTMLElement): void {
+    const svg = diagram.querySelector("svg");
+    if (!(svg instanceof Element) || svg.tagName.toLowerCase() !== "svg") {
+        return;
+    }
+    const widthAttr = Number.parseFloat(svg.getAttribute("width") ?? "");
+    const heightAttr = Number.parseFloat(svg.getAttribute("height") ?? "");
+    const viewBox = (svg as SVGSVGElement).viewBox?.baseVal;
+    if (!(viewBox && viewBox.width > 0 && viewBox.height > 0) && widthAttr > 0 && heightAttr > 0) {
+        svg.setAttribute("viewBox", `0 0 ${widthAttr} ${heightAttr}`);
+    }
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    svg.setAttribute("preserveAspectRatio", "xMinYMid meet");
+    diagram.style.width = "100%";
+    diagram.style.height = "100%";
+}
+
 export function createMermaidZone(
     scope: Scope,
     content: string,
     key: string,
     lineNumber: number,
     host: BlockZoneHost,
+    lineCount = 1,
 ): BlockZoneRecord {
     const openLine = lineNumber - 1;
+    const sourceHeight = mermaidZoneHeight(lineCount, host.lineHeight);
     const frame = document.createElement("div");
     frame.className = "inline-md-mermaid";
     const openPreview = document.createElement("button");
@@ -317,28 +341,23 @@ export function createMermaidZone(
     frame.append(diagram);
     const zone: monaco.editor.IViewZone = {
         afterLineNumber: lineNumber - 1,
-        heightInPx: 120,
+        heightInPx: sourceHeight,
         domNode: frame,
         marginDomNode: lineNumberNode(lineNumber),
         suppressMouseDown: true,
         showInHiddenAreas: true,
     };
-    const fitZoneHeight = (): void => {
+    const fitDiagram = (): void => {
         if (!frame.isConnected) {
             return;
         }
-        const measured = Math.ceil(frame.scrollHeight);
-        if (measured > 0 && Math.abs(measured - (zone.heightInPx ?? 0)) > 1) {
-            zone.heightInPx = measured;
-            host.onLayout(key);
-        }
+        fitMermaidSvg(diagram);
     };
     void renderMermaidDiagram(diagram, content).then((height) => {
         if (!frame.isConnected || height <= 0) {
             return;
         }
-        zone.heightInPx = height;
-        requestAnimationFrame(fitZoneHeight);
+        requestAnimationFrame(fitDiagram);
     });
     return { key, zone };
 }

@@ -863,7 +863,7 @@ describe("createMermaidZone", () => {
             host,
         );
         const frame = element(record.zone.domNode);
-        expect(record.zone.heightInPx).toBe(120);
+        expect(record.zone.heightInPx).toBe(20);
         expect(element(record.zone.marginDomNode).textContent).toBe("5");
         const open = created.find((node) => node.className === "inline-md-mermaid-open-preview");
         expect(open?.textContent).toBe("Open Preview");
@@ -894,7 +894,7 @@ describe("createMermaidZone", () => {
         expect(render?.[1]).toBe("graph TD;");
         frame.isConnected = false;
         await flush();
-        expect(record.zone.heightInPx).toBe(120);
+        expect(record.zone.heightInPx).toBe(20);
     });
 
     it("does nothing when preview handler is missing or the diagram height is empty", async () => {
@@ -914,45 +914,32 @@ describe("createMermaidZone", () => {
         expect(host.onReveal).not.toHaveBeenCalled();
         element(record.zone.domNode).isConnected = true;
         await flush();
-        expect(record.zone.heightInPx).toBe(120);
+        expect(record.zone.heightInPx).toBe(20);
         expect(host.onLayout).not.toHaveBeenCalled();
     });
 
-    it("refits a connected diagram from scroll height", async () => {
+    it("keeps zone height at the source fence footprint", async () => {
         installRichDom();
         runFrames = false;
-        vi.mocked(renderMermaidDiagram).mockResolvedValue(80);
-        const host = createHost();
+        vi.mocked(renderMermaidDiagram).mockResolvedValue(400);
+        const host = createHost({ lineHeight: 20 });
         const record = createMermaidZone(
             scope({ kind: "codeBlock", contentStart: 2 }),
             "graph",
             "mermaid:2",
             3,
             host,
+            5,
         );
         const frame = element(record.zone.domNode);
+        expect(record.zone.heightInPx).toBe(100);
         frame.isConnected = true;
-        frame.scrollHeight = 81;
+        frame.scrollHeight = 420;
         await flush();
-        expect(record.zone.heightInPx).toBe(80);
+        expect(record.zone.heightInPx).toBe(100);
         queuedFrame?.(0);
+        expect(record.zone.heightInPx).toBe(100);
         expect(host.onLayout).not.toHaveBeenCalled();
-
-        frame.scrollHeight = 0;
-        queuedFrame?.(0);
-        expect(record.zone.heightInPx).toBe(80);
-
-        frame.scrollHeight = 140;
-        frame.isConnected = false;
-        queuedFrame?.(0);
-        expect(host.onLayout).not.toHaveBeenCalled();
-
-        frame.isConnected = true;
-        record.zone.heightInPx = undefined;
-        frame.scrollHeight = 140;
-        queuedFrame?.(0);
-        expect(record.zone.heightInPx).toBe(140);
-        expect(host.onLayout).toHaveBeenCalledWith("mermaid:2");
     });
 });
 

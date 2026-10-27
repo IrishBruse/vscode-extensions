@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type HtmlTagDescriptor, type Plugin } from "vite-plus";
@@ -7,6 +8,9 @@ const playgroundDir = dirname(fileURLToPath(import.meta.url));
 const extensionRoot = join(playgroundDir, "..", "..", "..");
 const monorepoRoot = join(extensionRoot, "..");
 const docsMarkdownDir = join(extensionRoot, "docs", "tests", "markdown");
+const require = createRequire(import.meta.url);
+const monacoRoot = join(dirname(require.resolve("monaco-editor/editor/editor.api")), "../../..");
+const monacoEditorMainCss = join(monacoRoot, "min/vs/editor/editor.main.css");
 
 function vscodeUserThemePlugin(): Plugin {
     return {
@@ -43,6 +47,11 @@ export default defineConfig({
         __DOCS_MARKDOWN_FS__: JSON.stringify(docsMarkdownDir),
         __INLINE_TESTS_FS__: JSON.stringify(join(playgroundDir, "..", "tests")),
         __INLINE_LIB_FS__: JSON.stringify(join(playgroundDir, "..", "lib")),
+    },
+    resolve: {
+        alias: {
+            "monaco-editor/min/vs/editor/editor.main.css": monacoEditorMainCss,
+        },
     },
     server: {
         port: 5175,

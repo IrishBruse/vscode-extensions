@@ -27,6 +27,8 @@ export const Commands = {
 
     DeleteSnippet: `ib-utilities.deleteSnippet`,
 
+    TerminalPaste: `ib-utilities.terminalPaste`,
+
     OpenMermaidPreview: `ib-utilities.openMermaidPreview`,
 
     OpenMermaidSource: `ib-utilities.openMermaidSource`,

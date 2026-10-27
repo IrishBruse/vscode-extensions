@@ -838,7 +838,7 @@ export class InlinePresentation {
             }
             const first = lines[0];
             if (first !== undefined) {
-                zones.push(this.ensureMermaidZone(scope, text, first));
+                zones.push(this.ensureMermaidZone(scope, text, first, lines.length));
             }
         }
         const liveImageKeys = new Set<string>();
@@ -1278,14 +1278,19 @@ export class InlinePresentation {
         return record;
     }
 
-    private ensureMermaidZone(scope: Scope, source: string, lineNumber: number): ZoneRecord {
+    private ensureMermaidZone(
+        scope: Scope,
+        source: string,
+        lineNumber: number,
+        lineCount: number,
+    ): ZoneRecord {
         const content = mermaidDiagramSource(source.slice(scope.contentStart, scope.contentEnd));
         const key = `mermaid:${scope.start}:${scope.end}:${content}`;
         const existing = this.mermaidZones.get(key);
         if (existing) {
             return existing;
         }
-        const record = this.createMermaidZone(scope, content, key, lineNumber);
+        const record = this.createMermaidZone(scope, content, key, lineNumber, lineCount);
         this.mermaidZones.set(key, record);
         return record;
     }
@@ -1295,8 +1300,9 @@ export class InlinePresentation {
         content: string,
         key: string,
         lineNumber: number,
+        lineCount: number,
     ): ZoneRecord {
-        return buildMermaidZone(scope, content, key, lineNumber, this.zoneHost());
+        return buildMermaidZone(scope, content, key, lineNumber, this.zoneHost(), lineCount);
     }
 
     private applyTableHeights(

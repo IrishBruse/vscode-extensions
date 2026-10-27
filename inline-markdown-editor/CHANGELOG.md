@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Mermaid preview fits the source fence height instead of growing past those lines.
+- **Fix**: Open Markdown with the inline editor unless a real diff tab shows content changes.
 - **Add**: Inline Markdown Editor extracted from `ib-utilities`.
 - **Change**: Single extension package (editor deps and playground scripts live on `inline-markdown-editor` instead of a nested workspace).
 - **Change**: Extension display name is Inline Markdown Editor.

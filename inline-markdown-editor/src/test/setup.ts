@@ -34,7 +34,11 @@ vi.mock("vscode", () => ({
         showInputBox: vi.fn().mockResolvedValue(undefined),
         createTextEditorDecorationType: vi.fn().mockReturnValue({}),
         activeTextEditor: undefined,
-        tabGroups: { all: [], activeTabGroup: { activeTab: undefined } },
+        tabGroups: {
+            all: [],
+            activeTabGroup: { activeTab: undefined },
+            onDidChangeTabs: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+        },
         onDidChangeActiveColorTheme: vi.fn().mockReturnValue({ dispose: vi.fn() }),
     },
     commands: {

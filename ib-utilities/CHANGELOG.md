@@ -5,7 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
-- **Remove**: Terminal paste command (clipboard image detection for the terminal).
+- **Add**: Terminal paste command again (clipboard image detection for the terminal, including Linux Wayland).
 - **Remove**: Inline Markdown Editor (shipped as the separate `inline-markdown-editor` extension).
 
 ## 0.30.0

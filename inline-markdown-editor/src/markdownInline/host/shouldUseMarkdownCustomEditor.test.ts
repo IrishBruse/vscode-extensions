@@ -10,8 +10,12 @@ const mutableWindow = window as unknown as {
     tabGroups: { all: { tabs: { input: unknown }[] }[] };
 };
 const mutableWorkspace = workspace as unknown as {
-    textDocuments: { uri: unknown }[];
+    textDocuments: { uri: unknown; getText: () => string }[];
 };
+
+function doc(uri: Uri, text = ""): { uri: Uri; getText: () => string } {
+    return { uri, getText: () => text };
+}
 
 describe("shouldUseMarkdownCustomEditor", () => {
     beforeEach(() => {
@@ -46,9 +50,10 @@ describe("shouldUseMarkdownCustomEditor", () => {
         });
     });
 
-    it("rejects a file URI that is already open in a text diff tab", () => {
+    it("rejects a file URI that is open in a text diff tab with changes", () => {
         const original = Uri.file("/proj/old.md");
         const modified = Uri.file("/proj/readme.md");
+        mutableWorkspace.textDocuments = [doc(original, "old"), doc(modified, "new")];
         mutableWindow.tabGroups.all = [
             {
                 tabs: [{ input: { original, modified } }],
@@ -60,27 +65,42 @@ describe("shouldUseMarkdownCustomEditor", () => {
         expect(shouldUseMarkdownCustomEditor(Uri.file("/proj/other.md"))).toBe(true);
     });
 
-    it("rejects a file URI opened in a multi-file compare", () => {
+    it("keeps the custom editor for a diff tab whose sides are identical", () => {
+        const original = Uri.from({ scheme: "git", path: "/proj/readme.md" });
         const modified = Uri.file("/proj/readme.md");
+        mutableWorkspace.textDocuments = [doc(original, "same"), doc(modified, "same")];
         mutableWindow.tabGroups.all = [
             {
-                tabs: [
-                    { input: { resources: [{ original: Uri.file("/proj/old.md"), modified }] } },
-                ],
+                tabs: [{ input: { original, modified } }],
+            },
+        ];
+
+        expect(shouldUseMarkdownCustomEditor(modified)).toBe(true);
+    });
+
+    it("rejects a file URI opened in a multi-file compare with changes", () => {
+        const modified = Uri.file("/proj/readme.md");
+        const original = Uri.file("/proj/old.md");
+        mutableWorkspace.textDocuments = [doc(original, "a"), doc(modified, "b")];
+        mutableWindow.tabGroups.all = [
+            {
+                tabs: [{ input: { resources: [{ original, modified }] } }],
             },
         ];
 
         expect(shouldUseMarkdownCustomEditor(modified)).toBe(false);
     });
 
-    it("rejects a file URI opened in a merge editor", () => {
+    it("rejects a file URI opened in a merge editor with changes", () => {
         const result = Uri.file("/proj/readme.md");
+        const base = Uri.from({ scheme: "git", path: "/proj/readme.md" });
+        mutableWorkspace.textDocuments = [doc(base, "base"), doc(result, "result")];
         mutableWindow.tabGroups.all = [
             {
                 tabs: [
                     {
                         input: {
-                            base: Uri.from({ scheme: "git", path: "/proj/readme.md" }),
+                            base,
                             input1: Uri.from({
                                 scheme: "git",
                                 path: "/proj/readme.md",
@@ -101,19 +121,16 @@ describe("shouldUseMarkdownCustomEditor", () => {
         expect(shouldUseMarkdownCustomEditor(result)).toBe(false);
     });
 
-    it("rejects a file URI listed in a multi-diff tab", () => {
+    it("rejects a file URI listed in a multi-diff tab with changes", () => {
         const modified = Uri.file("/proj/readme.md");
+        const original = Uri.from({ scheme: "git", path: "/proj/readme.md" });
+        mutableWorkspace.textDocuments = [doc(original, "head"), doc(modified, "work")];
         mutableWindow.tabGroups.all = [
             {
                 tabs: [
                     {
                         input: {
-                            textDiffs: [
-                                {
-                                    original: Uri.from({ scheme: "git", path: "/proj/readme.md" }),
-                                    modified,
-                                },
-                            ],
+                            textDiffs: [{ original, modified }],
                         },
                     },
                 ],
@@ -123,37 +140,34 @@ describe("shouldUseMarkdownCustomEditor", () => {
         expect(shouldUseMarkdownCustomEditor(modified)).toBe(false);
     });
 
-    it("rejects a working tree file that is open beside a git document", () => {
+    it("keeps the custom editor when a git document is open but there is no diff tab", () => {
         const modified = Uri.file("/proj/readme.md");
         mutableWorkspace.textDocuments = [
-            { uri: modified },
-            {
-                uri: Uri.from({
+            doc(modified, "work"),
+            doc(
+                Uri.from({
                     scheme: "git",
                     path: "/proj/readme.md",
                     query: '{"path":"/proj/readme.md","ref":"~"}',
                 }),
-            },
+                "head",
+            ),
         ];
 
-        expect(shouldUseMarkdownCustomEditor(modified)).toBe(false);
+        expect(shouldUseMarkdownCustomEditor(modified)).toBe(true);
         expect(shouldUseMarkdownCustomEditor(Uri.file("/proj/other.md"))).toBe(true);
     });
 
-    it("reopens a git working tree file as a text diff", async () => {
+    it("opens the default text editor for a raw reopen", async () => {
         const modified = Uri.file("/proj/readme.md");
-        const original = Uri.from({ scheme: "git", path: "/proj/readme.md" });
-        mutableWorkspace.textDocuments = [{ uri: modified }, { uri: original }];
 
         await openMarkdownWithRawEditor(modified);
 
         expect(commands.executeCommand).toHaveBeenCalledWith(
-            "_workbench.diff",
-            original,
+            "vscode.openWith",
             modified,
+            "default",
             undefined,
-            undefined,
-            { editorOptions: { override: "default" } },
         );
     });
 });
