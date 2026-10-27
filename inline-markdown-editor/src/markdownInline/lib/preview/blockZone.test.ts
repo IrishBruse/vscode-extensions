@@ -859,7 +859,7 @@ describe("createMermaidZone", () => {
             scope({ kind: "codeBlock", contentStart: 8 }),
             "graph TD;",
             "mermaid:8",
-            5,
+            [5],
             host,
         );
         const frame = element(record.zone.domNode);
@@ -905,7 +905,7 @@ describe("createMermaidZone", () => {
             scope({ kind: "codeBlock", contentStart: 1 }),
             "graph",
             "mermaid:1",
-            2,
+            [2],
             host,
         );
         const button = created.find((node) => node.className === "inline-md-mermaid-open-preview");
@@ -927,10 +927,23 @@ describe("createMermaidZone", () => {
             scope({ kind: "codeBlock", contentStart: 2 }),
             "graph",
             "mermaid:2",
-            3,
+            [3, 4, 5, 6, 7],
             host,
-            5,
         );
+        const marginNumbers: string[] = [];
+        const margin = element(record.zone.marginDomNode);
+        const collect = (node: TestElement): void => {
+            if (node.className.split(/\s+/).includes("inline-md-zone-number")) {
+                marginNumbers.push(node.textContent ?? "");
+            }
+            for (const child of node.childNodes) {
+                if (child instanceof TestElement) {
+                    collect(child);
+                }
+            }
+        };
+        collect(margin);
+        expect(marginNumbers).toEqual(["3", "4", "5", "6", "7"]);
         const frame = element(record.zone.domNode);
         expect(record.zone.heightInPx).toBe(100);
         frame.isConnected = true;

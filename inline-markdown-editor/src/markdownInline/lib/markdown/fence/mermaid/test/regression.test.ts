@@ -314,4 +314,29 @@ describe("mermaid fits source height", () => {
         expect(sizes!.svgHeight).toBeGreaterThan(20);
         expect(sizes!.afterTop).toBeGreaterThanOrEqual(sizes!.frameBottom - 1);
     });
+
+    it("shows a line number in the gutter for each fence line", async () => {
+        const numbers = await page.evaluate(() => {
+            const api = (
+                window as unknown as {
+                    __inlineMarkdown: { getDocument(): string };
+                }
+            ).__inlineMarkdown;
+            const source = api.getDocument();
+            const fenceStart = source.indexOf("```mermaid");
+            const fenceEnd = source.indexOf("```", fenceStart + 3);
+            const fenceText = source.slice(fenceStart, fenceEnd + 3);
+            const firstLine = source.slice(0, fenceStart).split(/\r?\n/).length + 1;
+            const fenceLines = fenceText.split(/\r?\n/).length;
+            const zoneNumbers = [
+                ...document.querySelectorAll(".inline-md-fence-margin .inline-md-zone-number"),
+            ].map((node) => Number((node.textContent ?? "").trim()));
+            return { firstLine, fenceLines, zoneNumbers };
+        });
+        expect(numbers.zoneNumbers.length).toBe(numbers.fenceLines);
+        expect(numbers.zoneNumbers[0]).toBe(numbers.firstLine);
+        for (let index = 1; index < numbers.zoneNumbers.length; index += 1) {
+            expect(numbers.zoneNumbers[index]).toBe(numbers.zoneNumbers[index - 1] + 1);
+        }
+    });
 });

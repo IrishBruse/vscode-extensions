@@ -1,7 +1,7 @@
 {
     "name": "inline-markdown-editor",
     "displayName": "Inline Markdown Editor",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Edit Markdown with formatted preview that reveals source where you click.",
     "categories": [
         "Other"

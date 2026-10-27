@@ -9,9 +9,8 @@ export function createMermaidZone(
     scope: Scope,
     content: string,
     key: string,
-    lineNumber: number,
+    lineNumbers: readonly number[],
     host: BlockZoneHost,
-    lineCount = 1,
 ): BlockZoneRecord {
-    return createMermaidZoneFromPreview(scope, content, key, lineNumber, host, lineCount);
+    return createMermaidZoneFromPreview(scope, content, key, lineNumbers, host);
 }

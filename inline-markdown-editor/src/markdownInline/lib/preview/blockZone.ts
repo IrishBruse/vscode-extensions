@@ -150,11 +150,25 @@ function appendFormatted(
     }
 }
 
-function lineNumberNode(lineNumber: number): HTMLDivElement {
+function lineNumberNode(lineNumber: number, lineHeight?: number): HTMLDivElement {
     const number = document.createElement("div");
     number.className = "inline-md-zone-number";
+    if (lineHeight !== undefined) {
+        number.className = "inline-md-zone-number inline-md-zone-number--fixed";
+        number.style.height = `${lineHeight}px`;
+        number.style.lineHeight = `${lineHeight}px`;
+    }
     number.textContent = String(lineNumber);
     return number;
+}
+
+function fenceMarginDomNode(lineNumbers: readonly number[], lineHeight: number): HTMLDivElement {
+    const margin = document.createElement("div");
+    margin.className = "inline-md-fence-margin";
+    for (const lineNumber of lineNumbers) {
+        margin.append(lineNumberNode(lineNumber, lineHeight));
+    }
+    return margin;
 }
 
 const IMAGE_MAX_WIDTH = 480;
@@ -306,12 +320,12 @@ export function createMermaidZone(
     scope: Scope,
     content: string,
     key: string,
-    lineNumber: number,
+    lineNumbers: readonly number[],
     host: BlockZoneHost,
-    lineCount = 1,
 ): BlockZoneRecord {
-    const openLine = lineNumber - 1;
-    const sourceHeight = mermaidZoneHeight(lineCount, host.lineHeight);
+    const firstLine = lineNumbers[0] ?? 1;
+    const openLine = firstLine - 1;
+    const sourceHeight = mermaidZoneHeight(lineNumbers.length, host.lineHeight);
     const frame = document.createElement("div");
     frame.className = "inline-md-mermaid";
     const openPreview = document.createElement("button");
@@ -340,10 +354,13 @@ export function createMermaidZone(
     frame.append(openPreview);
     frame.append(diagram);
     const zone: monaco.editor.IViewZone = {
-        afterLineNumber: lineNumber - 1,
+        afterLineNumber: firstLine - 1,
         heightInPx: sourceHeight,
         domNode: frame,
-        marginDomNode: lineNumberNode(lineNumber),
+        marginDomNode:
+            lineNumbers.length <= 1
+                ? lineNumberNode(firstLine)
+                : fenceMarginDomNode(lineNumbers, host.lineHeight),
         suppressMouseDown: true,
         showInHiddenAreas: true,
     };
