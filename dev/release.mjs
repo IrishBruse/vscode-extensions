@@ -110,7 +110,7 @@ function promoteUnreleased(extension, version) {
     }
 
     const changelog = readText(extension.changelogPath);
-    const unreleasedMatch = changelog.match(/^## Unreleased\r?\n([\s\S]*?)(?=^## |z)/m);
+    const unreleasedMatch = changelog.match(/^## Unreleased\r?\n([\s\S]*?)(?=^## |(?![\s\S]))/m);
     if (!unreleasedMatch) {
         console.error(
             `\n${extension.relativeDir}/CHANGELOG.md is missing an "## Unreleased" section.`,
@@ -126,9 +126,11 @@ function promoteUnreleased(extension, version) {
         process.exit(1);
     }
 
+    const hasFollowingSection = /^## Unreleased\r?\n[\s\S]*?(?=^## )/m.test(changelog);
+    const endNewlines = hasFollowingSection ? "\n\n" : "\n";
     const promoted = changelog.replace(
-        /^## Unreleased\r?\n[\s\S]*?(?=^## |z)/m,
-        `## Unreleased\n\n## ${version}\n\n${body}\n\n`,
+        /^## Unreleased\r?\n[\s\S]*?(?=^## |(?![\s\S]))/m,
+        `## Unreleased\n\n## ${version}\n\n${body}${endNewlines}`,
     );
     writeText(extension.changelogPath, promoted);
     console.log(`Moved Unreleased entries into ## ${version}.`);

@@ -92,7 +92,7 @@ function getEditorHtml(
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; worker-src ${webview.cspSource};" />
+        content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}' ${webview.cspSource}; worker-src ${webview.cspSource};" />
     <meta name="inline-md-message-secret" content="${messageSecret}" />
     <meta name="inline-md-worker" content="${workerUri.toString().replace(/&/g, "&amp;").replace(/"/g, "&quot;")}" />
     <meta id="inline-md-state" content="${initialState}" />

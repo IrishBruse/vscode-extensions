@@ -9,6 +9,37 @@ const outDir = path.join(dir, "../../media/markdownInline");
 const monacoRoot = path.join(path.dirname(require.resolve("monaco-editor")), "../..");
 const monacoEditorMainCss = path.join(monacoRoot, "min/vs/editor/editor.main.css");
 
+function mermaidBundleChunk(id: string): string | undefined {
+    if (!id.includes("node_modules")) {
+        return undefined;
+    }
+    const markers = [
+        "/mermaid/",
+        "\\mermaid\\",
+        "@mermaid-js",
+        "chevrotain",
+        "cytoscape",
+        "dagre-d3-es",
+        "/d3/",
+        "/d3-",
+        "khroma",
+        "roughjs",
+        "dompurify",
+        "elkjs",
+        "katex",
+        "marked",
+        "stylis",
+        "dayjs",
+        "@braintree/sanitize-url",
+        "@iconify/",
+        "@upsetjs/venn",
+        "d3-sankey",
+        "ts-dedent",
+        "es-toolkit",
+    ];
+    return markers.some((marker) => id.includes(marker)) ? "mermaid" : undefined;
+}
+
 export default defineConfig({
     root: dir,
     base: "./",
@@ -31,8 +62,11 @@ export default defineConfig({
             output: {
                 format: "es",
                 entryFileNames: "editor.js",
+                chunkFileNames: "mermaid-[hash].js",
                 assetFileNames: "editor[extname]",
-                codeSplitting: false,
+                manualChunks(id) {
+                    return mermaidBundleChunk(id);
+                },
             },
         },
     },

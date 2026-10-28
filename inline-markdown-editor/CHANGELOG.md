@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Lazy-load Mermaid in the webview so the main editor script is smaller on open.
+
 ## 0.3.0
 
 - **Fix**: Mermaid preview shows a line number in the gutter for every fence line.
