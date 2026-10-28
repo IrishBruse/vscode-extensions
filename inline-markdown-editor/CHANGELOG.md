@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+## 0.2.0
+
 - **Fix**: Mermaid preview shows a line number in the gutter for every fence line.
 - **Fix**: Mermaid preview fits the source fence height instead of growing past those lines.
 - **Fix**: Open Markdown with the inline editor unless a real diff tab shows content changes.
