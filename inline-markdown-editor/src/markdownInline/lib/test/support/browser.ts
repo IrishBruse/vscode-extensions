@@ -62,6 +62,7 @@ export interface BulletLine {
 export async function openPlayground(
     fixture: string,
     marker?: string,
+    options?: { readonly userAgent?: string },
 ): Promise<{ browser: Browser; page: Page }> {
     const ready = await fetch(playground)
         .then((response) => response.ok)
@@ -73,6 +74,7 @@ export async function openPlayground(
     const page = await browser.newPage({
         viewport: { width: 900, height: 700 },
         deviceScaleFactor: 1,
+        userAgent: options?.userAgent,
     });
     const readyMarker =
         marker === ""

@@ -571,3 +571,51 @@ describe("wrapped paragraph selection corners", () => {
         );
     });
 });
+
+describe("triple click a line", () => {
+    let browser: Browser;
+    let page: Page;
+
+    beforeAll(async () => {
+        const opened = await openPlayground("test/selection/fixtures/case-8.md", "hands-on checks");
+        browser = opened.browser;
+        page = opened.page;
+    });
+
+    afterAll(async () => {
+        await browser?.close();
+    });
+
+    it("selects the full line", async () => {
+        const point = await page.evaluate(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            const line = [...document.querySelectorAll<HTMLElement>("#editor .view-line")].find(
+                (entry) => fold(entry.textContent).includes("hands-on"),
+            );
+            const spans = [...(line?.querySelectorAll("span") ?? [])].filter((span) =>
+                fold(span.textContent).includes("hands-on"),
+            );
+            spans.sort(
+                (left, right) => (left.textContent?.length ?? 0) - (right.textContent?.length ?? 0),
+            );
+            const box = spans[0]?.getBoundingClientRect();
+            return {
+                x: box ? box.left + box.width / 2 : 0,
+                y: box ? box.top + box.height / 2 : 0,
+            };
+        });
+        expect(point.x).toBeGreaterThan(0);
+        await page.mouse.click(point.x, point.y, { clickCount: 3, delay: 80 });
+        const widths = await page.evaluate(async () => {
+            await new Promise((resolve) => {
+                requestAnimationFrame(() => requestAnimationFrame(resolve));
+            });
+            return [...document.querySelectorAll<HTMLElement>(".cslr.selected-text")].map(
+                (piece) => piece.style.width,
+            );
+        });
+        await page.keyboard.type("X");
+        const doc = await page.evaluate(() => window.__inlineMarkdown.getDocument());
+        expect(doc, JSON.stringify(widths)).toBe("X");
+    });
+});

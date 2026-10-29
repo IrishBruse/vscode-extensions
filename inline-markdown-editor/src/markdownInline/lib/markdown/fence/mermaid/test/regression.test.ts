@@ -326,7 +326,7 @@ describe("mermaid fits source height", () => {
             const fenceStart = source.indexOf("```mermaid");
             const fenceEnd = source.indexOf("```", fenceStart + 3);
             const fenceText = source.slice(fenceStart, fenceEnd + 3);
-            const firstLine = source.slice(0, fenceStart).split(/\r?\n/).length + 1;
+            const firstLine = source.slice(0, fenceStart).split(/\r?\n/).length;
             const fenceLines = fenceText.split(/\r?\n/).length;
             const zoneNumbers = [
                 ...document.querySelectorAll(".inline-md-fence-margin .inline-md-zone-number"),

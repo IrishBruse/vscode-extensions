@@ -183,10 +183,42 @@ function runClipboard(
     editor.trigger("keyboard", "editor.action.clipboardPasteAction", null);
 }
 
+function macOs(): boolean {
+    return typeof navigator !== "undefined" && navigator.userAgent.includes("Macintosh");
+}
+
+function installMacTextMoves(editor: monaco.editor.IStandaloneCodeEditor): void {
+    if (!macOs()) {
+        return;
+    }
+    const command = monaco.KeyMod.CtrlCmd;
+    const shift = monaco.KeyMod.Shift;
+    const moves: ReadonlyArray<readonly [number, string | undefined]> = [
+        [command | monaco.KeyCode.LeftArrow, "cursorWordLeft"],
+        [command | shift | monaco.KeyCode.LeftArrow, "cursorWordLeftSelect"],
+        [command | monaco.KeyCode.RightArrow, "cursorWordEndRight"],
+        [command | shift | monaco.KeyCode.RightArrow, "cursorWordEndRightSelect"],
+        [command | monaco.KeyCode.Backspace, "deleteWordLeft"],
+        [command | monaco.KeyCode.Delete, "deleteWordRight"],
+        [command | monaco.KeyCode.UpArrow, "scrollLineUp"],
+        [command | monaco.KeyCode.DownArrow, "scrollLineDown"],
+        [command | shift | monaco.KeyCode.UpArrow, undefined],
+        [command | shift | monaco.KeyCode.DownArrow, undefined],
+    ];
+    for (const [chord, id] of moves) {
+        editor.addCommand(chord, () => {
+            if (id !== undefined) {
+                editor.trigger("inline-md", id, null);
+            }
+        });
+    }
+}
+
 export function installInlineKeybindings(
     editor: monaco.editor.IStandaloneCodeEditor,
     column: HTMLElement,
 ): () => void {
+    installMacTextMoves(editor);
     const mod = monaco.KeyMod.CtrlCmd;
     editor.addCommand(mod | monaco.KeyCode.KeyD, () => {
         editor.trigger("inline-md", "editor.action.addSelectionToNextFindMatch", null);

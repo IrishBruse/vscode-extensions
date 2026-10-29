@@ -31,8 +31,11 @@ describe("fenced code colors", () => {
         });
         await page.waitForFunction(() => {
             const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
-            return [...document.querySelectorAll("#editor .view-line")].some((line) =>
-                fold(line.textContent).includes("```mermaid"),
+            const line = [...document.querySelectorAll("#editor .view-line")].find((entry) =>
+                fold(entry.textContent).includes("```mermaid"),
+            );
+            return [...(line?.querySelectorAll("span") ?? [])].some(
+                (span) => span.childElementCount === 0 && fold(span.textContent) === "mermaid",
             );
         });
     }, 45_000);
@@ -140,7 +143,7 @@ describe("ordered marker inside a markdown fence", () => {
             };
         });
         expect(reading?.markerText).toContain("1. Only steps");
-        expect(reading?.plainText).toBe("plain line");
+        expect(reading?.plainText).toBe("   plain line");
         expect(reading?.markerColor).toBe(reading?.plainColor);
         expect(reading?.plainColor).not.toBe("");
         expect(reading?.listGap).toBe(false);

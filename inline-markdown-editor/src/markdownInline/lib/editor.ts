@@ -564,6 +564,34 @@ export function mountInlineEditor(
         editor.setPosition({ lineNumber, column: currentModel.getLineMaxColumn(lineNumber) });
     };
     parent.addEventListener("mousedown", placeCaretBelowLastLine);
+    const selectTripleClickedLine = (event: MouseEvent): void => {
+        if (
+            event.button !== 0 ||
+            event.detail !== 3 ||
+            event.shiftKey ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey
+        ) {
+            return;
+        }
+        const position = editor.getTargetAtClientPoint(event.clientX, event.clientY)?.position;
+        if (!position) {
+            return;
+        }
+        const lineCount = model.getLineCount();
+        let endLine = position.lineNumber + 1;
+        let endColumn = 1;
+        if (endLine > lineCount) {
+            endLine = lineCount;
+            endColumn = model.getLineMaxColumn(endLine);
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        editor.focus();
+        editor.setSelection(new monaco.Selection(position.lineNumber, 1, endLine, endColumn));
+    };
+    column.addEventListener("mousedown", selectTripleClickedLine, true);
     let selectionClick: { x: number; y: number; lineNumber: number; column: number } | undefined;
     const mouseListener = editor.onMouseDown((event) => {
         selectionClick = undefined;
@@ -808,6 +836,7 @@ export function mountInlineEditor(
             mouseUpListener.dispose();
             editor.getDomNode()?.removeEventListener("mousedown", openRenderedLink, true);
             parent.removeEventListener("mousedown", placeCaretBelowLastLine);
+            column.removeEventListener("mousedown", selectTripleClickedLine, true);
             mermaidLens.dispose();
             presentation.dispose();
             editor.dispose();

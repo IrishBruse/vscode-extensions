@@ -5,7 +5,7 @@ import { expectLineRangeShot, openPlayground } from "../support/browser";
 import type { Browser, Page } from "playwright-core";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const fixture = "test/front-matter-selection/fixtures/case-1.md";
+const fixture = "test/front-matter-selection/fixtures/context-breakdown/SKILL.md";
 
 interface SpanBox {
     readonly left: number;
@@ -82,6 +82,12 @@ describe("front matter selection", () => {
         const opened = await openPlayground(fixture, "context-breakdown");
         browser = opened.browser;
         page = opened.page;
+        await page.waitForFunction(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            return [...document.querySelectorAll("#editor .view-line span")].some(
+                (span) => span.childElementCount === 0 && fold(span.textContent) === "name",
+            );
+        });
     });
 
     afterAll(async () => {
