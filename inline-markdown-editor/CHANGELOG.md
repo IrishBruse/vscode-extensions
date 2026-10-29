@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+## 0.4.0
+
 - **Fix**: A triple-click selects the full line.
 - **Fix**: On macOS, Command+arrow matches the Linux Ctrl+arrow word and scroll keys.
 - **Change**: Lazy-load Mermaid in the webview so the main editor script is smaller on open.
