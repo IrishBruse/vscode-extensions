@@ -220,7 +220,7 @@ describe("revealMarker", () => {
         ).toEqual({ surface: "preview", zone: true, occupy: false });
     });
 
-    it("keeps a ghost marker as ghost source when the caret is on its line", () => {
+    it("keeps a marker hidden when the caret is on its line but outside the span", () => {
         const strong: Scope = {
             kind: "strong",
             start: 0,
@@ -234,7 +234,7 @@ describe("revealMarker", () => {
         };
         const onLine = cursor(9, 0, 10);
         const line = markerLine(0, 1);
-        expect(markerVisibility(strong, strong.markers[0]!, onLine, line)).toBe("ghost");
+        expect(markerVisibility(strong, strong.markers[0]!, onLine, line)).toBe("hidden");
         expect(
             revealMarker({
                 scope: strong,
@@ -245,7 +245,7 @@ describe("revealMarker", () => {
                 frontMatterEnd: undefined,
                 singleLine: false,
             }),
-        ).toBe("ghost");
+        ).toBe("raw");
         expect(
             reveal({
                 scope: strong,
@@ -256,7 +256,7 @@ describe("revealMarker", () => {
                 frontMatterEnd: undefined,
                 singleLine: false,
             }),
-        ).toEqual({ surface: "raw", ghost: true });
+        ).toEqual({ surface: "raw", ghost: false });
         expect(
             revealMarker({
                 scope: strong,
@@ -267,7 +267,18 @@ describe("revealMarker", () => {
                 frontMatterEnd: undefined,
                 singleLine: false,
             }),
-        ).toBe("ghost");
+        ).toBe("hidden");
+        expect(
+            reveal({
+                scope: strong,
+                marker: strong.markers[0]!,
+                cursor: onLine,
+                markerLine: line,
+                findHit: false,
+                frontMatterEnd: undefined,
+                singleLine: false,
+            }),
+        ).toEqual({ surface: "preview", zone: false, occupy: false });
     });
 
     it("hides an image that does not cover a single line", () => {

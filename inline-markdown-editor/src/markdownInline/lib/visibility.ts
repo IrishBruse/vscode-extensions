@@ -117,12 +117,8 @@ export function markerVisibility(
             ? "raw"
             : "hidden";
     }
-    if (selectionOverlaps(scope, cursor)) {
+    if (cursorOnRange(scope, cursor)) {
         return "raw";
-    }
-    const { from, to } = selectionBounds(cursor);
-    if (from === to && rangesOverlap(scope.start, scope.end, cursor.lineStart, cursor.lineEnd)) {
-        return "ghost";
     }
     return "hidden";
 }
@@ -145,6 +141,6 @@ export function showsFormattedContent(scope: Scope, cursor: CursorContext): bool
         case "task":
             return false;
         default:
-            return !selectionOverlaps(scope, cursor);
+            return !cursorOnRange(scope, cursor);
     }
 }

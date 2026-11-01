@@ -30,12 +30,12 @@ const strong: Scope = {
 };
 
 describe("markerVisibility", () => {
-    it("hides strong markers off the cursor line and ghosts them on the line", () => {
+    it("hides strong markers when the caret is outside the span", () => {
         const marker = strong.markers[0]!;
         expect(markerVisibility(strong, marker, cursor(20, 10, 30), markerLine(0, 1))).toBe(
             "hidden",
         );
-        expect(markerVisibility(strong, marker, cursor(9, 0, 10), markerLine(0, 1))).toBe("ghost");
+        expect(markerVisibility(strong, marker, cursor(9, 0, 10), markerLine(0, 1))).toBe("hidden");
         expect(showsFormattedContent(strong, cursor(9, 0, 10))).toBe(true);
     });
 
@@ -66,6 +66,27 @@ describe("markerVisibility", () => {
         expect(showsFormattedContent(strongScope!, boldOnly)).toBe(false);
         expect(markerVisibility(emphasis!, emphasis!.markers[0]!, boldOnly, line)).toBe("hidden");
         expect(markerVisibility(link!, link!.markers[0]!, boldOnly, line)).toBe("hidden");
+    });
+
+    it("shows inline code source only when the caret is inside the span", () => {
+        const source = "see `code` here";
+        const code = parseScopes(source).find((scope) => scope.kind === "inlineCode");
+        expect(code).toBeDefined();
+        const line = markerLine(0, source.length);
+        const marker = code!.markers[0]!;
+        const see = cursor(source.indexOf("see"), 0, source.length);
+        const after = cursor(source.indexOf("here"), 0, source.length);
+        const open = cursor(code!.start, 0, source.length);
+        const inside = cursor(code!.contentStart, 0, source.length);
+        const close = cursor(code!.markers[code!.markers.length - 1]!.start, 0, source.length);
+        expect(markerVisibility(code!, marker, see, line)).toBe("hidden");
+        expect(showsFormattedContent(code!, see)).toBe(true);
+        expect(markerVisibility(code!, marker, after, line)).toBe("hidden");
+        expect(showsFormattedContent(code!, after)).toBe(true);
+        for (const place of [open, inside, close]) {
+            expect(markerVisibility(code!, marker, place, line)).toBe("raw");
+            expect(showsFormattedContent(code!, place)).toBe(false);
+        }
     });
 
     it("shows a construct raw when the cursor is inside it", () => {

@@ -22,11 +22,15 @@ describe("link syntax colors", () => {
         await page.evaluate(() => {
             const api = (
                 window as unknown as {
-                    __inlineMarkdown: { focus(): void; setCursor(offset: number): void };
+                    __inlineMarkdown: {
+                        focus(): void;
+                        getDocument(): string;
+                        setCursor(offset: number): void;
+                    };
                 }
             ).__inlineMarkdown;
             api.focus();
-            api.setCursor(0);
+            api.setCursor(api.getDocument().indexOf("["));
         });
         await page.waitForFunction(() => {
             const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");

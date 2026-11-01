@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Inline marks stay previewed until the caret is inside their source.
 - **Add**: Markdown diffs open in the inline editor for the inline view and the side-by-side view.
 - **Change**: README feature tour and `npm run screenshots` for marketplace images.
 
