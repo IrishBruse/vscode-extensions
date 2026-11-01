@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: A GitHub alert quote shows that alert's color and an icon in place of the `[!…]` marker.
 - **Fix**: Inline marks stay previewed until the caret is inside their source.
 - **Add**: Markdown diffs open in the inline editor for the inline view and the side-by-side view.
 - **Change**: README feature tour and `npm run screenshots` for marketplace images.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { CursorContext, TextRange } from "../../../document/types";
+import { alertClass, cursorCoversAlert, quoteAlert } from "../alert";
 import { quoteMarkerShowsRaw } from "../raw";
 import {
     blockquoteContentIndex,
@@ -78,5 +79,37 @@ describe("blockquoteDepthClass", () => {
         expect(blockquoteDepthClass(0)).toBe("inline-md-quote-depth-1");
         expect(blockquoteDepthClass(3)).toBe("inline-md-quote-depth-3");
         expect(blockquoteDepthClass(9)).toBe("inline-md-quote-depth-5");
+    });
+});
+
+describe("quoteAlert", () => {
+    it("reads a GitHub alert on the first line of a quote", () => {
+        expect(quoteAlert("> [!IMPORTANT]")).toEqual({
+            kind: "important",
+            from: 2,
+            to: 14,
+            label: "Important",
+        });
+        expect(quoteAlert("> [!note]")).toMatchObject({ kind: "note", label: "Note" });
+        expect(quoteAlert("> [!TIP]")).toMatchObject({ kind: "tip", label: "Tip" });
+        expect(quoteAlert("> [!Warning]")).toMatchObject({ kind: "warning", label: "Warning" });
+        expect(quoteAlert("> [!CAUTION]  ")).toMatchObject({ kind: "caution", label: "Caution" });
+        expect(alertClass("important")).toBe("inline-md-alert-important");
+    });
+
+    it("ignores ordinary quote lines", () => {
+        expect(quoteAlert("> Quote line.")).toBeUndefined();
+        expect(quoteAlert("> [!IMPORTANT] extra")).toBeUndefined();
+        expect(quoteAlert("plain")).toBeUndefined();
+    });
+
+    it("covers the caret when it sits on the alert marker", () => {
+        const alert = quoteAlert("> [!IMPORTANT]");
+        expect(alert).toBeDefined();
+        if (!alert) {
+            return;
+        }
+        expect(cursorCoversAlert(alert, 0, cursor(3, 0, 20))).toBe(true);
+        expect(cursorCoversAlert(alert, 0, cursor(20, 0, 40))).toBe(false);
     });
 });

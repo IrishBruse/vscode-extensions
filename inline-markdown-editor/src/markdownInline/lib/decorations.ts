@@ -6,6 +6,13 @@ import {
     blockquoteWrapIndentColumns,
 } from "./preview/blockquote";
 import {
+    alertClass,
+    cursorCoversAlert,
+    quoteAlert,
+    type AlertKind,
+    type QuoteAlert,
+} from "./markdown/quote/alert";
+import {
     applyHeadingFontScales,
     headingLineHeightMultiplier,
     headingSelectionPadPx,
@@ -1018,6 +1025,10 @@ export class InlinePresentation {
             applyHeadingFontScales(listRoot);
         }
         const quoteDepths = new Map<number, number>();
+        const quoteAlerts = new Map<
+            number,
+            { kind: AlertKind; scopeStart: number; title?: QuoteAlert }
+        >();
         for (const scope of visibleScopes) {
             if (scope.kind !== "blockquote") {
                 continue;
@@ -1035,11 +1046,27 @@ export class InlinePresentation {
                 }
                 quoteDepths.set(line, Math.max(quoteDepths.get(line) ?? 0, depth));
             }
+            const alert = quoteAlert(model.getLineContent(quoteStart.lineNumber));
+            if (!alert) {
+                continue;
+            }
+            for (let line = quoteFrom; line <= quoteTo; line += 1) {
+                const current = quoteAlerts.get(line);
+                if (current && current.scopeStart > scope.start) {
+                    continue;
+                }
+                quoteAlerts.set(line, {
+                    kind: alert.kind,
+                    scopeStart: scope.start,
+                    title: line === quoteStart.lineNumber ? alert : undefined,
+                });
+            }
         }
         for (const [lineNumber, depth] of quoteDepths) {
             const content = model.getLineContent(lineNumber);
             const lineStart = model.getOffsetAt({ lineNumber, column: 1 });
             const lineEnd = lineStart + content.length;
+            const alert = quoteAlerts.get(lineNumber);
             const raw = visibleScopes.some((scope) => {
                 if (scope.kind !== "blockquoteMarker") {
                     return false;
@@ -1061,19 +1088,36 @@ export class InlinePresentation {
                 });
             });
             if (!raw) {
+                const className = alert
+                    ? `inline-md-quote ${blockquoteDepthClass(depth)} ${alertClass(alert.kind)}`
+                    : `inline-md-quote ${blockquoteDepthClass(depth)}`;
                 decorations.push({
                     range: new monaco.Range(lineNumber, 1, lineNumber, 1),
                     options: {
                         isWholeLine: true,
-                        className: `inline-md-quote ${blockquoteDepthClass(depth)}`,
+                        className,
                     },
                 });
             }
-            const start = blockquoteContentIndex(content);
+            const title = alert?.title;
+            const showTitle =
+                title !== undefined && !raw && !cursorCoversAlert(title, lineStart, cursor);
+            const start = showTitle && title ? title.to : blockquoteContentIndex(content);
+            if (showTitle && title) {
+                decorations.push({
+                    range: new monaco.Range(lineNumber, title.from + 1, lineNumber, title.to + 1),
+                    options: hideOptions(
+                        injected(title.label, `inline-md-alert-label ${alertClass(title.kind)}`),
+                    ),
+                });
+            }
             if (start < content.length) {
                 decorations.push({
                     range: new monaco.Range(lineNumber, start + 1, lineNumber, content.length + 1),
-                    options: { inlineClassName: "inline-md-quote-text" },
+                    options: {
+                        inlineClassName:
+                            alert && !raw ? "inline-md-alert-body" : "inline-md-quote-text",
+                    },
                 });
             }
             const indentColumns = blockquoteWrapIndentColumns(content, model.getOptions().tabSize);

@@ -109,3 +109,134 @@ describe("blockquotes", () => {
         expect(bars.nested?.image).toContain("14px");
     });
 });
+
+const alertFixture = "markdown/quote/test/fixtures/case-4.md";
+
+describe("GitHub alert quotes", () => {
+    let browser: Browser;
+    let page: Page;
+
+    beforeAll(async () => {
+        const opened = await openPlayground(alertFixture, "There is no Nintendo");
+        browser = opened.browser;
+        page = opened.page;
+        await page.evaluate(() => {
+            const api = (
+                window as unknown as {
+                    __inlineMarkdown: { setCursor(offset: number): void };
+                }
+            ).__inlineMarkdown;
+            api.setCursor(0);
+        });
+        await page.waitForFunction(
+            () => document.querySelector(".inline-md-alert-important") instanceof HTMLElement,
+        );
+    });
+
+    afterAll(async () => {
+        await browser?.close();
+    });
+
+    it("shows a purple icon and the word Important in place of the alert marker", async () => {
+        const title = await page.evaluate(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            const label = [...document.querySelectorAll(".inline-md-alert-label")].find((entry) =>
+                fold(entry.textContent).includes("Important"),
+            );
+            const hidden = [...document.querySelectorAll(".inline-md-hidden")].find((entry) =>
+                fold(entry.textContent).includes("[!IMPORTANT]"),
+            );
+            if (!(label instanceof HTMLElement)) {
+                return null;
+            }
+            const before = getComputedStyle(label, "::before");
+            const mask = before.maskImage;
+            const box = label.getBoundingClientRect();
+            const hit = document.elementFromPoint(box.left + 4, box.top + box.height / 2);
+            return {
+                text: fold(label.textContent),
+                color: getComputedStyle(label).color,
+                mask,
+                iconWidth: before.width,
+                hitIsIcon:
+                    hit instanceof Element &&
+                    (hit === label ||
+                        label.contains(hit) ||
+                        hit.classList.contains("inline-md-alert-label")),
+                markerHidden:
+                    hidden instanceof HTMLElement &&
+                    getComputedStyle(hidden).visibility === "hidden",
+            };
+        });
+        expect(title?.text).toBe("Important");
+        expect(title?.color).toBe("rgb(171, 125, 248)");
+        expect(title?.mask).toContain("data:image/svg");
+        expect(title?.iconWidth).not.toBe("0px");
+        expect(title?.hitIsIcon).toBe(true);
+        expect(title?.markerHidden).toBe(true);
+    });
+
+    it("paints the bar in GitHub's important purple", async () => {
+        const bar = await page.evaluate(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            const line = [...document.querySelectorAll("#editor .view-line")].find((entry) =>
+                fold(entry.textContent).includes("Important"),
+            );
+            if (!(line instanceof HTMLElement)) {
+                return "";
+            }
+            const top = line.getBoundingClientRect().top;
+            const mark = [...document.querySelectorAll(".inline-md-alert-important")].find(
+                (entry) =>
+                    entry.classList.contains("inline-md-quote") &&
+                    Math.abs(entry.getBoundingClientRect().top - top) <= 2,
+            );
+            return mark instanceof HTMLElement ? getComputedStyle(mark).backgroundImage : "";
+        });
+        expect(bar).toContain("linear-gradient");
+        expect(bar).toContain("137, 87, 229");
+    });
+
+    it("keeps the sentences under the title visible in the editor text color", async () => {
+        const body = await page.evaluate(() => {
+            const fold = (value: string | null) => (value ?? "").replaceAll("\u00a0", " ");
+            const colorOf = (needle: string) => {
+                const line = [...document.querySelectorAll("#editor .view-line")].find((entry) =>
+                    fold(entry.textContent).includes(needle),
+                );
+                const span = [...(line?.querySelectorAll("span") ?? [])]
+                    .filter((entry) => fold(entry.textContent).includes(needle))
+                    .sort(
+                        (left, right) =>
+                            (left.textContent?.length ?? 0) - (right.textContent?.length ?? 0),
+                    )[0];
+                return span instanceof HTMLElement ? getComputedStyle(span).color : "";
+            };
+            const root = document.querySelector(".inline-md-root");
+            const probe = document.createElement("span");
+            probe.style.color = "var(--vscode-editor-foreground)";
+            root?.appendChild(probe);
+            const editor = probe instanceof HTMLElement ? getComputedStyle(probe).color : "";
+            probe.style.color =
+                "color-mix(in srgb, var(--vscode-descriptionForeground) 60%, transparent)";
+            const faded = getComputedStyle(probe).color;
+            probe.remove();
+            const text = fold(document.querySelector("#editor .view-lines")?.textContent ?? "");
+            return {
+                editor,
+                faded,
+                body: colorOf("There is no Nintendo"),
+                text,
+            };
+        });
+        expect(body.text).toContain(
+            "There is no Nintendo code, no assets and no game data anywhere in this project or its releases.",
+        );
+        expect(body.text).toContain("You need your own legally dumped copy of the game.");
+        expect(body.text).toContain(
+            "Nothing in this repo, in any release, or in the build process contains or downloads Nintendo IP.",
+        );
+        expect(body.body).toBe(body.editor);
+        expect(body.body).not.toBe(body.faded);
+    });
+});
