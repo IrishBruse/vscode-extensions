@@ -18,7 +18,9 @@ Monaco reads and screenshot pixel scans come after that file exists.
 
 ## Questions
 
-Ask one question, then wait.
+When the message already names the part and the result, that message is the accepted sample.
+Write the check in that same turn.
+Ask one question, then wait, only when the part or the result is still unknown.
 The first write is the accepted sample.
 
 1. Which part is this, and does its `test/` folder already exist?
@@ -50,10 +52,7 @@ Done when the README, the sample, and the chosen test file exist.
 
 ## Explore
 
-Print the local playground link in the reply as soon as the fixture path is known:
-
-`http://127.0.0.1:5175/?fixture=markdown/<part>/test/fixtures/<path>`
-
+Print the playground link from `.cursor/skills/markdown-inline/SKILL.md` as soon as the fixture path is known.
 Open that same URL.
 `npm run dev:markdown-inline -w inline-markdown-editor` starts the playground when nothing is listening.
 When it is already up, leave that server running.
@@ -73,5 +72,7 @@ Run the new test file:
 npm run test:markdown-inline-browser -w inline-markdown-editor -- src/markdownInline/lib/markdown/<part>/test/<file>.test.ts
 ```
 
-Then run `npm run test:markdown-inline-browser -w inline-markdown-editor`.
 Done when that command exits 0.
+Then run `npm run test:markdown-inline-browser -w inline-markdown-editor`.
+A failure in a file this change does not touch stays out of this case.
+Name that command and the failing file in the reply.

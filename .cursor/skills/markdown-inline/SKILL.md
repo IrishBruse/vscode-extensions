@@ -20,26 +20,40 @@ Imports from `lib/` stay inside this package. `npm run lint` at the repo root en
 
 Keep the mask `z-index` above `.selected-text`.
 
+## Front matter
+
+A closed `---` block at the start of a markdown file paints like a skill document.
+That paint is YAML colors, the darker code background, and a yaml label.
+The opening and closing fences stay visible.
+A later line of dashes still previews as a horizontal rule.
+Skill property completion and skill field errors stay on a file named `SKILL.md`.
+A leading `---` with no closing fence stays a horizontal rule.
+The paint lives in `lib/decorations.ts`, `lib/editor.ts`, and `lib/monaco/setup.ts`.
+
 ## Change and Hold
 
 Before the first edit of editor behavior, write two sentences in the reply, then continue in that same turn.
 
 Change: the one behavior that will change.
-Hold: the nearby behavior that stays as it is. Hold names only a behavior the user ask or the feature README already states.
+Hold: the nearby behavior that stays as it is.
+Hold names only a behavior the user ask or the feature README already states.
 
-Grain is one interaction. A caret on the marker character is a different behavior from a caret elsewhere on that line.
+Grain is one interaction.
+A caret on the marker character is a different behavior from a caret elsewhere on that line.
 
-A complaint that already names the feature, the steps, and the wrong result still gets both sentences. Skip the longer questions and continue.
+A complaint that already names the feature, the steps, and the wrong result still gets both sentences.
+Skip the longer questions and continue.
 
 ## Playground
 
 Treat `/home/econn/.config/Code/User/settings.json` as the reference for VS Code user settings when you check theme, colors, or fonts in the playground.
 The playground loads that path on Linux, match behavior to what those settings imply, not to ad hoc values in the repo.
 The playground loads `inline-markdown-editor/src/markdownInline/playground/vscode-iframe-injected-theme.css` (a real copy of VS Code webview iframe `--vscode-*` tokens, see `inline-markdown-editor/src/markdownInline/playground/AGENTS.md`), then applies settings overrides from `settings.json`.
-
 When a fixture path is known, print its local playground link in the reply so the user can open it:
 
-`http://127.0.0.1:5175/?fixture=<feature-name>/fixtures/<file>`
+`http://127.0.0.1:5175/?fixture=<fixture-id>`
 
-Print it as soon as the case exists.
+The fixture id is the path under `src/markdownInline/lib/`.
+One example is `markdown/front-matter/test/fixtures/case-1.md`.
+Print the link as soon as the case exists.
 Do not wait for the end of the turn.

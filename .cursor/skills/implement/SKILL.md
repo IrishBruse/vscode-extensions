@@ -21,11 +21,13 @@ A follow-up image of the same interaction stays on this source.
 
 ## Do
 
-Editor behavior: write the Change sentence and the Hold sentence from `.cursor/skills/markdown-inline/SKILL.md` before the first edit, then continue in that same turn. Hold uses only behavior the source states.
+Editor behavior: write the Change sentence and the Hold sentence from `.cursor/skills/markdown-inline/SKILL.md` before the first edit, then continue in that same turn.
+Hold uses only behavior the source states.
 
 A bug ticket, or a source that states a wrong result, follows `.cursor/skills/regression/SKILL.md`.
 
-A todo ticket, a feature README, or new Inline Markdown behavior follows `.cursor/skills/markdown-inline-case/SKILL.md`. That ticket or README is the named scenario, so write the check from it in this turn.
+A todo ticket, a feature README, or new Inline Markdown behavior follows `.cursor/skills/markdown-inline-case/SKILL.md`.
+When that source already names the part and the result, write the check in this turn.
 
 Work outside `inline-markdown-editor/src/markdownInline` gets one failing check beside the module before production code changes, then the tests that cover that module.
 
@@ -35,11 +37,13 @@ Work outside `inline-markdown-editor/src/markdownInline` gets one failing check 
 
 Playground server rules are in `inline-markdown-editor/src/markdownInline/playground/AGENTS.md`.
 
-A ticket is finished when every Done when line other than `Not in the source` is true. When every Done when line is `Not in the source`, a bug is finished at its Expected section and a todo is finished at the outcome in its Description.
+A ticket is finished when every Done when line other than `Not in the source` is true.
+When every Done when line is `Not in the source`, a bug is finished at its Expected section and a todo is finished at the outcome in its Description.
 
 A feature README is finished when each of its sentences is true.
 
-The reply names the source, the red command, and the green command.
+The reply names the source and the green command.
+When the source states a wrong result, the reply also names the red command.
 
 When the source is a ticket folder, `git mv` that folder to `ib-utilities/.tickets/archive/<folder-name>/` after those commands exit 0.
 

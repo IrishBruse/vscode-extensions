@@ -6,6 +6,10 @@ The file stays normal Markdown on disk.
 When you click or select text, markers and raw syntax appear where you edit.
 When you move away, the preview returns.
 
+![Formatted Markdown preview in the Inline Markdown Editor](docs/Overview.png)
+
+_Headings, lists, tables, and code fences in preview mode._
+
 **Install:** search the Marketplace for **Inline Markdown Editor** ([publisher `irishbruse`](https://marketplace.visualstudio.com/publishers/irishbruse)), or install a `.vsix` from [this repository](https://github.com/IrishBruse/vscode-extensions).
 
 **Requirements:** VS Code `^1.140.0`.
@@ -31,11 +35,17 @@ Git diffs and compare views keep the stock text editor.
 - Line numbers sit beside the text.
 - Trailing spaces show as small gray marks so you can see them.
 
+Click a heading or paragraph to reveal raw Markdown, including `#` markers and link syntax.
+
+![Editing Markdown source in place](docs/Editing-source.png)
+
 ### Lists and tasks
 
 - Nested bullets and numbered lists keep their structure in preview.
 - Task lines show a checkbox.
 - Click the checkbox to toggle the task without editing the marker by hand.
+
+![Task checkbox in preview](docs/Tasks.png)
 
 ### Code fences
 
@@ -43,6 +53,8 @@ Git diffs and compare views keep the stock text editor.
 - Click a fence to edit the raw Markdown.
 - Mermaid fences can show an inline diagram.
 - If **IrishBruse's Utilities** is installed, **Open Preview** can open that extension’s Mermaid preview.
+
+![Inline Mermaid diagram](docs/Mermaid.png)
 
 ### Tables
 
@@ -53,6 +65,8 @@ Git diffs and compare views keep the stock text editor.
 - Wide cells wrap.
 - Short columns stay narrow.
 - Click a link in a table to open it.
+
+![Formatted tables with wrapped cells](docs/Tables.png)
 
 ### Images and HTML
 
@@ -65,6 +79,8 @@ Git diffs and compare views keep the stock text editor.
 - A markdown file paints leading YAML front matter as a YAML code block.
 - Files named `SKILL.md` also check skill fields and offer skill properties.
 - The body still uses the same Inline Markdown preview.
+
+![YAML front matter styled as a code block](docs/Skill-front-matter.png)
 
 ## Commands
 

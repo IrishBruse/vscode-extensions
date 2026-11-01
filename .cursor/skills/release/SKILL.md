@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare a release by updating CHANGELOG.md and bumping package.json version with the shared release script. Use when the user asks for /release, release prep, version bump, or changelog update. Decide only patch or minor based on change impact; never major.
+description: Prepare a release by updating CHANGELOG.md and bumping package.json version with the shared release script. Use when the user asks for /release, release prep, version bump, or changelog update. Decide only patch or minor based on change impact, never major.
 ---
 
 # Release
@@ -13,7 +13,7 @@ Produce a safe release update for one extension package by:
 - bumping that package's `package.json` version through `npm run release`
 - choosing **only** `patch` or `minor` (never `major`)
 
-Packages live at the monorepo root (`ib-utilities`, `ib-acp-ui`, …).
+Packages live at the monorepo root (`ib-utilities`, `ib-acp-ui`, ...).
 Ask which package when it is not clear from the request.
 
 ## Decision Rules (Patch vs Minor)
@@ -40,13 +40,17 @@ Otherwise pick `patch` for:
     - optionally `git log --oneline -n 15` for context
 2. Decide the target package and release type (`patch` or `minor`) using the rules above.
 3. Update `<package>/CHANGELOG.md`:
-    - Ensure a top section exists for the new version.
+    - Leave the user-facing bullets under `## Unreleased`.
+    - The script writes the version heading and moves those bullets.
     - Summarize user-facing changes first, then internal fixes.
     - Keep entries concise and actionable.
 4. Run the shared release script from the monorepo root:
     - `npm run release -- --package <name> patch`
     - `npm run release -- --package <name> minor`
     - Or omit the bump arg to use the interactive UI in `dev/`
+    - The script then asks to publish.
+    - The default answer is no.
+    - Send a blank line unless the user asked to publish.
 5. Re-open `<package>/package.json` and `<package>/CHANGELOG.md` to verify results.
 6. Report exactly what changed:
     - package name
@@ -66,5 +70,6 @@ When done, provide:
 ## Constraints
 
 - Do not pick `major`.
-- Do not create a commit unless explicitly requested (the release script may create the stamp commit).
+- The stamp commit is part of this skill.
+- Push and Marketplace publish stay off unless the user asked for them.
 - If there are no meaningful changes, prefer `patch` and note why.

@@ -1,6 +1,9 @@
-# Markdown Editor manual test fixtures
+# Contributor fixtures (Inline Markdown Editor)
 
-Sample `.md` files for hands-on checks of **Markdown Editor (ib-utilities)**. Open any file in this folder, then use **Reopen Editor With... → Markdown Editor (ib-utilities)** (or the editor title bar swap icon when the file is already open).
+Manual `.md` samples for hands-on checks during development.
+End users see the [extension README](../../README.md) instead.
+
+Open any file in this folder in the browser playground (`npm run dev:markdown-inline`) or in VS Code with **Reopen Editor With... → Inline Markdown Editor**.
 
 For Mermaid-only samples see [../mermaid/](../mermaid/).
 
@@ -11,15 +14,16 @@ Feature checks live in a `test/` folder beside the part and run with `npm run te
 
 ## Suggested order
 
-1. [showcase.md](./showcase.md) — broad feature tour (headings, tables, code, mermaid, HTML, math, links).
-2. [table-columns.md](./table-columns.md) — table wrap and short-column layout.
-3. [lists-tasks.md](./lists-tasks.md) — list markers, nesting, task checkboxes.
-4. [keyboard-whitespace.md](./keyboard-whitespace.md) — Enter, Shift+Enter, trailing-space dots.
-5. [links-autolinks.md](./links-autolinks.md) — inline links, autolinks, reference definitions.
-6. [edge-cases.md](./edge-cases.md) — odd syntax, sanitizer, sparse tables.
-7. [blank.md](./blank.md) — empty document and click-to-edit baseline.
-8. [SKILL.md](./SKILL.md) — YAML front matter properties panel and Add property autocomplete.
-9. [large/](./large/) — downloaded real-world stress tests (14 MB docs, huge tables, 128k-line README).
+1. [readme-feature-tour.md](./readme-feature-tour.md) — short sample used for Marketplace README screenshots (`npm run screenshots`).
+2. [showcase.md](./showcase.md) — broad feature tour (headings, tables, code, mermaid, HTML, math, links).
+3. [table-columns.md](./table-columns.md) — table wrap and short-column layout.
+4. [lists-tasks.md](./lists-tasks.md) — list markers, nesting, task checkboxes.
+5. [keyboard-whitespace.md](./keyboard-whitespace.md) — Enter, Shift+Enter, trailing-space dots.
+6. [links-autolinks.md](./links-autolinks.md) — inline links, autolinks, reference definitions.
+7. [edge-cases.md](./edge-cases.md) — odd syntax, sanitizer, sparse tables.
+8. [blank.md](./blank.md) — empty document and click-to-edit baseline.
+9. [SKILL.md](./SKILL.md) — YAML front matter properties panel and Add property autocomplete.
+10. [large/](./large/) — downloaded real-world stress tests (14 MB docs, huge tables, 128k-line README).
 
 ## Large fixtures (online sources)
 

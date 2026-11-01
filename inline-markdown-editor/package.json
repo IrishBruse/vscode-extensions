@@ -35,7 +35,8 @@
         "test:markdown-inline": "vp test run --project unit -- src/markdownInline",
         "test:markdown-inline-browser": "vp test run --project markdownInline",
         "verify:markdown-inline": "npm run check:markdown-inline && npm run test:markdown-inline && npm run e2e:markdown-inline",
-        "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs"
+        "fetch-markdown-large-fixtures": "node docs/tests/markdown/fetch-large-fixtures.mjs",
+        "screenshots": "node scripts/capture-readme-screenshots.mjs"
     },
     "dependencies": {
         "mermaid": "^12.2.0",

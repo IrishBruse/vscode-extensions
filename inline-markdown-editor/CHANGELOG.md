@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: README feature tour and `npm run screenshots` for marketplace images.
+
 ## 0.5.0
 
 - **Add**: A normal markdown file paints leading YAML front matter like a skill document.

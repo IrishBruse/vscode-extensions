@@ -32,3 +32,4 @@ Shared scripts are documented in the root `AGENTS.md`.
 - `test:markdown-inline-browser` runs integration and regression Vitest projects
 - `check:markdown-inline` type-checks `src/markdownInline` and runs browser tests
 - `fetch-markdown-large-fixtures` refreshes gitignored large fixtures under `docs/tests/markdown/large/`
+- `screenshots` captures committed README images under `docs/` from the browser playground (no VS Code required)
