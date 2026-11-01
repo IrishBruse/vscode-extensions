@@ -1,5 +1,6 @@
 import type { DiffPaint } from "./diff/lineChanges";
 import { mountInlineEditor } from "./editor";
+import { tryRevealHeadingFragment } from "./markdown/link/fragment";
 import { installWebviewThemeSync, webviewThemeTargets } from "./webviewTheme";
 import "./styles/editor.css";
 
@@ -16,6 +17,7 @@ interface BootState {
     readonly: boolean;
     skillFrontMatter?: boolean;
     scrollSync?: boolean;
+    contentComplete?: boolean;
     diff?: DiffPaint;
 }
 
@@ -97,6 +99,7 @@ if (!(parent instanceof HTMLElement)) {
 const editor = mountInlineEditor(parent, {
     text: boot.content,
     documentUrl: boot.documentUrl,
+    contentPending: boot.contentComplete === false,
     readOnly: boot.readonly,
     skillFrontMatter: boot.skillFrontMatter === true,
     onEdit(edit) {
@@ -116,6 +119,13 @@ const editor = mountInlineEditor(parent, {
         });
     },
     onLink(href) {
+        if (
+            tryRevealHeadingFragment(href, editor.getDocument(), boot.documentUrl, (line) =>
+                editor.revealLine(line),
+            )
+        ) {
+            return;
+        }
         vscode.postMessage({
             type: "openLink",
             messageSecret,
@@ -167,6 +177,7 @@ window.addEventListener("message", (event: MessageEvent) => {
         if (isDiffPaint(record.diff)) {
             editor.setDiff(record.diff);
         }
+        editor.revealEditor();
     }
     if (record.type === "diff" && isDiffPaint(record.diff)) {
         editor.setDiff(record.diff);

@@ -5,6 +5,9 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Opening a markdown file no longer flashes raw source or an empty pane while Monaco starts.
+- **Add**: Markdown links with a `#heading` fragment scroll the editor to that heading.
+
 ## 0.6.0
 
 - **Add**: A GitHub alert quote shows that alert's color and an icon in place of the `[!…]` marker.

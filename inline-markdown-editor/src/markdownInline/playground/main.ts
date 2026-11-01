@@ -1,5 +1,6 @@
 import "../lib/styles/editor.css";
-import { mountInlineEditor } from "..";
+import { mountInlineEditor, type InlineEditorHandle } from "..";
+import { lineForHeadingFragment, tryRevealHeadingFragment } from "../lib/markdown/link/fragment";
 import { isSkillMarkdownPath } from "../skill";
 
 const DOCS_PREFIX = "../../../docs/tests/markdown/";
@@ -61,6 +62,7 @@ function openPlaygroundLink(href: string, baseUrl: string, fixtures: readonly Fi
     if (fixture && name.endsWith(".md")) {
         const url = new URL(window.location.href);
         url.searchParams.set("fixture", fixture.id);
+        url.hash = resolved.hash;
         window.location.assign(url);
         return;
     }
@@ -159,14 +161,31 @@ async function main(): Promise<void> {
 
     const text = await selected.load();
     const baseUrl = documentUrl(selected);
-    window.__inlineMarkdown = mountInlineEditor(parent, {
+    let editor: InlineEditorHandle;
+    editor = mountInlineEditor(parent, {
         text,
         documentUrl: baseUrl,
         skillFrontMatter: isSkillMarkdownPath(selected.id),
         onLink(href) {
+            if (
+                tryRevealHeadingFragment(href, editor.getDocument(), baseUrl, (line) =>
+                    editor.revealLine(line),
+                )
+            ) {
+                return;
+            }
             openPlaygroundLink(href, baseUrl, fixtures);
         },
     });
+    window.__inlineMarkdown = editor;
+    const hashFragment =
+        window.location.hash.length > 1 ? window.location.hash.slice(1) : undefined;
+    if (hashFragment) {
+        const line = lineForHeadingFragment(text, hashFragment);
+        if (line !== undefined) {
+            editor.revealLine(line);
+        }
+    }
     if (selected.id === DEFAULT_FIXTURE) {
         const blankLine = text.indexOf("\n\n");
         window.__inlineMarkdown.setCursor(blankLine >= 0 ? blankLine + 1 : text.length);

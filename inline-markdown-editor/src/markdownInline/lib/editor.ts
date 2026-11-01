@@ -12,6 +12,7 @@ import { createLargeDocumentFit } from "./editorFit";
 import { markdownFrontMatterLanguageId, readFrontMatter, skillMarkdownLanguageId } from "./skill";
 import type { Scope } from "./document/types";
 import type { DiffPaint } from "./diff/lineChanges";
+import { tryRevealHeadingFragment } from "./markdown/link/fragment";
 
 export interface InlineEdit {
     start: number;
@@ -22,6 +23,7 @@ export interface InlineEdit {
 export interface MountInlineEditorOptions {
     text: string;
     documentUrl: string;
+    contentPending?: boolean;
     readOnly?: boolean;
     skillFrontMatter?: boolean;
     onEdit?: (edit: InlineEdit) => void;
@@ -34,6 +36,7 @@ export interface MountInlineEditorOptions {
 
 export interface InlineEditorHandle {
     destroy(): void;
+    revealEditor(): void;
     setDocument(text: string): void;
     getDocument(): string;
     focus(): void;
@@ -120,7 +123,15 @@ export function mountInlineEditor(
 ): InlineEditorHandle {
     installMonaco();
     const hadRoot = parent.classList.contains("inline-md-root");
-    parent.classList.add("inline-md-root");
+    parent.classList.add("inline-md-root", "inline-md-booting");
+    let bootComplete = false;
+    const finishBoot = (): void => {
+        if (bootComplete) {
+            return;
+        }
+        bootComplete = true;
+        parent.classList.remove("inline-md-booting");
+    };
     const unbindDragSelection = bindDragSelection(parent, () => {
         refresh();
         fitContent();
@@ -529,6 +540,13 @@ export function mountInlineEditor(
         }
         event.preventDefault();
         event.stopPropagation();
+        const currentModel = editor.getModel();
+        if (
+            currentModel &&
+            tryRevealHeadingFragment(href, currentModel.getValue(), options.documentUrl, revealLine)
+        ) {
+            return;
+        }
         options.onLink(href);
     };
     editor.getDomNode()?.addEventListener("mousedown", openRenderedLink, true);
@@ -735,6 +753,21 @@ export function mountInlineEditor(
             fitNow();
         });
     };
+    const revealEditor = (): void => {
+        if (bootComplete) {
+            return;
+        }
+        requestAnimationFrame(() => {
+            fitNow();
+            requestAnimationFrame(finishBoot);
+        });
+    };
+    const scheduleInitialReveal = (): void => {
+        if (options.contentPending === true) {
+            return;
+        }
+        revealEditor();
+    };
     const placeFindWidget = (): void => {
         const rootRect = parent.getBoundingClientRect();
         const columnRect = column.getBoundingClientRect();
@@ -807,10 +840,12 @@ export function mountInlineEditor(
         fitNow();
         requestAnimationFrame(() => {
             refresh();
+            scheduleInitialReveal();
         });
     } else {
         refresh();
         fitNow();
+        scheduleInitialReveal();
     }
     placeFindWidget();
 
@@ -999,7 +1034,9 @@ export function mountInlineEditor(
             if (!hadRoot) {
                 parent.classList.remove("inline-md-root");
             }
+            finishBoot();
         },
+        revealEditor,
         setDocument(text: string) {
             const current = model.getValue();
             if (current === text) {

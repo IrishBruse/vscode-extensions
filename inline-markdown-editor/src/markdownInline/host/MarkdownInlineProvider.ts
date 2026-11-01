@@ -7,6 +7,7 @@ import {
     Range,
     Selection,
     TextDocument,
+    TextEditorRevealType,
     Uri,
     Webview,
     WebviewPanel,
@@ -32,8 +33,11 @@ import {
     shouldUseMarkdownCustomEditor,
 } from "./shouldUseMarkdownCustomEditor";
 import { isSkillMarkdownPath, prefixMarkdownForFastOpen } from "./webviewInitialState";
+import { lineForHeadingFragment } from "../lib/markdown/link/fragment";
 
 export const MARKDOWN_INLINE_VIEW_TYPE = "inline-markdown-editor.markdownInline";
+
+const webviewRevealByDocumentUri = new Map<string, (line: number) => void>();
 
 function getNonce(): string {
     let text = "";
@@ -74,6 +78,7 @@ interface EditorBoot {
     readonly documentVersion: number;
     readonly readOnly: boolean;
     readonly scrollSync: boolean;
+    readonly contentComplete: boolean;
     readonly diff?: DiffPaint;
 }
 
@@ -96,6 +101,7 @@ function getEditorHtml(
             documentVersion: boot.documentVersion,
             readonly: boot.readOnly,
             scrollSync: boot.scrollSync,
+            contentComplete: boot.contentComplete,
             diff: boot.diff,
             documentUrl: baseUri.toString(),
             skillFrontMatter: isSkillMarkdownPath(documentUri.path),
@@ -119,6 +125,12 @@ function getEditorHtml(
         :root {
             ${colorVars}
         }
+        html,
+        body,
+        #editor {
+            background: var(--vscode-editor-background, #1e1e1e);
+            color: var(--vscode-editor-foreground, #d4d4d4);
+        }
     </style>
     <title>Inline Markdown (ib-utilities)</title>
 </head>
@@ -129,18 +141,48 @@ function getEditorHtml(
 </html>`;
 }
 
+function resolveMarkdownLinkTarget(href: string, documentUri: Uri): Uri {
+    const hashIndex = href.indexOf("#");
+    const pathPart = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+    const baseDir = Uri.joinPath(documentUri, "..");
+    const targetPath = pathPart.length > 0 ? pathPart : (documentUri.path.split("/").pop() ?? "");
+    return Uri.joinPath(baseDir, ...targetPath.split("/").filter(Boolean));
+}
+
+function fragmentFromHref(href: string): string | undefined {
+    const hashIndex = href.indexOf("#");
+    if (hashIndex < 0) {
+        return undefined;
+    }
+    const fragment = href.slice(hashIndex + 1);
+    return fragment.length > 0 ? fragment : undefined;
+}
+
+async function revealDocumentLine(doc: TextDocument, line: number, column = 0): Promise<void> {
+    await window.showTextDocument(doc);
+    const reveal = webviewRevealByDocumentUri.get(doc.uri.toString());
+    if (reveal) {
+        reveal(line);
+        return;
+    }
+    const editor = window.activeTextEditor;
+    if (!editor || editor.document.uri.toString() !== doc.uri.toString()) {
+        return;
+    }
+    const safeLine = Math.min(line, doc.lineCount - 1);
+    const position = doc.lineAt(safeLine).range.start.with(undefined, column);
+    editor.selection = new Selection(position, position);
+    editor.revealRange(new Range(position, position), TextEditorRevealType.InCenter);
+}
+
 async function openMarkdownLink(href: string, documentUri: Uri): Promise<void> {
     if (/^https?:\/\//i.test(href)) {
         await env.openExternal(Uri.parse(href));
         return;
     }
 
-    const hashIndex = href.indexOf("#");
-    const pathPart = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
-    const fragment = hashIndex >= 0 ? href.slice(hashIndex + 1) : undefined;
-    const baseDir = Uri.joinPath(documentUri, "..");
-    const targetPath = pathPart.length > 0 ? pathPart : (documentUri.path.split("/").pop() ?? "");
-    const target = Uri.joinPath(baseDir, ...targetPath.split("/").filter(Boolean));
+    const target = resolveMarkdownLinkTarget(href, documentUri);
+    const fragment = fragmentFromHref(href);
 
     if (fragment) {
         const lineMatch = /^L(\d+)(?:,(\d+))?$/.exec(fragment);
@@ -148,11 +190,19 @@ async function openMarkdownLink(href: string, documentUri: Uri): Promise<void> {
             const line = Math.max(0, Number(lineMatch[1]) - 1);
             const column = lineMatch[2] !== undefined ? Math.max(0, Number(lineMatch[2]) - 1) : 0;
             const doc = await workspace.openTextDocument(target);
-            const editor = await window.showTextDocument(doc);
-            const safeLine = Math.min(line, doc.lineCount - 1);
-            const position = doc.lineAt(safeLine).range.start.with(undefined, column);
-            editor.selection = new Selection(position, position);
-            editor.revealRange(new Range(position, position));
+            await revealDocumentLine(doc, line, column);
+            return;
+        }
+        let doc: TextDocument;
+        try {
+            doc = await workspace.openTextDocument(target);
+        } catch {
+            await commands.executeCommand("vscode.open", target);
+            return;
+        }
+        const line = lineForHeadingFragment(doc.getText(), fragment);
+        if (line !== undefined) {
+            await revealDocumentLine(doc, line);
             return;
         }
     }
@@ -305,6 +355,7 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                     documentVersion: document.version,
                     readOnly: options.readOnly,
                     scrollSync: options.scrollSync,
+                    contentComplete: !htmlContentIsPrefix,
                     diff: options.diff?.(),
                 },
             );
@@ -319,9 +370,15 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                   }, delay),
               )
             : [];
+        const documentUriKey = document.uri.toString();
+        webviewRevealByDocumentUri.set(documentUriKey, (line) => {
+            void editorWebview.postMessage({ type: "reveal", line });
+        });
+
         const disposables = [
             {
                 dispose: () => {
+                    webviewRevealByDocumentUri.delete(documentUriKey);
                     for (const timer of releaseTimers) {
                         clearTimeout(timer);
                     }
