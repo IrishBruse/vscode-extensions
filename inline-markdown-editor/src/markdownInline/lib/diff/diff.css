@@ -1,0 +1,30 @@
+.monaco-editor .inline-md-diff-added,
+.monaco-editor .inline-md-diff-removed-line {
+    background-color: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+.monaco-editor .inline-md-diff-removed-line {
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+}
+
+.monaco-editor .inline-md-diff-char-added {
+    background-color: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+.monaco-editor .inline-md-diff-char-removed {
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+}
+
+.inline-md-diff-removed {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 0 0 0 64px;
+    overflow: hidden;
+    background-color: var(--vscode-diffEditor-removedTextBackground);
+    color: var(--vscode-editor-foreground, inherit);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre-wrap;
+}

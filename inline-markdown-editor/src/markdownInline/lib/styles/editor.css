@@ -20,5 +20,6 @@
 @import "../markdown/quote/quote.css";
 @import "../markdown/fence/fence.css";
 @import "../markdown/fence/mermaid/mermaid.css";
+@import "../diff/diff.css";
 @import "./preview/list.css";
 @import "./preview/code-block.css";

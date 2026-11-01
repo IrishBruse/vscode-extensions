@@ -1,5 +1,7 @@
 import {
     CancellationToken,
+    CustomEditorDiffDocuments,
+    CustomEditorSideBySideDiffWebviewPanels,
     CustomTextEditorProvider,
     ExtensionContext,
     Range,
@@ -19,6 +21,12 @@ import {
     getMarkdownInlineEditorColors,
     markdownInlineEditorColorsCssVars,
 } from "./markdownInlineEditorColors";
+import {
+    paintForModified,
+    paintForOriginal,
+    textLineChanges,
+    type DiffPaint,
+} from "../lib/diff/lineChanges";
 import {
     openMarkdownWithRawEditor,
     shouldUseMarkdownCustomEditor,
@@ -61,13 +69,20 @@ class AuthenticatedWebview {
     }
 }
 
+interface EditorBoot {
+    readonly content: string;
+    readonly documentVersion: number;
+    readonly readOnly: boolean;
+    readonly scrollSync: boolean;
+    readonly diff?: DiffPaint;
+}
+
 function getEditorHtml(
     documentUri: Uri,
     webview: Webview,
     extensionUri: Uri,
     messageSecret: string,
-    content: string,
-    documentVersion: number,
+    boot: EditorBoot,
 ): string {
     const mediaRoot = Uri.joinPath(extensionUri, "media", "markdownInline");
     const scriptUri = webview.asWebviewUri(Uri.joinPath(mediaRoot, "editor.js"));
@@ -77,9 +92,11 @@ function getEditorHtml(
     const nonce = getNonce();
     const initialState = encodeURIComponent(
         JSON.stringify({
-            content,
-            documentVersion,
-            readonly: false,
+            content: boot.content,
+            documentVersion: boot.documentVersion,
+            readonly: boot.readOnly,
+            scrollSync: boot.scrollSync,
+            diff: boot.diff,
             documentUrl: baseUri.toString(),
             skillFrontMatter: isSkillMarkdownPath(documentUri.path),
         }),
@@ -165,17 +182,106 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
             return;
         }
 
+        this.openEditor(document, webviewPanel, {
+            readOnly: false,
+            scrollSync: false,
+            releaseIfNotEditor,
+        });
+    }
+
+    async resolveCustomTextEditorInlineDiff(
+        documents: CustomEditorDiffDocuments<TextDocument>,
+        webviewPanel: WebviewPanel,
+        token: CancellationToken,
+    ): Promise<void> {
+        if (token.isCancellationRequested) {
+            return;
+        }
+        const changes = () =>
+            textLineChanges(documents.original.getText(), documents.modified.getText());
+        this.openEditor(documents.modified, webviewPanel, {
+            readOnly: false,
+            scrollSync: false,
+            alsoWatch: documents.original,
+            diff: () => paintForModified(changes(), true),
+        });
+    }
+
+    async resolveCustomTextEditorSideBySideDiff(
+        documents: CustomEditorDiffDocuments<TextDocument>,
+        webviewPanels: CustomEditorSideBySideDiffWebviewPanels,
+        token: CancellationToken,
+    ): Promise<void> {
+        if (token.isCancellationRequested) {
+            return;
+        }
+        const changes = () =>
+            textLineChanges(documents.original.getText(), documents.modified.getText());
+        const sides: {
+            original?: { reveal(line: number): void };
+            modified?: { reveal(line: number): void };
+        } = {};
+        let scrollFrom: "original" | "modified" | undefined;
+        const relay = (role: "original" | "modified", line: number): void => {
+            if (scrollFrom && scrollFrom !== role) {
+                return;
+            }
+            scrollFrom = role;
+            const current = changes();
+            const mapped =
+                role === "original"
+                    ? (current.originalToModified[line] ?? line)
+                    : (current.modifiedToOriginal[line] ?? line);
+            const target = role === "original" ? sides.modified : sides.original;
+            target?.reveal(mapped);
+            setTimeout(() => {
+                if (scrollFrom === role) {
+                    scrollFrom = undefined;
+                }
+            }, 80);
+        };
+        sides.original = this.openEditor(documents.original, webviewPanels.original, {
+            readOnly: true,
+            scrollSync: true,
+            alsoWatch: documents.modified,
+            diff: () => paintForOriginal(changes()),
+            onScroll: (line) => {
+                relay("original", line);
+            },
+        });
+        sides.modified = this.openEditor(documents.modified, webviewPanels.modified, {
+            readOnly: false,
+            scrollSync: true,
+            alsoWatch: documents.original,
+            diff: () => paintForModified(changes(), false),
+            onScroll: (line) => {
+                relay("modified", line);
+            },
+        });
+    }
+
+    private openEditor(
+        document: TextDocument,
+        webviewPanel: WebviewPanel,
+        options: {
+            readonly readOnly: boolean;
+            readonly scrollSync: boolean;
+            readonly diff?: () => DiffPaint;
+            readonly alsoWatch?: TextDocument;
+            readonly onScroll?: (line: number) => void;
+            readonly releaseIfNotEditor?: () => Promise<boolean>;
+        },
+    ): { reveal(line: number): void } {
         const mediaRoot = Uri.joinPath(this.context.extensionUri, "media", "markdownInline");
         const editorWebview = new AuthenticatedWebview(webviewPanel.webview);
+        const workspaceFolder = workspace.getWorkspaceFolder(document.uri);
 
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
                 mediaRoot,
                 Uri.joinPath(document.uri, ".."),
-                ...(workspace.getWorkspaceFolder(document.uri)
-                    ? [workspace.getWorkspaceFolder(document.uri)!.uri]
-                    : []),
+                ...(workspaceFolder ? [workspaceFolder.uri] : []),
             ],
         };
 
@@ -187,25 +293,32 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
         const renderHtml = () => {
             webviewReady = false;
             const text = document.getText();
-            const prefix = prefixMarkdownForFastOpen(text);
+            const prefix = options.diff ? text : prefixMarkdownForFastOpen(text);
             htmlContentIsPrefix = prefix.length < text.length;
             webviewPanel.webview.html = getEditorHtml(
                 document.uri,
                 webviewPanel.webview,
                 this.context.extensionUri,
                 editorWebview.messageSecret,
-                prefix,
-                document.version,
+                {
+                    content: prefix,
+                    documentVersion: document.version,
+                    readOnly: options.readOnly,
+                    scrollSync: options.scrollSync,
+                    diff: options.diff?.(),
+                },
             );
         };
 
         renderHtml();
 
-        const releaseTimers = [0, 50, 200].map((delay) =>
-            setTimeout(() => {
-                void releaseIfNotEditor();
-            }, delay),
-        );
+        const releaseTimers = options.releaseIfNotEditor
+            ? [0, 50, 200].map((delay) =>
+                  setTimeout(() => {
+                      void options.releaseIfNotEditor?.();
+                  }, delay),
+              )
+            : [];
         const disposables = [
             {
                 dispose: () => {
@@ -214,9 +327,13 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                     }
                 },
             },
-            window.tabGroups.onDidChangeTabs(() => {
-                void releaseIfNotEditor();
-            }),
+            ...(options.releaseIfNotEditor
+                ? [
+                      window.tabGroups.onDidChangeTabs(() => {
+                          void options.releaseIfNotEditor?.();
+                      }),
+                  ]
+                : []),
             editorWebview.webview.onDidReceiveMessage(async (message) => {
                 if (
                     !message ||
@@ -233,7 +350,14 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                             await editorWebview.postMessage({
                                 type: "update",
                                 content: document.getText(),
+                                diff: options.diff?.(),
                             });
+                        }
+                        break;
+                    }
+                    case "scroll": {
+                        if (typeof message.line === "number") {
+                            options.onScroll?.(message.line);
                         }
                         break;
                     }
@@ -267,6 +391,9 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                         break;
                     }
                     case "edit": {
+                        if (options.readOnly) {
+                            break;
+                        }
                         const startOffset = message.start;
                         const endOffset = message.endExclusive;
                         const text = message.text;
@@ -305,15 +432,24 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                 }
             }),
             workspace.onDidChangeTextDocument((event) => {
-                if (
-                    event.document.uri.toString() !== document.uri.toString() ||
-                    isUpdatingFromWebview
-                ) {
+                const uri = event.document.uri.toString();
+                const own = uri === document.uri.toString();
+                const peer = options.alsoWatch ? uri === options.alsoWatch.uri.toString() : false;
+                if ((!own && !peer) || (own && isUpdatingFromWebview) || !webviewReady) {
                     return;
                 }
-                if (webviewReady) {
-                    void editorWebview.postMessage({ type: "update", content: document.getText() });
+                if (own) {
+                    void editorWebview.postMessage({
+                        type: "update",
+                        content: document.getText(),
+                        diff: options.diff?.(),
+                    });
+                    return;
                 }
+                void editorWebview.postMessage({
+                    type: "diff",
+                    diff: options.diff?.(),
+                });
             }),
             webviewPanel.onDidDispose(() => {
                 for (const disposable of disposables) {
@@ -321,6 +457,12 @@ export class MarkdownInlineProvider implements CustomTextEditorProvider {
                 }
             }),
         ];
+
+        return {
+            reveal(line: number) {
+                void editorWebview.postMessage({ type: "reveal", line });
+            },
+        };
     }
 }
 

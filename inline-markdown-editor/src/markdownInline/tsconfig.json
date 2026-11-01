@@ -9,6 +9,7 @@
     "include": [
         "*.ts",
         "host/**/*.ts",
+        "host/**/*.d.ts",
         "lib/**/*.ts",
         "lib/**/*.d.ts",
         "playground/**/*.ts",

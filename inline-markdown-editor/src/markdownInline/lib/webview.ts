@@ -1,3 +1,4 @@
+import type { DiffPaint } from "./diff/lineChanges";
 import { mountInlineEditor } from "./editor";
 import { installWebviewThemeSync, webviewThemeTargets } from "./webviewTheme";
 import "./styles/editor.css";
@@ -14,6 +15,8 @@ interface BootState {
     documentUrl: string;
     readonly: boolean;
     skillFrontMatter?: boolean;
+    scrollSync?: boolean;
+    diff?: DiffPaint;
 }
 
 function isBootState(value: unknown): value is BootState {
@@ -26,6 +29,40 @@ function isBootState(value: unknown): value is BootState {
         typeof record.documentVersion === "number" &&
         typeof record.readonly === "boolean" &&
         typeof record.documentUrl === "string"
+    );
+}
+
+function isColumnSpan(value: unknown): boolean {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+    const record = value as Record<string, unknown>;
+    return (
+        typeof record.line === "number" &&
+        typeof record.startColumn === "number" &&
+        typeof record.endColumn === "number"
+    );
+}
+
+function isDiffPaint(value: unknown): value is DiffPaint {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+    const record = value as Record<string, unknown>;
+    return (
+        (record.kind === "added" || record.kind === "removed") &&
+        Array.isArray(record.lines) &&
+        record.lines.every((line) => typeof line === "number") &&
+        Array.isArray(record.inner) &&
+        record.inner.every((span) => isColumnSpan(span)) &&
+        Array.isArray(record.removedBlocks) &&
+        record.removedBlocks.every((block) => {
+            if (typeof block !== "object" || block === null) {
+                return false;
+            }
+            const entry = block as Record<string, unknown>;
+            return typeof entry.beforeLine === "number" && typeof entry.text === "string";
+        })
     );
 }
 
@@ -92,6 +129,16 @@ const editor = mountInlineEditor(parent, {
             openLine,
         });
     },
+    onVisibleLine: boot.scrollSync
+        ? (line) => {
+              vscode.postMessage({
+                  type: "scroll",
+                  messageSecret,
+                  line,
+              });
+          }
+        : undefined,
+    diff: boot.diff,
 });
 
 const stopWebviewThemeSync = installWebviewThemeSync(() => webviewThemeTargets(parent));
@@ -117,5 +164,14 @@ window.addEventListener("message", (event: MessageEvent) => {
     }
     if (record.type === "update" && typeof record.content === "string") {
         editor.setDocument(record.content);
+        if (isDiffPaint(record.diff)) {
+            editor.setDiff(record.diff);
+        }
+    }
+    if (record.type === "diff" && isDiffPaint(record.diff)) {
+        editor.setDiff(record.diff);
+    }
+    if (record.type === "reveal" && typeof record.line === "number") {
+        editor.revealLine(record.line);
     }
 });

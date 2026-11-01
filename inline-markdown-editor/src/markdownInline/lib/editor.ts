@@ -11,6 +11,7 @@ import { cachedScopes, fullPaintLineLimit } from "./document/scopeCache";
 import { createLargeDocumentFit } from "./editorFit";
 import { markdownFrontMatterLanguageId, readFrontMatter, skillMarkdownLanguageId } from "./skill";
 import type { Scope } from "./document/types";
+import type { DiffPaint } from "./diff/lineChanges";
 
 export interface InlineEdit {
     start: number;
@@ -27,6 +28,8 @@ export interface MountInlineEditorOptions {
     onHistory?: (command: "undo" | "redo") => void;
     onLink?: (href: string) => void;
     onOpenMermaidPreview?: (openLine: number) => void;
+    onVisibleLine?: (line: number) => void;
+    diff?: DiffPaint;
 }
 
 export interface InlineEditorHandle {
@@ -38,6 +41,8 @@ export interface InlineEditorHandle {
     hasTextFocus(): boolean;
     setCursor(offset: number): void;
     select(from: number, to: number): void;
+    setDiff(diff: DiffPaint | undefined): void;
+    revealLine(line: number): void;
 }
 
 function historyBindings(
@@ -809,6 +814,143 @@ export function mountInlineEditor(
     }
     placeFindWidget();
 
+    const diffDecorations = editor.createDecorationsCollection();
+    let diffZoneIds: string[] = [];
+    let reportScroll = true;
+    let visibleFrame = 0;
+    const topVisibleLine = (): number => {
+        const current = editor.getModel();
+        if (!current) {
+            return 1;
+        }
+        const top = editorOwnsScroll ? editor.getScrollTop() : parent.scrollTop;
+        const count = current.getLineCount();
+        let low = 1;
+        let high = count;
+        while (low < high) {
+            const mid = Math.ceil((low + high) / 2);
+            if (editor.getTopForLineNumber(mid) <= top + 1) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low;
+    };
+    const reportVisibleLine = (): void => {
+        if (!options.onVisibleLine || !reportScroll || visibleFrame !== 0) {
+            return;
+        }
+        visibleFrame = requestAnimationFrame(() => {
+            visibleFrame = 0;
+            if (!options.onVisibleLine || !reportScroll) {
+                return;
+            }
+            options.onVisibleLine(topVisibleLine() - 1);
+        });
+    };
+    const clearDiffZones = (): void => {
+        const ids = diffZoneIds;
+        diffZoneIds = [];
+        if (ids.length === 0) {
+            return;
+        }
+        editor.changeViewZones((accessor) => {
+            for (const id of ids) {
+                accessor.removeZone(id);
+            }
+        });
+    };
+    const setDiff = (diff: DiffPaint | undefined): void => {
+        clearDiffZones();
+        const current = editor.getModel();
+        const lineCount = current?.getLineCount() ?? 0;
+        if (!diff) {
+            diffDecorations.clear();
+            fitContent();
+            return;
+        }
+        const lineClass =
+            diff.kind === "added" ? "inline-md-diff-added" : "inline-md-diff-removed-line";
+        const charClass =
+            diff.kind === "added" ? "inline-md-diff-char-added" : "inline-md-diff-char-removed";
+        diffDecorations.set([
+            ...diff.lines.flatMap((line) => {
+                const lineNumber = line + 1;
+                if (lineNumber < 1 || lineNumber > lineCount) {
+                    return [];
+                }
+                return [
+                    {
+                        range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+                        options: {
+                            isWholeLine: true,
+                            className: lineClass,
+                        },
+                    },
+                ];
+            }),
+            ...diff.inner.flatMap((span) => {
+                const lineNumber = span.line + 1;
+                if (
+                    !current ||
+                    lineNumber < 1 ||
+                    lineNumber > lineCount ||
+                    span.endColumn <= span.startColumn
+                ) {
+                    return [];
+                }
+                const maxColumn = current.getLineMaxColumn(lineNumber);
+                const start = Math.max(1, Math.min(span.startColumn + 1, maxColumn));
+                const end = Math.max(start, Math.min(span.endColumn + 1, maxColumn));
+                return [
+                    {
+                        range: new monaco.Range(lineNumber, start, lineNumber, end),
+                        options: { inlineClassName: charClass },
+                    },
+                ];
+            }),
+        ]);
+        editor.changeViewZones((accessor) => {
+            for (const block of diff.removedBlocks) {
+                const node = document.createElement("div");
+                node.className = "inline-md-diff-removed";
+                node.textContent = block.text;
+                diffZoneIds.push(
+                    accessor.addZone({
+                        afterLineNumber: Math.max(0, Math.min(block.beforeLine, lineCount)),
+                        heightInLines: Math.max(1, block.text.split("\n").length),
+                        domNode: node,
+                        suppressMouseDown: true,
+                    }),
+                );
+            }
+        });
+        fitContent();
+    };
+    const revealLine = (line: number): void => {
+        const current = editor.getModel();
+        if (!current) {
+            return;
+        }
+        const lineNumber = Math.max(1, Math.min(current.getLineCount(), Math.floor(line) + 1));
+        const top = editor.getTopForLineNumber(lineNumber);
+        reportScroll = false;
+        if (editorOwnsScroll) {
+            editor.setScrollTop(top);
+        } else {
+            parent.scrollTop = top;
+        }
+        requestAnimationFrame(() => {
+            reportScroll = true;
+        });
+    };
+    parent.addEventListener("scroll", reportVisibleLine, { passive: true });
+    const diffScrollListener = editor.onDidScrollChange(reportVisibleLine);
+    if (options.diff) {
+        setDiff(options.diff);
+    }
+
     if (options.text.length === 0 && options.readOnly !== true) {
         queueMicrotask(() => {
             revealOffset(0);
@@ -818,6 +960,12 @@ export function mountInlineEditor(
     return {
         destroy() {
             unbindDragSelection();
+            parent.removeEventListener("scroll", reportVisibleLine);
+            diffScrollListener.dispose();
+            if (visibleFrame !== 0) {
+                cancelAnimationFrame(visibleFrame);
+            }
+            clearDiffZones();
             largeDocumentFit.dispose();
             resizeObserver.disconnect();
             if (fitFrame !== 0) {
@@ -922,5 +1070,7 @@ export function mountInlineEditor(
             editor.focus();
             editor.setSelection(monaco.Selection.fromPositions(start, end));
         },
+        setDiff,
+        revealLine,
     };
 }

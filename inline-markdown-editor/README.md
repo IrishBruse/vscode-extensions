@@ -24,7 +24,7 @@ _Headings, lists, tables, and code fences in preview mode._
 
 The custom editor is optional.
 It is not the default for Markdown.
-Git diffs and compare views keep the stock text editor.
+A git diff can reopen with this editor in the inline view or the side-by-side view.
 
 ## Features
 
@@ -100,7 +100,7 @@ Under **Inline Markdown Editor**:
 ## Tips
 
 - Prefer this editor for reading and light edits.
-- Use **Open Text Editor** when you want a full raw buffer, multi-cursor work, or a diff.
+- Use **Open Text Editor** when you want a full raw buffer or multi-cursor work.
 - Keep Mermaid preview in **IrishBruse's Utilities** if you want the dedicated diagram canvas.
 
 ## License

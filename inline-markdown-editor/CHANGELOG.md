@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: Markdown diffs open in the inline editor for the inline view and the side-by-side view.
 - **Change**: README feature tour and `npm run screenshots` for marketplace images.
 
 ## 0.5.0

@@ -10,6 +10,7 @@ vi.mock("vscode", () => ({
         getWorkspaceFolder: vi.fn(),
         openTextDocument: vi.fn(),
         textDocuments: [],
+        onDidChangeTextDocument: vi.fn().mockReturnValue({ dispose: vi.fn() }),
         fs: {
             writeFile: vi.fn().mockResolvedValue(undefined),
             readFile: vi.fn().mockResolvedValue(Buffer.from("")),

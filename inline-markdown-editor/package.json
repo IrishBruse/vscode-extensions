@@ -145,5 +145,8 @@
     "icon": "icon.png",
     "engines": {
         "vscode": "^1.140.0"
-    }
+    },
+    "enabledApiProposals": [
+        "customEditorDiffs"
+    ]
 }
