@@ -29,6 +29,7 @@ import {
 import {
     completeAgentPropertyKeys,
     completeSkillPropertyKeys,
+    markdownFrontMatterLanguageId,
     parseSkillFrontMatter,
     readFrontMatter,
     skillMarkdownLanguageId,
@@ -56,46 +57,49 @@ export function installSkillYaml(): void {
     };
     const markdown = markdownWithFenceColors(markdownLanguage);
     register("yaml", yamlLanguage, yamlConf);
-    register(
-        skillMarkdownLanguageId,
-        {
-            ...markdown,
-            tokenizer: {
-                ...markdown.tokenizer,
-                root: [
-                    [
-                        /^---$/,
-                        {
-                            token: "meta.separator",
-                            switchTo: "@skillFrontMatter",
-                            nextEmbedded: "yaml",
-                        },
-                    ],
-                    [/^/, { token: "@rematch", switchTo: "@markdownBody" }],
-                ],
-                skillFrontMatter: [
-                    [
-                        /^---$/,
-                        {
-                            token: "meta.separator",
-                            switchTo: "@markdownBody",
-                            nextEmbedded: "@pop",
-                        },
-                    ],
-                ],
-                markdownBody: markdown.tokenizer.root ?? [],
-            },
-        },
-        {
-            ...markdownConf,
-            wordPattern: /[A-Za-z0-9_-]+/,
-        },
-    );
+    register(markdownFrontMatterLanguageId, withYamlFrontMatter(markdown), markdownConf);
+    register(skillMarkdownLanguageId, withYamlFrontMatter(markdown), {
+        ...markdownConf,
+        wordPattern: /[A-Za-z0-9_-]+/,
+    });
     monaco.languages.registerCompletionItemProvider(skillMarkdownLanguageId, {
         provideCompletionItems(model, position) {
             return { suggestions: skillKeyCompletions(model, position) };
         },
     });
+}
+
+function withYamlFrontMatter(
+    markdown: monaco.languages.IMonarchLanguage,
+): monaco.languages.IMonarchLanguage {
+    return {
+        ...markdown,
+        tokenizer: {
+            ...markdown.tokenizer,
+            root: [
+                [
+                    /^---$/,
+                    {
+                        token: "meta.separator",
+                        switchTo: "@yamlFrontMatter",
+                        nextEmbedded: "yaml",
+                    },
+                ],
+                [/^/, { token: "@rematch", switchTo: "@markdownBody" }],
+            ],
+            yamlFrontMatter: [
+                [
+                    /^---$/,
+                    {
+                        token: "meta.separator",
+                        switchTo: "@markdownBody",
+                        nextEmbedded: "@pop",
+                    },
+                ],
+            ],
+            markdownBody: markdown.tokenizer.root ?? [],
+        },
+    };
 }
 
 function skillKeyCompletions(

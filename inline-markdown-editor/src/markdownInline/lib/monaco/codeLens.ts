@@ -1,5 +1,5 @@
 import * as monaco from "monaco-editor/editor/editor.api";
-import { skillMarkdownLanguageId } from "../skill";
+import { markdownFrontMatterLanguageId, skillMarkdownLanguageId } from "../skill";
 
 const openCommandId = "inline-md.openMermaidPreview";
 const openHandlers = new Map<string, (openLine: number) => void>();
@@ -19,7 +19,7 @@ export function installMermaidCodeLens(): void {
         return;
     }
     installed = true;
-    for (const languageId of ["markdown", skillMarkdownLanguageId]) {
+    for (const languageId of ["markdown", markdownFrontMatterLanguageId, skillMarkdownLanguageId]) {
         monaco.languages.registerCodeLensProvider(languageId, lensProvider);
     }
     monaco.editor.registerCommand(openCommandId, (_accessor, uri: string, openLine: number) => {

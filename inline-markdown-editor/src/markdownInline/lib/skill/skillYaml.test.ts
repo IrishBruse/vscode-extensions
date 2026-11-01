@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
-import { paintYamlFrontMatter, skillMarkdownLanguageId } from "./skillYaml";
+import {
+    markdownFrontMatterLanguageId,
+    paintYamlFrontMatter,
+    skillMarkdownLanguageId,
+} from "./skillYaml";
 
 const source = `---
 name: markdown-skill-fixture
@@ -28,6 +32,7 @@ describe("paintYamlFrontMatter", () => {
         expect(text("inline-md-yaml-operator")).toContain("---");
         expect(text("inline-md-yaml-operator")).toContain(">-");
         expect(skillMarkdownLanguageId).toBe("skill-markdown");
+        expect(markdownFrontMatterLanguageId).toBe("markdown-front-matter");
     });
 
     it("colors numbers, comments, document ends, and lines that are not keys", () => {

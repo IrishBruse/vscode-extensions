@@ -7,7 +7,12 @@ export {
 } from "./yamlFrontMatter";
 export { isSkillMarkdownPath, skillDirectoryName } from "./skillPath";
 export { skillFrontMatterIssues, type SkillFrontMatterIssue } from "./skillFrontMatterIssues";
-export { paintYamlFrontMatter, skillMarkdownLanguageId, type YamlPaint } from "./skillYaml";
+export {
+    markdownFrontMatterLanguageId,
+    paintYamlFrontMatter,
+    skillMarkdownLanguageId,
+    type YamlPaint,
+} from "./skillYaml";
 export {
     SKILL_FRONT_MATTER_KEYS,
     completeSkillPropertyKeys,

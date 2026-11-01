@@ -62,7 +62,8 @@ Git diffs and compare views keep the stock text editor.
 
 ### Agent skills (`SKILL.md`)
 
-- Files named `SKILL.md` treat YAML front matter as structured YAML.
+- A markdown file paints leading YAML front matter as a YAML code block.
+- Files named `SKILL.md` also check skill fields and offer skill properties.
 - The body still uses the same Inline Markdown preview.
 
 ## Commands

@@ -9,7 +9,7 @@ import {
 } from "./monaco";
 import { cachedScopes, fullPaintLineLimit } from "./document/scopeCache";
 import { createLargeDocumentFit } from "./editorFit";
-import { skillMarkdownLanguageId } from "./skill";
+import { markdownFrontMatterLanguageId, readFrontMatter, skillMarkdownLanguageId } from "./skill";
 import type { Scope } from "./document/types";
 
 export interface InlineEdit {
@@ -125,7 +125,13 @@ export function mountInlineEditor(
     parent.append(column);
 
     const usesSkillMarkdown = (): boolean => options.skillFrontMatter === true;
-    const languageId = usesSkillMarkdown() ? skillMarkdownLanguageId : "markdown";
+    const languageFor = (text: string): string => {
+        if (usesSkillMarkdown()) {
+            return skillMarkdownLanguageId;
+        }
+        return readFrontMatter(text) ? markdownFrontMatterLanguageId : "markdown";
+    };
+    const languageId = languageFor(options.text);
     const model = monaco.editor.createModel(options.text, languageId);
     model.setEOL(endOfLine(options.text));
     const largeDocument = model.getLineCount() > fullPaintLineLimit;
@@ -250,7 +256,7 @@ export function mountInlineEditor(
         try {
             const currentModel = editor.getModel();
             if (currentModel) {
-                const nextLanguage = usesSkillMarkdown() ? skillMarkdownLanguageId : "markdown";
+                const nextLanguage = languageFor(currentModel.getValue());
                 if (currentModel.getLanguageId() !== nextLanguage) {
                     monaco.editor.setModelLanguage(currentModel, nextLanguage);
                     const suggestions = usesSkillMarkdown();

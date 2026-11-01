@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: A normal markdown file paints leading YAML front matter like a skill document.
+
 ## 0.4.0
 
 - **Fix**: A triple-click selects the full line.

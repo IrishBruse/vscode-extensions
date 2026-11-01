@@ -672,7 +672,7 @@ export class InlinePresentation {
         const text = entry.text;
         this.sourceText = text;
         const scopes = entry.scopes;
-        this.frontMatter = this.skillFrontMatter ? readFrontMatter(text) : undefined;
+        this.frontMatter = readFrontMatter(text);
         const cursor = cursorContext(this.editor, model);
         const finds = findRevealRanges(this.editor, model);
         const visibleScopes = scopesOverlapping(scopes, startOffset, endOffset);
@@ -1395,6 +1395,9 @@ export class InlinePresentation {
             });
         }
         this.syncYamlLabel(start.lineNumber);
+        if (!this.skillFrontMatter) {
+            return;
+        }
         for (const issue of skillFrontMatterIssues(
             span.yaml,
             skillDirectoryName(this.documentUrl),
