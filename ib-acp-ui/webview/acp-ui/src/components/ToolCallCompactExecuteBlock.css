@@ -15,11 +15,11 @@
 }
 
 .tool-call-compact-execute[data-status="in_progress"] .tool-call-compact-execute-command {
-  color: color-mix(in srgb, var(--vscode-foreground) 88%, var(--vscode-descriptionForeground));
+  color: var(--vscode-foreground);
 }
 
 .tool-call-compact-execute-prompt {
-  color: var(--vscode-descriptionForeground, var(--vscode-list-deemphasizedForeground));
+  color: var(--vscode-foreground);
   font-weight: 600;
   user-select: none;
 }
@@ -29,7 +29,7 @@
 }
 
 .tool-call-compact-execute-duration {
-  color: var(--vscode-descriptionForeground, var(--vscode-list-deemphasizedForeground));
+  color: var(--vscode-foreground);
   white-space: nowrap;
 }
 
@@ -41,7 +41,7 @@
   line-height: inherit;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-foreground);
 }
 
 .tool-call-compact-execute-hidden {
@@ -53,7 +53,7 @@
   background: none;
   font: inherit;
   text-align: left;
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-foreground);
   cursor: pointer;
 }
 
@@ -64,6 +64,6 @@
 .tool-call-compact-execute-running {
   margin-top: 2px;
   padding-left: var(--acp-ui-trace-content-indent);
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-foreground);
   font-style: italic;
 }

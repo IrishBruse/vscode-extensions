@@ -13,7 +13,7 @@
 .agent-plan-title {
   font-size: var(--acp-ui-font-size-x-small);
   font-weight: var(--acp-ui-font-weight-semibold);
-  color: var(--acp-ui-text-secondary);
+  color: var(--acp-ui-text-primary);
   margin-bottom: var(--acp-ui-space-6);
 }
 
@@ -28,7 +28,7 @@
 
 .agent-plan-status {
   flex-shrink: 0;
-  color: var(--acp-ui-text-secondary);
+  color: var(--acp-ui-text-primary);
   text-transform: uppercase;
   font-size: var(--acp-ui-font-size-label);
 }

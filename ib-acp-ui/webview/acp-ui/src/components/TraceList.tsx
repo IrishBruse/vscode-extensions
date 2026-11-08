@@ -8,6 +8,7 @@ import {
   rectIntersectsScrollport,
   rectIsFullyAboveScrollport,
 } from "./thoughtCollapse";
+import { activityGroupRanges, isActivityTraceType } from "./traceActivityGroup";
 
 const AgentMarkdown = lazy(() =>
   import("./AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
@@ -26,11 +27,8 @@ function traceSegmentGapClass(
   if (previousType === undefined) {
     return "";
   }
-  if (
-    (previousType === "thought" && currentType === "tool") ||
-    (previousType === "tool" && currentType === "thought")
-  ) {
-    return " trace-segment-gap";
+  if (isActivityTraceType(previousType) || isActivityTraceType(currentType)) {
+    return "";
   }
   const isAgentResponse = (type: TraceItem["type"]) => type === "agent";
   if (isAgentResponse(previousType) === isAgentResponse(currentType)) {
@@ -269,9 +267,7 @@ export function TraceList({
   const segments = partitionTraceSegments(items, showThoughts, toolCallVerbosity);
   let previousVisibleType: TraceItem["type"] | undefined;
 
-  return (
-    <>
-      {segments.map((segment) => {
+  const renderSegment = (segment: TraceRenderSegment): ReactElement | null => {
         if (segment.kind === "toolExecute") {
           const gapClass = traceSegmentGapClass(previousVisibleType, "tool");
           previousVisibleType = "tool";
@@ -391,7 +387,47 @@ export function TraceList({
           segment.index,
           <PlanBlock key={segment.index} className={gapClass.trim()} entries={item.entries} />,
         );
-      })}
-    </>
+  };
+
+  const groupByStart = new Map(
+    activityGroupRanges(segments.map((segment) => segmentTraceType(segment))).map((range) => [
+      range.start,
+      range,
+    ]),
   );
+  const rows: ReactElement[] = [];
+  let segmentIndex = 0;
+  while (segmentIndex < segments.length) {
+    const range = groupByStart.get(segmentIndex);
+    if (range === undefined) {
+      const row = renderSegment(segments[segmentIndex]!);
+      if (row !== null) {
+        rows.push(row);
+      }
+      segmentIndex += 1;
+      continue;
+    }
+    const children: ReactElement[] = [];
+    for (let cursor = range.start; cursor <= range.end; cursor++) {
+      const row = renderSegment(segments[cursor]!);
+      if (row !== null) {
+        children.push(row);
+      }
+    }
+    rows.push(
+      <div key={`activity-${range.start}`} className="trace-activity-group">
+        {children}
+      </div>,
+    );
+    segmentIndex = range.end + 1;
+  }
+
+  return <>{rows}</>;
+}
+
+function segmentTraceType(segment: TraceRenderSegment): TraceItem["type"] {
+  if (segment.kind === "single") {
+    return segment.item.type;
+  }
+  return "tool";
 }

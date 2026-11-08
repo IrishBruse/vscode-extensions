@@ -10,6 +10,8 @@ When a new thought block appears, the previous thought block closes.
 It stays open if you have scrolled up and that block is on screen.
 
 Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
+Transcript text uses the normal foreground color.
+A run of thought blocks and tool calls has extra padding so the group stays separate from the reply.
 Each code block has a copy button.
 
 Tool calls appear inline while the agent works.

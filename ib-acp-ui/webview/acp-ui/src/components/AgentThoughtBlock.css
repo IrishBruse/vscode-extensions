@@ -5,11 +5,7 @@
   border: none;
   background: transparent;
   font-family: var(--acp-ui-font-mono);
-  color: color-mix(
-    in srgb,
-    var(--vscode-editor-foreground, var(--vscode-foreground)) 86%,
-    var(--acp-ui-text-secondary)
-  );
+  color: var(--acp-ui-text-primary);
 }
 
 .agent-thought-chunk-title {

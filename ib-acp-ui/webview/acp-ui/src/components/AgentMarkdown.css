@@ -60,6 +60,7 @@
 .agent-markdown a {
   color: var(--vscode-textLink-foreground);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .agent-markdown a:hover {
@@ -124,7 +125,7 @@
   border: none;
   border-radius: var(--acp-ui-radius-sm);
   background: color-mix(in srgb, var(--vscode-editor-background) 55%, transparent);
-  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  color: var(--vscode-foreground);
   cursor: pointer;
   opacity: 0;
   transition:
@@ -184,7 +185,7 @@
   margin: 0.5em 0;
   padding: 0.2em 0 0.2em 0.75em;
   border-left: 3px solid var(--vscode-textBlockQuote-border, var(--vscode-widget-border));
-  color: var(--vscode-textBlockQuote-foreground, var(--vscode-descriptionForeground));
+  color: var(--acp-ui-text-primary);
 }
 
 .agent-markdown table {
