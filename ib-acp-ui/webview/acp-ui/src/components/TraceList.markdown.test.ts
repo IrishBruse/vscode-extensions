@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, createRef } from "react";
 import { prerenderToNodeStream } from "react-dom/static";
 import { describe, expect, it } from "vite-plus/test";
 import { TraceList } from "./TraceList";
@@ -10,6 +10,9 @@ async function renderTrace(text: string, imageCount?: number): Promise<string> {
       showThoughts: false,
       expandAllToolOutputs: false,
       toolCallVerbosity: "verbose",
+      followBottom: true,
+      historyCommit: 0,
+      traceScrollRef: createRef<HTMLElement>(),
     }),
   );
   const chunks: Buffer[] = [];

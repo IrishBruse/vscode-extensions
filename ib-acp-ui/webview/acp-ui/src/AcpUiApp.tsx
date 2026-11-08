@@ -740,6 +740,9 @@ export function AcpUiApp({
               showThoughts={showThinkingBlocks}
               expandAllToolOutputs={expandAllToolOutputs}
               toolCallVerbosity={toolCallVerbosity}
+              followBottom={stickToBottomRef.current}
+              historyCommit={state.historyCommit}
+              traceScrollRef={traceRef}
               onOpenWorkspacePath={postOpenWorkspacePath}
               onCollapseExpandAll={() => {
                 setExpandAllToolOutputs(false);

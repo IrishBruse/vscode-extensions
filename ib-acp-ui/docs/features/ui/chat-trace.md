@@ -6,6 +6,8 @@ The chat trace is the scrolling conversation panel above the composer.
 It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and structured agent plans.
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
 Click a thought heading to hide or show that block.
+When a new thought block appears, the previous thought block closes.
+It stays open if you have scrolled up and that block is on screen.
 
 Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
 Each code block has a copy button.

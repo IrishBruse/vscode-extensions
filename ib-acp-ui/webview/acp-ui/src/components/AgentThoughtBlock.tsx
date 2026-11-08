@@ -1,4 +1,4 @@
-import { type ReactElement, type SyntheticEvent, useState } from "react";
+import { type ReactElement, type SyntheticEvent, useLayoutEffect, useRef, useState } from "react";
 import { formatCompactDurationMs } from "../../../../src/protocol/visibleTrace";
 import "./AgentThoughtBlock.css";
 
@@ -18,12 +18,24 @@ export function AgentThoughtBlock({
   text,
   durationMs,
   className,
+  collapseNonce = 0,
 }: {
   text: string;
   durationMs?: number;
   className?: string;
+  /** Increments to close this block without a click. */
+  collapseNonce?: number;
 }): ReactElement {
   const [expanded, setExpanded] = useState(true);
+  const seenCollapseNonceRef = useRef(collapseNonce);
+
+  useLayoutEffect(() => {
+    if (collapseNonce === seenCollapseNonceRef.current) {
+      return;
+    }
+    seenCollapseNonceRef.current = collapseNonce;
+    setExpanded(false);
+  }, [collapseNonce]);
 
   const onToggle = (event: SyntheticEvent<HTMLDetailsElement>): void => {
     setExpanded(event.currentTarget.open);

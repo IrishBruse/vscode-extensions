@@ -1,8 +1,13 @@
-import { lazy, Suspense, type ReactElement } from "react";
+import { lazy, Suspense, useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 import "./TraceList.css";
 import type { ToolCallVerbosity } from "../../../../src/protocol/extensionHostMessages";
 import type { WorkspacePathOpenTarget } from "../../../../src/protocol/extensionHostMessages";
 import type { TraceItem, TraceToolItem } from "../chatReducer";
+import {
+  previousThoughtIndexToCollapse,
+  rectIntersectsScrollport,
+  rectIsFullyAboveScrollport,
+} from "./thoughtCollapse";
 
 const AgentMarkdown = lazy(() =>
   import("./AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
@@ -139,6 +144,20 @@ function traceRow(start: number, end: number, child: ReactElement): ReactElement
   );
 }
 
+function thoughtIndexes(items: readonly TraceItem[]): number[] {
+  const indexes: number[] = [];
+  for (let index = 0; index < items.length; index++) {
+    if (items[index]?.type === "thought") {
+      indexes.push(index);
+    }
+  }
+  return indexes;
+}
+
+function traceRowElement(scrollEl: HTMLElement, index: number): HTMLElement | null {
+  return scrollEl.querySelector<HTMLElement>(`[data-trace-index="${index}"]`);
+}
+
 function visibleTraceType(item: TraceItem, showThoughts: boolean): TraceItem["type"] | undefined {
   if (item.type === "thought" && !showThoughts) {
     return undefined;
@@ -154,6 +173,9 @@ export function TraceList({
   showThoughts,
   expandAllToolOutputs,
   toolCallVerbosity,
+  followBottom,
+  historyCommit,
+  traceScrollRef,
   onCollapseExpandAll,
   onOpenWorkspacePath,
 }: {
@@ -161,9 +183,89 @@ export function TraceList({
   showThoughts: boolean;
   expandAllToolOutputs: boolean;
   toolCallVerbosity: ToolCallVerbosity;
+  /** True when the transcript is following the latest text. */
+  followBottom: boolean;
+  /** Changes when a saved transcript replaces the visible trace. */
+  historyCommit: number;
+  traceScrollRef: RefObject<HTMLElement | null>;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
 }): ReactElement {
+  const thoughtIndexesRef = useRef<number[] | null>(null);
+  const seenHistoryCommitRef = useRef(historyCommit);
+  const pendingScrollAdjustRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const [collapseNonceByIndex, setCollapseNonceByIndex] = useState<ReadonlyMap<number, number>>(
+    () => new Map(),
+  );
+
+  if (seenHistoryCommitRef.current !== historyCommit) {
+    seenHistoryCommitRef.current = historyCommit;
+    thoughtIndexesRef.current = null;
+    if (collapseNonceByIndex.size > 0) {
+      setCollapseNonceByIndex(new Map());
+    }
+  }
+
+  useLayoutEffect(() => {
+    const next = thoughtIndexes(items);
+    const previous = thoughtIndexesRef.current;
+    thoughtIndexesRef.current = next;
+    if (previous === null || previous.length === 0) {
+      return;
+    }
+    const prior = previous[previous.length - 1]!;
+    const scrollEl = traceScrollRef.current;
+    const row = scrollEl === null ? null : traceRowElement(scrollEl, prior);
+    const rowRect = row?.getBoundingClientRect();
+    const portRect = scrollEl?.getBoundingClientRect();
+    const previousThoughtInView =
+      rowRect !== undefined && portRect !== undefined
+        ? rectIntersectsScrollport(rowRect, portRect)
+        : false;
+    const index = previousThoughtIndexToCollapse({
+      previousThoughtIndexes: previous,
+      nextThoughtIndexes: next,
+      followBottom,
+      previousThoughtInView,
+    });
+    if (index === undefined) {
+      return;
+    }
+    if (
+      !followBottom &&
+      scrollEl !== null &&
+      rowRect !== undefined &&
+      portRect !== undefined &&
+      rectIsFullyAboveScrollport(rowRect, portRect)
+    ) {
+      pendingScrollAdjustRef.current = {
+        scrollHeight: scrollEl.scrollHeight,
+        scrollTop: scrollEl.scrollTop,
+      };
+    }
+    setCollapseNonceByIndex((current) => {
+      const nextMap = new Map(current);
+      nextMap.set(index, (current.get(index) ?? 0) + 1);
+      return nextMap;
+    });
+  }, [items, followBottom, historyCommit, traceScrollRef]);
+
+  useLayoutEffect(() => {
+    const pending = pendingScrollAdjustRef.current;
+    if (pending === null) {
+      return;
+    }
+    pendingScrollAdjustRef.current = null;
+    const scrollEl = traceScrollRef.current;
+    if (scrollEl === null) {
+      return;
+    }
+    const shrunk = pending.scrollHeight - scrollEl.scrollHeight;
+    if (shrunk > 0) {
+      scrollEl.scrollTop = Math.max(0, pending.scrollTop - shrunk);
+    }
+  }, [collapseNonceByIndex, traceScrollRef]);
+
   const segments = partitionTraceSegments(items, showThoughts, toolCallVerbosity);
   let previousVisibleType: TraceItem["type"] | undefined;
 
@@ -267,6 +369,7 @@ export function TraceList({
               className={gapClass.trim()}
               text={item.text}
               durationMs={item.durationMs}
+              collapseNonce={collapseNonceByIndex.get(segment.index) ?? 0}
             />,
           );
         }

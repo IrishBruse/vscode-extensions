@@ -6,6 +6,8 @@ Update any bullet that does not follow this form.
 ## Unreleased
 
 - **Add**: User messages in the chat trace render as markdown, with the same headings, tables, and code blocks as agent replies.
+- **Change**: A new thought block closes the previous one while the transcript follows the latest text.
+  The previous block stays open when you have scrolled up and it is on screen.
 - **Change**: Dropdowns use a VS Code-style list instead of the native menu, with the same corner radii as settings controls.
 
 ## 0.6.1
