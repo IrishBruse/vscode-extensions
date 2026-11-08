@@ -7,7 +7,7 @@ It shows your messages, streaming agent replies, reasoning thoughts, tool calls,
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
 Click a thought heading to hide or show that block.
 
-Agent text renders as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
+Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
 Each code block has a copy button.
 
 Tool calls appear inline while the agent works.
@@ -54,7 +54,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 [TraceList](../../../webview/acp-ui/src/components/TraceList.tsx#L148-L296) walks trace items and picks presentation by type and verbosity.
 [usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList.tsx#L37-L43) gates minimal and compact modes.
 
-- Agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown.tsx#L117-L167) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/codeHighlighting.tsx#L101-L120) with workbench theme colors.
 - Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock.tsx) is a disclosure.
   The heading stays open until it is clicked and shows a duration when known (`Thought for 1.2s`).

@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: User messages in the chat trace render as markdown, with the same headings, tables, and code blocks as agent replies.
 - **Change**: Dropdowns use a VS Code-style list instead of the native menu, with the same corner radii as settings controls.
 
 ## 0.6.1

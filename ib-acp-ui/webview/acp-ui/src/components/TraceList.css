@@ -14,8 +14,15 @@
   border-radius: var(--acp-ui-radius-lg);
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-body);
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.user-prompt-bar .agent-markdown > :first-child {
+  margin-top: 0;
+}
+
+.user-prompt-bar .agent-markdown > :last-child {
+  margin-bottom: 0;
 }
 
 .user-prompt-images {

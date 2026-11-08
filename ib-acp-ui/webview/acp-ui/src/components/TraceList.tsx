@@ -239,7 +239,9 @@ export function TraceList({
                   {item.imageCount === 1 ? "1 image" : `${item.imageCount} images`}
                 </span>
               ) : null}
-              {item.text}
+              <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
+                <AgentMarkdown text={item.text} />
+              </Suspense>
             </section>,
           );
         }

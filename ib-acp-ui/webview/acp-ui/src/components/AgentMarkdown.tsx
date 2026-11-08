@@ -111,7 +111,7 @@ function CopyCodeButton({ text }: { text: string }): ReactElement {
 }
 
 /**
- * Renders assistant markdown with GFM (tables, strikethrough, task lists). Re-parses on each text
+ * Renders chat markdown with GFM (tables, strikethrough, task lists). Re-parses on each text
  * update so streaming chunks render incrementally without a separate streaming parser.
  */
 export function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
@@ -123,7 +123,7 @@ export function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          pre({ children, ...rest }) {
+          pre({ children, node: _node, ...rest }) {
             const codeText = codeTextFromPreChild(children);
             return (
               <div className="agent-markdown-code-block">
@@ -133,7 +133,7 @@ export function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
             );
           },
           code(props) {
-            const { className, children, ...rest } = props;
+            const { className, children, node: _node, ...rest } = props;
             const language = languageFromClassName(className);
             const codeText = reactNodeToPlainText(children).replace(/\n$/, "");
             if (!className) {
