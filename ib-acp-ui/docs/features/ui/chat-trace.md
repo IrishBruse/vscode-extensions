@@ -57,13 +57,17 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 ### Trace rendering
 
-[TraceList](../../../webview/acp-ui/src/components/TraceList.tsx#L148-L296) walks trace items and picks presentation by type and verbosity.
-[usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList.tsx#L37-L43) gates minimal and compact modes.
+[TraceList](../../../webview/acp-ui/src/components/TraceList.tsx#L170-L447) walks trace items and picks presentation by type and verbosity.
+[usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList.tsx#L47-L49) gates minimal and compact modes.
 
 - User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/codeHighlighting.tsx#L101-L120) with workbench theme colors.
-- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock.tsx) is a disclosure.
+- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock.tsx#L17-L62) is a disclosure.
   The heading stays open until it is clicked and shows a duration when known (`Thought for 1.2s`).
+  [previousThoughtIndexToCollapse](../../../webview/acp-ui/src/components/thoughtCollapse.ts#L12-L30) closes the previous thought when a new one appears.
+  The close is skipped when the transcript is scrolled up and that row is on screen.
+  [activityGroupRanges](../../../webview/acp-ui/src/components/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
+  [trace-activity-group](../../../webview/acp-ui/src/components/TraceList.css#L91-L96) adds padding around that run.
 - Plans: [PlanBlock](../../../webview/acp-ui/src/components/PlanBlock.tsx#L8-L40).
 - Verbose tools: [ToolCallBlock](../../../webview/acp-ui/src/components/ToolCallBlock.tsx).
 - Compact tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/ToolCallCompactBlock.tsx).
