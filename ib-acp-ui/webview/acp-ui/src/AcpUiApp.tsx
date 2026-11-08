@@ -465,7 +465,11 @@ export function AcpUiApp({
       return next;
     });
     stickToBottomRef.current = true;
-    dispatch({ type: "submit", body, ...(images.length > 0 ? { imageCount: images.length } : {}) });
+    dispatch({
+      type: "submit",
+      body,
+      ...(images.length > 0 ? { imageCount: images.length, images } : {}),
+    });
     postSend(body, images.length > 0 ? images : undefined);
     setPendingImages([]);
   };
@@ -744,6 +748,7 @@ export function AcpUiApp({
               historyCommit={state.historyCommit}
               traceScrollRef={traceRef}
               onOpenWorkspacePath={postOpenWorkspacePath}
+              onOpenImage={setViewerImageSrc}
               onCollapseExpandAll={() => {
                 setExpandAllToolOutputs(false);
               }}

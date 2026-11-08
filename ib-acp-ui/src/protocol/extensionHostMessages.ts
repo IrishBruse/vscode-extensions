@@ -205,6 +205,7 @@ export type ExtensionToWebviewMessage =
     | { type: "appendAgentThought"; text: string; durationMs?: number }
     | { type: "appendAgentText"; text: string }
     | { type: "appendUserText"; text: string }
+    | { type: "appendUserImage"; image: AcpUiPromptImage }
     | {
           type: "appendToolCall";
           toolCallId: string;

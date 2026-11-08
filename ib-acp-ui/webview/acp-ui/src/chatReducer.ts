@@ -16,6 +16,7 @@ import {
   resolveToolIndexByCallId,
 } from "../../../src/acp/mapping/canonicalToolCallId";
 import type {
+    AcpUiPromptImage,
     AcpUiRecentSession,
     ExtensionToWebviewMessage,
     AcpUiSlashCommand,
@@ -49,7 +50,7 @@ export type TraceToolItem = {
 };
 
 export type TraceItem =
-  | { type: "user"; text: string; imageCount?: number }
+  | { type: "user"; text: string; imageCount?: number; images?: AcpUiPromptImage[] }
   | { type: "thought"; text: string; durationMs?: number }
   | { type: "agent"; text: string }
   | TraceToolItem
@@ -124,7 +125,7 @@ export type ChatState = {
 
 export type ChatAction =
   | ExtensionMessageAfterInit
-  | { type: "submit"; body: string; imageCount?: number }
+  | { type: "submit"; body: string; imageCount?: number; images?: AcpUiPromptImage[] }
   | { type: "pickSessionModel"; modelId: string }
   | { type: "pickSessionAgent"; agentName: string }
   | {
@@ -476,16 +477,59 @@ function buildAcpAgentSelectionFromInit(payload: InitPayload): AcpAgentSelection
   return null;
 }
 
+function userAttachmentFields(item: {
+  imageCount?: number;
+  images?: AcpUiPromptImage[];
+}): { imageCount?: number; images?: AcpUiPromptImage[] } {
+  return {
+    ...(item.imageCount !== undefined ? { imageCount: item.imageCount } : {}),
+    ...(item.images !== undefined && item.images.length > 0 ? { images: item.images } : {}),
+  };
+}
+
 function appendUserText(state: ChatState, text: string): ChatState {
   const last = state.trace[state.trace.length - 1];
   if (last?.type === "user") {
     const trace = state.trace.slice();
-    trace[trace.length - 1] = { type: "user", text: last.text + text };
+    trace[trace.length - 1] = {
+      type: "user",
+      text: last.text + text,
+      ...userAttachmentFields(last),
+    };
     return { ...state, trace };
   }
   return {
     ...state,
     trace: [...state.trace, { type: "user" as const, text }],
+  };
+}
+
+function appendUserImage(state: ChatState, image: AcpUiPromptImage): ChatState {
+  const last = state.trace[state.trace.length - 1];
+  if (last?.type === "user") {
+    const images = last.images ?? [];
+    const alreadyAttached = images.some(
+      (existing) => existing.data === image.data && existing.mimeType === image.mimeType,
+    );
+    if (alreadyAttached) {
+      return state;
+    }
+    const nextImages = [...images, image];
+    const trace = state.trace.slice();
+    trace[trace.length - 1] = {
+      type: "user",
+      text: last.text,
+      imageCount: nextImages.length,
+      images: nextImages,
+    };
+    return { ...state, trace };
+  }
+  return {
+    ...state,
+    trace: [
+      ...state.trace,
+      { type: "user", text: "", imageCount: 1, images: [image] },
+    ],
   };
 }
 
@@ -835,6 +879,7 @@ function isReplayTranscriptAction(action: ChatAction): boolean {
   switch (action.type) {
     case "appendAgentText":
     case "appendUserText":
+    case "appendUserImage":
     case "appendAgentThought":
     case "appendToolCall":
     case "updateToolCall":
@@ -887,6 +932,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           type: "user",
           text: action.body,
           ...(action.imageCount !== undefined ? { imageCount: action.imageCount } : {}),
+          ...(action.images !== undefined && action.images.length > 0 ? { images: action.images } : {}),
         },
       ],
       promptInFlight: true,
@@ -1048,6 +1094,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return appendAgentText(state, action.text);
     case "appendUserText":
       return appendUserText(state, action.text);
+    case "appendUserImage":
+      return appendUserImage(state, action.image);
     case "appendAgentThought":
       return appendAgentThought(state, action.text, action.durationMs);
     case "appendToolCall":

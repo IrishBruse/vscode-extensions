@@ -3,10 +3,14 @@ import { prerenderToNodeStream } from "react-dom/static";
 import { describe, expect, it } from "vite-plus/test";
 import { TraceList } from "./TraceList";
 
-async function renderTrace(text: string, imageCount?: number): Promise<string> {
+async function renderTrace(
+  text: string,
+  imageCount?: number,
+  images?: { data: string; mimeType: string }[],
+): Promise<string> {
   const { prelude } = await prerenderToNodeStream(
     createElement(TraceList, {
-      items: [{ type: "user", text, imageCount }],
+      items: [{ type: "user", text, imageCount, images }],
       showThoughts: false,
       expandAllToolOutputs: false,
       toolCallVerbosity: "verbose",
@@ -33,6 +37,15 @@ describe("TraceList user markdown", () => {
     expect(html).toContain("<p>The in-level pause menu row stays visible.</p>");
     expect(html).not.toContain("# Pause menu");
     expect(html).toContain('aria-label="User message"');
+  });
+
+  it("shows a small user image that can open larger", async () => {
+    const html = await renderTrace("Broke again", 1, [{ data: "QUJD", mimeType: "image/png" }]);
+
+    expect(html).toContain('src="data:image/png;base64,QUJD"');
+    expect(html).toContain('class="user-prompt-image-thumb"');
+    expect(html).toContain('aria-label="View image 1"');
+    expect(html).not.toContain("1 image");
   });
 
   it("keeps the image count beside a markdown user message", async () => {

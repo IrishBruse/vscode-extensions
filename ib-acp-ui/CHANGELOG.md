@@ -6,6 +6,8 @@ Update any bullet that does not follow this form.
 ## Unreleased
 
 - **Add**: User messages in the chat trace render as markdown, with the same headings, tables, and code blocks as agent replies.
+- **Add**: A sent message shows each attached image as a small thumbnail.
+  Click the thumbnail to view it larger.
 - **Change**: Transcript text uses the normal foreground color.
 - **Change**: A run of thought blocks and tool calls has extra padding so the group stays separate from the reply.
 - **Change**: A new thought block closes the previous one while the transcript follows the latest text.

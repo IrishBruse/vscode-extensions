@@ -17,6 +17,16 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendUserText", text: "hello" }]);
     });
 
+    it("maps a user image chunk to appendUserImage", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "user_message_chunk",
+            content: { type: "image", data: "QUJD", mimeType: "image/png" },
+        });
+        expect(messages).toEqual([
+            { type: "appendUserImage", image: { data: "QUJD", mimeType: "image/png" } },
+        ]);
+    });
+
     it("maps usage_update to tokenUsage", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "usage_update",

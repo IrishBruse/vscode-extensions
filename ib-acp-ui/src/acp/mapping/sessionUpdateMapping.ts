@@ -785,6 +785,18 @@ export function sessionUpdateToWebviewMessages(
             if (block.type === "text") {
                 return [{ type: "appendUserText", text: block.text }];
             }
+            if (
+                block.type === "image" &&
+                block.data.length > 0 &&
+                block.mimeType.startsWith("image/")
+            ) {
+                return [
+                    {
+                        type: "appendUserImage",
+                        image: { data: block.data, mimeType: block.mimeType },
+                    },
+                ];
+            }
             return [];
         }
         case "tool_call": {

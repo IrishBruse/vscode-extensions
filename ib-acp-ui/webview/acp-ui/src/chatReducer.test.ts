@@ -306,8 +306,13 @@ describe("chatReducer", () => {
 
   it("records image attachments on submit", () => {
     let state = createInitialChatState();
-    state = chatReducer(state, { type: "submit", body: "look", imageCount: 2 });
-    expect(state.trace).toEqual([{ type: "user", text: "look", imageCount: 2 }]);
+    const image = { data: "QUJD", mimeType: "image/png" };
+    state = chatReducer(state, { type: "submit", body: "look", imageCount: 1, images: [image] });
+    expect(state.trace).toEqual([{ type: "user", text: "look", imageCount: 1, images: [image] }]);
+    state = chatReducer(state, { type: "appendUserText", text: " more" });
+    expect(state.trace).toEqual([
+      { type: "user", text: "look more", imageCount: 1, images: [image] },
+    ]);
 
     state = chatReducer(state, { type: "promptImageSupport", supported: false });
     expect(state.promptImageSupported).toBe(false);

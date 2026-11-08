@@ -9,6 +9,7 @@ import {
   rectIsFullyAboveScrollport,
 } from "./thoughtCollapse";
 import { activityGroupRanges, isActivityTraceType } from "./traceActivityGroup";
+import { promptImageSrc } from "../pastedImages";
 
 const AgentMarkdown = lazy(() =>
   import("./AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
@@ -176,6 +177,7 @@ export function TraceList({
   traceScrollRef,
   onCollapseExpandAll,
   onOpenWorkspacePath,
+  onOpenImage,
 }: {
   items: TraceItem[];
   showThoughts: boolean;
@@ -188,6 +190,7 @@ export function TraceList({
   traceScrollRef: RefObject<HTMLElement | null>;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
+  onOpenImage?: (src: string) => void;
 }): ReactElement {
   const thoughtIndexesRef = useRef<number[] | null>(null);
   const seenHistoryCommitRef = useRef(historyCommit);
@@ -332,7 +335,25 @@ export function TraceList({
               className={`user-prompt-bar${gapClass}`}
               aria-label="User message"
             >
-              {item.imageCount !== undefined && item.imageCount > 0 ? (
+              {item.images !== undefined && item.images.length > 0 ? (
+                <div className="user-prompt-image-row" role="list" aria-label="Attached images">
+                  {item.images.map((image, imageIndex) => {
+                    const src = promptImageSrc(image);
+                    return (
+                      <button
+                        key={`${imageIndex}:${image.mimeType}:${image.data.length}`}
+                        type="button"
+                        className="user-prompt-image"
+                        role="listitem"
+                        aria-label={`View image ${imageIndex + 1}`}
+                        onClick={() => onOpenImage?.(src)}
+                      >
+                        <img className="user-prompt-image-thumb" src={src} alt="" />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : item.imageCount !== undefined && item.imageCount > 0 ? (
                 <span className="user-prompt-images" role="presentation">
                   {item.imageCount === 1 ? "1 image" : `${item.imageCount} images`}
                 </span>

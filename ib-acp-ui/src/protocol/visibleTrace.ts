@@ -24,7 +24,12 @@ export type AcpUiVisibleTraceMeta = {
 };
 
 export type AcpUiVisibleTraceItem =
-    | { type: "user"; text: string; imageCount?: number }
+    | {
+          type: "user";
+          text: string;
+          imageCount?: number;
+          images?: { data: string; mimeType: string }[];
+      }
     | { type: "thought"; text: string; durationMs?: number }
     | { type: "agent"; text: string }
     | {
@@ -136,6 +141,29 @@ function parseVisibleTraceMeta(value: unknown): AcpUiVisibleTraceMeta | null {
     };
 }
 
+function userImages(value: unknown): { data: string; mimeType: string }[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+    const images: { data: string; mimeType: string }[] = [];
+    for (const item of value) {
+        if (images.length >= 8) {
+            break;
+        }
+        if (!isRecord(item)) {
+            continue;
+        }
+        if (typeof item.data !== "string" || item.data.length === 0) {
+            continue;
+        }
+        if (typeof item.mimeType !== "string" || !item.mimeType.startsWith("image/")) {
+            continue;
+        }
+        images.push({ data: item.data, mimeType: item.mimeType });
+    }
+    return images.length > 0 ? images : undefined;
+}
+
 function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
     if (!isRecord(value) || typeof value.type !== "string") {
         return null;
@@ -151,10 +179,12 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             return { type: "agent", text: value.text };
         }
         const imageCount = positiveInteger(value.imageCount);
+        const images = userImages(value.images);
         return {
             type: "user",
             text: value.text,
             ...(imageCount !== undefined ? { imageCount } : {}),
+            ...(images !== undefined ? { images } : {}),
         };
     }
     if (value.type === "thought") {
