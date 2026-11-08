@@ -2,16 +2,18 @@
   position: relative;
   flex-shrink: 0;
   margin-top: auto;
-  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-panel);
-  border-radius: var(--acp-ui-radius-lg);
-  background-color: var(--acp-ui-surface-panel);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-input-border, transparent);
+  border-radius: var(--vscode-cornerRadius-large, 8px);
+  background-color: var(--vscode-input-background, var(--acp-ui-surface-panel));
   overflow: visible;
+  cursor: text;
 }
 
 .composer-frame:focus-within {
   outline: none;
   box-shadow: none;
-  border-color: var(--acp-ui-border-panel);
+  border-color: var(--vscode-focusBorder);
 }
 
 .composer-top-bar {
@@ -101,14 +103,6 @@
   width: auto;
   min-width: 0;
   max-width: 12rem;
-  padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
-  color: var(--acp-ui-text-primary);
-  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
-  border: var(--acp-ui-stroke-width) solid
-    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
-  border-radius: var(--acp-ui-radius-md);
-  font-family: inherit;
-  font-size: var(--acp-ui-font-size-small);
 }
 
 .composer-model-variant-select {
@@ -118,6 +112,35 @@
 .composer-input-wrap {
   position: relative;
   overflow: visible;
+}
+
+.composer-follow-up {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--acp-ui-space-8) var(--acp-ui-space-12) 0;
+  padding: var(--acp-ui-space-8);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-input-border, var(--acp-ui-border-chrome));
+  border-radius: var(--vscode-cornerRadius-small, 4px);
+  background: var(--vscode-input-background, transparent);
+}
+
+.composer-follow-up-mode {
+  font-size: var(--acp-ui-font-size-label);
+  font-weight: var(--acp-ui-font-weight-semibold);
+  color: var(--acp-ui-text-primary);
+}
+
+.composer-follow-up-text {
+  color: var(--acp-ui-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.composer-follow-up-hint {
+  color: var(--acp-ui-text-secondary);
+  font-size: var(--acp-ui-font-size-small);
 }
 
 .composer-image-row {
@@ -158,7 +181,7 @@
   border-radius: var(--acp-ui-radius-full);
   font-size: var(--acp-ui-font-size-label);
   line-height: 1;
-  cursor: default;
+  cursor: pointer;
 }
 
 .composer-image-remove:hover {
@@ -182,8 +205,9 @@
   flex-direction: column;
   gap: 0;
   padding: var(--acp-ui-space-4) 0;
-  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
-  border-radius: var(--acp-ui-radius-lg);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
+  border-radius: var(--vscode-cornerRadius-large, 8px);
   background: var(--acp-ui-surface-panel);
   box-shadow: var(--acp-ui-shadow-lg);
 }
@@ -286,31 +310,24 @@
   resize: none;
   margin: 0;
   padding: var(--acp-ui-space-8) var(--acp-ui-space-12);
-  color: var(--acp-ui-text-primary);
+  color: var(--vscode-input-foreground, var(--acp-ui-text-primary));
   background: transparent;
   border: none;
   font-family: inherit;
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-body);
+  cursor: text;
 }
 
 .composer-input::placeholder {
   color: var(--vscode-input-placeholderForeground, var(--acp-ui-text-secondary));
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .composer-input:focus,
 .composer-input:focus-visible {
   outline: none !important;
   box-shadow: none;
-}
-
-.composer-model-select:focus,
-.composer-model-select:focus-visible,
-.composer-config-select:focus,
-.composer-config-select:focus-visible {
-  outline: none;
-  border-color: var(--acp-ui-focus-border);
 }
 
 .composer-footer {
@@ -329,15 +346,17 @@
 
 .composer-send {
   flex-shrink: 0;
-  padding: var(--acp-ui-space-6) var(--acp-ui-space-16);
+  padding: 4px 8px;
   color: var(--vscode-button-foreground);
   background-color: var(--vscode-button-background);
-  border: none;
-  border-radius: var(--acp-ui-radius-md);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-button-border, transparent);
+  border-radius: var(--vscode-cornerRadius-small, 4px);
   font-family: inherit;
   font-size: var(--acp-ui-font-size-small);
   font-weight: var(--acp-ui-font-weight-medium);
-  cursor: default;
+  line-height: 16px;
+  cursor: pointer;
   transition: background-color 0.1s ease;
 }
 
@@ -349,16 +368,22 @@
   opacity: 0.85;
 }
 
+.composer-send:disabled {
+  opacity: 0.4;
+}
+
 .composer-cancel {
   flex-shrink: 0;
-  padding: var(--acp-ui-space-6) var(--acp-ui-space-12);
+  padding: 4px 8px;
   color: var(--vscode-button-secondaryForeground, var(--acp-ui-text-primary));
   background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
-  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
-  border-radius: var(--acp-ui-radius-md);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-button-secondaryBorder, var(--vscode-button-border, transparent));
+  border-radius: var(--vscode-cornerRadius-small, 4px);
   font-family: inherit;
   font-size: var(--acp-ui-font-size-small);
-  cursor: default;
+  line-height: 16px;
+  cursor: pointer;
 }
 
 .composer-cancel:hover:not(:disabled) {
@@ -369,5 +394,5 @@
 }
 
 .composer-cancel:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
 }

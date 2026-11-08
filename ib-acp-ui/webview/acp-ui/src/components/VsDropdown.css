@@ -1,0 +1,105 @@
+.vs-dropdown {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.vs-dropdown--block {
+  display: flex;
+  width: 100%;
+}
+
+.vs-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--acp-ui-space-6);
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  margin: 0;
+  padding: 2px 4px 2px 8px;
+  color: var(--vscode-dropdown-foreground, var(--acp-ui-text-primary));
+  background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-dropdown-border, transparent);
+  border-radius: var(--vscode-cornerRadius-small, 4px);
+  font-family: inherit;
+  font-size: var(--vscode-font-size, 13px);
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vs-dropdown-trigger:hover:not(:disabled) {
+  background-color: var(
+    --vscode-dropdown-background,
+    var(--vscode-input-background, var(--acp-ui-surface-panel))
+  );
+}
+
+.vs-dropdown-trigger:focus-visible,
+.vs-dropdown-trigger[aria-expanded="true"] {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.vs-dropdown-trigger:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.vs-dropdown-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-dropdown-chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--vscode-icon-foreground, var(--acp-ui-text-secondary));
+}
+
+.vs-dropdown-menu {
+  position: fixed;
+  z-index: 80;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 8px));
+  max-height: min(280px, 40vh);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  color: var(--vscode-dropdown-foreground, var(--acp-ui-text-primary));
+  background: var(--vscode-dropdown-background, var(--vscode-editorWidget-background));
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-widget-border, var(--vscode-dropdown-border, transparent));
+  border-radius: var(--vscode-cornerRadius-large, 8px);
+  box-shadow: var(--acp-ui-shadow-lg);
+}
+
+.vs-dropdown-option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--vscode-font-size, 13px);
+  line-height: 22px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.vs-dropdown-option--active {
+  background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground, inherit);
+}

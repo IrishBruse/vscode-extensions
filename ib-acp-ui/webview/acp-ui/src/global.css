@@ -49,3 +49,24 @@ body {
 .agent-root--narrow .ib-permission-backdrop {
   padding-inline: 0;
 }
+
+button,
+select,
+summary,
+label:has(input[type="checkbox"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: default;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--vscode-checkbox-background, var(--vscode-button-background));
+  cursor: pointer;
+}
+
+input[type="checkbox"]:disabled {
+  cursor: default;
+}

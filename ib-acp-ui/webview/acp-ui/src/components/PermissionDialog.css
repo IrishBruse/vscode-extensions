@@ -15,7 +15,7 @@
   max-width: 520px;
   width: 100%;
   padding: var(--acp-ui-space-12) var(--acp-ui-space-16) var(--acp-ui-space-16);
-  border-radius: var(--acp-ui-radius-lg);
+  border-radius: var(--vscode-cornerRadius-large, 8px);
   border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
   background: var(--acp-ui-surface-panel);
   color: var(--acp-ui-text-primary);
@@ -48,9 +48,10 @@
 .ib-permission-button {
   font: inherit;
   font-size: var(--acp-ui-font-size-small);
-  padding: var(--acp-ui-space-6) var(--acp-ui-space-12);
-  border-radius: var(--acp-ui-radius-md);
-  border: var(--acp-ui-stroke-width) solid var(--vscode-button-border, transparent);
+  padding: 4px 8px;
+  border-radius: var(--vscode-cornerRadius-small, 4px);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-button-border, transparent);
   background: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   cursor: pointer;

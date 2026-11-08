@@ -21,14 +21,6 @@
 
 .empty-chat-select {
   width: 100%;
-  padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
-  color: var(--acp-ui-text-primary);
-  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
-  border: var(--acp-ui-stroke-width) solid
-    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
-  border-radius: var(--acp-ui-radius-md);
-  font-family: inherit;
-  font-size: var(--acp-ui-font-size-small);
 }
 
 .empty-chat-recents {
@@ -46,9 +38,9 @@
   text-align: left;
   color: var(--acp-ui-text-primary);
   background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
-  border: var(--acp-ui-stroke-width) solid
-    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
-  border-radius: var(--acp-ui-radius-md);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-dropdown-border, transparent);
+  border-radius: var(--vscode-cornerRadius-small, 4px);
   font-family: inherit;
   font-size: var(--acp-ui-font-size-small);
   white-space: nowrap;

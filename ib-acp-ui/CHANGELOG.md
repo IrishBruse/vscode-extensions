@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Dropdowns use a VS Code-style list instead of the native menu, with the same corner radii as settings controls.
+
 ## 0.6.1
 
 - **Add**: Recent chat rows in the empty-chat state show relative time since the last update on the right.

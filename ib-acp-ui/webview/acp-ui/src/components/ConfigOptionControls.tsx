@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { AcpUiSessionConfigOption } from "../../../../src/acp/session/sessionConfigOptions";
 import "./ConfigOptionControls.css";
+import { VsDropdown } from "./VsDropdown";
 
 export type ConfigOptionControlsProps = {
   options: AcpUiSessionConfigOption[];
@@ -45,16 +46,16 @@ export function ComposerConfigLoading({
       >
         {label}
       </label>
-      <select
+      <VsDropdown
         id={fieldId}
         className="composer-config-select composer-config-select--model"
-        aria-label={`${label}: Loading model configuration`}
-        aria-busy="true"
+        ariaLabel={`${label}: Loading model configuration`}
         value="loading"
         disabled
-      >
-        <option value="loading">Loading models...</option>
-      </select>
+        busy
+        options={[{ value: "loading", label: "Loading models..." }]}
+        onChange={() => {}}
+      />
     </div>
   );
 }
@@ -92,20 +93,21 @@ export function ConfigOptionControls({
               >
                 {option.name}
               </label>
-              <select
+              <VsDropdown
                 id={fieldId}
                 className="composer-config-select"
-                aria-label={option.name}
+                ariaLabel={option.name}
                 title={option.description ?? option.name}
                 value={booleanSelectValue(option.currentValue)}
                 disabled={disabled}
-                onChange={(event) => {
-                  onPick(option.configId, event.target.value === "true");
+                options={[
+                  { value: "false", label: "Off" },
+                  { value: "true", label: "On" },
+                ]}
+                onChange={(next) => {
+                  onPick(option.configId, next === "true");
                 }}
-              >
-                <option value="false">Off</option>
-                <option value="true">On</option>
-              </select>
+              />
             </div>
           );
         }
@@ -118,31 +120,26 @@ export function ConfigOptionControls({
             >
               {option.name}
             </label>
-            <select
+            <VsDropdown
               id={fieldId}
               className={
                 option.category === "model"
                   ? "composer-config-select composer-config-select--model"
                   : "composer-config-select"
               }
-              aria-label={option.name}
+              ariaLabel={option.name}
               title={option.description ?? option.name}
               value={option.currentValue}
               disabled={disabled}
-              onChange={(event) => {
-                onPick(option.configId, event.target.value);
+              options={option.options.map((choice) => ({
+                value: choice.value,
+                label: choice.name,
+                title: choice.description,
+              }))}
+              onChange={(next) => {
+                onPick(option.configId, next);
               }}
-            >
-              {option.options.map((choice) => (
-                <option
-                  key={`${option.configId}:${choice.value}`}
-                  value={choice.value}
-                  title={choice.description}
-                >
-                  {choice.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         );
       })}
