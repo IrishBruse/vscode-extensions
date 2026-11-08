@@ -45,6 +45,12 @@ import {
   shouldCycleSessionModeOnShiftTab,
   shouldOpenNewChatOnCtrlT,
 } from "./components/composerKeybindings";
+import {
+  hasRunningTool,
+  resolveFollowUpEnter,
+  steerShouldStopAfterTool,
+  type FollowUpMode,
+} from "./components/composerFollowUp";
 import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog";
 import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog";
 import { EmptyChatState } from "./components/EmptyChatState";
@@ -161,6 +167,12 @@ export function AcpUiApp({
   const [composerAutocompleteDismissed, setComposerAutocompleteDismissed] = useState(false);
   const [pendingImages, setPendingImages] = useState<AcpUiPromptImage[]>([]);
   const [viewerImageSrc, setViewerImageSrc] = useState<string | null>(null);
+  const [queuedFollowUp, setQueuedFollowUp] = useState<{
+    body: string;
+    images: AcpUiPromptImage[];
+    mode: FollowUpMode;
+  } | null>(null);
+  const steerSawRunningToolRef = useRef(false);
 
   const scrollTraceToBottomIfPinned = useCallback((): void => {
     if (suppressStickToBottomRef.current) {
@@ -413,6 +425,27 @@ export function AcpUiApp({
     setComposerAutocompleteDismissed(true);
   }, []);
 
+  const deliverPrompt = (body: string, images: AcpUiPromptImage[]): void => {
+    setDraft("");
+    setHistoryBrowse(null);
+    setQueuedFollowUp(null);
+    steerSawRunningToolRef.current = false;
+    setHistory((prev) => {
+      const next =
+        prev.length > 0 && prev[prev.length - 1] === body ? prev : [...prev.slice(-49), body];
+      postSaveHistory(next);
+      return next;
+    });
+    stickToBottomRef.current = true;
+    dispatch({
+      type: "submit",
+      body,
+      ...(images.length > 0 ? { imageCount: images.length, images } : {}),
+    });
+    postSend(body, images.length > 0 ? images : undefined);
+    setPendingImages([]);
+  };
+
   const submit = (): void => {
     if (state.permissionPrompt !== null) {
       return;
@@ -426,6 +459,7 @@ export function AcpUiApp({
     if (asCommand === "/clear" || asCommand === "/new") {
       setDraft("");
       setHistoryBrowse(null);
+      setQueuedFollowUp(null);
       stickToBottomRef.current = true;
       dispatch({ type: "sessionReset" });
       postResetSession();
@@ -456,23 +490,73 @@ export function AcpUiApp({
       postRenameSession(nextTitle);
       return;
     }
-    setDraft("");
-    setHistoryBrowse(null);
-    setHistory((prev) => {
-      const next =
-        prev.length > 0 && prev[prev.length - 1] === body ? prev : [...prev.slice(-49), body];
-      postSaveHistory(next);
-      return next;
-    });
-    stickToBottomRef.current = true;
-    dispatch({
-      type: "submit",
-      body,
-      ...(images.length > 0 ? { imageCount: images.length, images } : {}),
-    });
-    postSend(body, images.length > 0 ? images : undefined);
-    setPendingImages([]);
+    deliverPrompt(body, images);
   };
+
+  const handleComposerSend = (): void => {
+    const trimmed = draft.trim().toLowerCase();
+    const immediateCommand =
+      trimmed === "/clear" ||
+      trimmed === "/new" ||
+      trimmed === "/show-thinking" ||
+      trimmed.startsWith("/rename");
+    if (immediateCommand) {
+      submit();
+      return;
+    }
+    const hasContent = draft.trim().length > 0 || pendingImages.length > 0;
+    const action = resolveFollowUpEnter({
+      promptInFlight: state.promptInFlight,
+      hasContent,
+      queuedMode: queuedFollowUp?.mode ?? null,
+    });
+    if (action === "send-now") {
+      submit();
+      return;
+    }
+    if (action === "enqueue") {
+      setQueuedFollowUp({ body: draft, images: pendingImages, mode: "queue" });
+      setDraft("");
+      setPendingImages([]);
+      setHistoryBrowse(null);
+      steerSawRunningToolRef.current = false;
+      return;
+    }
+    if (action === "steer") {
+      setQueuedFollowUp((current) =>
+        current === null ? current : { ...current, mode: "steer" },
+      );
+      return;
+    }
+    if (action === "interrupt" && queuedFollowUp !== null) {
+      deliverPrompt(queuedFollowUp.body, queuedFollowUp.images);
+    }
+  };
+
+  useEffect(() => {
+    if (queuedFollowUp === null) {
+      steerSawRunningToolRef.current = false;
+      return;
+    }
+    const toolRunning = hasRunningTool(
+      state.trace.flatMap((item) => (item.type === "tool" ? [item.status] : [])),
+    );
+    if (queuedFollowUp.mode === "steer" && toolRunning) {
+      steerSawRunningToolRef.current = true;
+    }
+    const turnFinished = !state.promptInFlight;
+    const stopAfterTool =
+      queuedFollowUp.mode === "steer" &&
+      steerShouldStopAfterTool({
+        sawRunningTool: steerSawRunningToolRef.current,
+        toolRunning,
+        promptInFlight: state.promptInFlight,
+      });
+    if (!turnFinished && !stopAfterTool) {
+      return;
+    }
+    deliverPrompt(queuedFollowUp.body, queuedFollowUp.images);
+  }, [queuedFollowUp, state.promptInFlight, state.trace]);
 
   const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     const target = event.currentTarget;
@@ -606,10 +690,7 @@ export function AcpUiApp({
 
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (state.promptInFlight) {
-        postCancel();
-      }
-      submit();
+      handleComposerSend();
     }
   };
 
@@ -852,7 +933,8 @@ export function AcpUiApp({
                 dispatch({ type: "pickSessionConfigOption", configId, value });
                 postSetSessionConfigOption(configId, value);
               }}
-              onSubmit={submit}
+              onSubmit={handleComposerSend}
+              followUp={queuedFollowUp}
               onCancel={postCancel}
               onKeyDown={onComposerKeyDown}
               onPaste={onComposerPaste}

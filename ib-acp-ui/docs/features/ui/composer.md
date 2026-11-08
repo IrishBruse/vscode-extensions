@@ -17,7 +17,10 @@ History is stored in the `.acp` session file (up to 55 entries) and restored on 
 
 Keyboard shortcuts while the composer is focused:
 
-- Enter sends, Shift+Enter inserts a newline
+- Enter sends, Shift+Enter inserts a newline.
+  While the agent is running, the first Enter queues the message for the end of that turn.
+  The next Enter marks it as steering, so it sends after the current tool finishes and does not stop that tool.
+  The next Enter interrupts the current message and sends now.
 - Shift+Tab cycles session mode when the agent exposes a mode option
 - Ctrl+C / Cmd+C cancels an in-flight prompt when supported
 - Ctrl+T / Cmd+T opens a new chat (when the Chats view or ACP UI editor is focused)
@@ -75,6 +78,7 @@ Task: covered by [sessions](../acp/sessions.md).
 [shouldCycleSessionModeOnShiftTab](../../../webview/acp-ui/src/components/composerKeybindings.ts#L16-L30) gates Shift+Tab mode cycling.
 [shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/composerKeybindings.ts#L32-L46) gates Ctrl+C cancel.
 [shouldOpenNewChatOnCtrlT](../../../webview/acp-ui/src/components/composerKeybindings.ts#L1-L14) gates Ctrl+T new chat.
+[resolveFollowUpEnter](../../../webview/acp-ui/src/components/composerFollowUp.ts#L12-L30) queues, steers, or interrupts a follow-up while a turn is running.
 
 ### Multimodal prompts
 

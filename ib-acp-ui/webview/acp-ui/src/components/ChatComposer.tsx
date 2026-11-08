@@ -38,7 +38,9 @@ import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../src/protoc
 import { buildComposerAutocompleteState, wrapIndex } from "./composerAutocomplete";
 import { ConfigOptionControls, ComposerConfigLoading } from "./ConfigOptionControls";
 import { SessionModeIndicator } from "./SessionModeIndicator";
+import { VsDropdown } from "./VsDropdown";
 import { promptImageSrc } from "../pastedImages";
+import type { FollowUpMode } from "./composerFollowUp";
 
 export type ChatComposerProps = {
   activityLabel: string | null;
@@ -66,6 +68,12 @@ export type ChatComposerProps = {
   onPickSessionModel: (modelId: string) => void;
   onPickSessionConfigOption: (configId: string, value: string | boolean) => void;
   onSubmit: () => void;
+  /** Draft held until the running turn can take it. */
+  followUp?: {
+    body: string;
+    images: AcpUiPromptImage[];
+    mode: FollowUpMode;
+  } | null;
   onCancel: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   /** Paste handler on the textarea; captures image clips as attachments. */
@@ -80,6 +88,23 @@ export type ChatComposerProps = {
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
+
+function sendFollowUpLabel(
+  promptInFlight: boolean,
+  hasContent: boolean,
+  mode: FollowUpMode | null,
+): string {
+  if (!promptInFlight) {
+    return "Send";
+  }
+  if (mode === "steer" && !hasContent) {
+    return "Interrupt";
+  }
+  if (mode === "queue" && !hasContent) {
+    return "Steer";
+  }
+  return "Queue";
+}
 
 /**
  * Activity hint, optional model picker, message input, and send/cancel actions.
@@ -104,6 +129,7 @@ export function ChatComposer({
   onPickSessionModel,
   onPickSessionConfigOption,
   onSubmit,
+  followUp = null,
   onCancel,
   onKeyDown,
   onPaste,
@@ -315,6 +341,25 @@ export function ChatComposer({
         <span className="composer-top-bar-hint">/ commands · @ files</span>
       </div>
       <div className="composer-input-wrap">
+        {followUp !== null ? (
+          <div className="composer-follow-up" role="status">
+            <span className="composer-follow-up-mode">
+              {followUp.mode === "queue" ? "Queued" : "Steering"}
+            </span>
+            <span className="composer-follow-up-text">
+              {followUp.body.trim().length > 0
+                ? followUp.body
+                : followUp.images.length === 1
+                  ? "1 image"
+                  : `${followUp.images.length} images`}
+            </span>
+            <span className="composer-follow-up-hint">
+              {followUp.mode === "queue"
+                ? "Sends when the agent finishes. Enter marks this as steering."
+                : "Sends after the running tool finishes. Enter interrupts the current message."}
+            </span>
+          </div>
+        ) : null}
         {pendingImages.length > 0 ? (
           <div className="composer-image-row" role="list" aria-label="Attached images">
             {pendingImages.map((image, index) => (
@@ -389,49 +434,51 @@ export function ChatComposer({
                     <label className="composer-config-label" htmlFor="acp-ui-model-select">
                       Model
                     </label>
-                    <select
+                    <VsDropdown
                       id="acp-ui-model-select"
                       className="composer-config-select composer-config-select--model"
-                      aria-label="Model"
+                      ariaLabel="Model"
                       value={configCurrentGroupName}
                       disabled={modelSelectDisabled}
-                      onChange={(e) => {
+                      options={configModelGroups.map((group) => ({
+                        value: group.name,
+                        label: group.label,
+                      }))}
+                      onChange={(next) => {
                         const preferredParams = parseModelIdBracketParams(
                           configModelOption.currentValue,
                         ).params;
                         const nextModelId = pickModelOptionForFamily(
                           configModelOption,
-                          e.target.value,
+                          next,
                           preferredParams,
                         );
                         onPickSessionConfigOption(configModelOption.configId, nextModelId);
                       }}
-                    >
-                      {configModelGroups.map((group) => (
-                        <option key={group.name} value={group.name}>
-                          {group.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 ) : (
                   <div className="composer-config-field">
                     <label className="composer-config-label" htmlFor="acp-ui-model-select">
                       Model
                     </label>
-                    <select
+                    <VsDropdown
                       id="acp-ui-model-select"
                       className="composer-config-select composer-config-select--model"
-                      aria-label="Model"
+                      ariaLabel="Model"
                       value={modelPickerState?.currentGroupName ?? ""}
                       disabled={modelSelectDisabled}
-                      onChange={(e) => {
+                      options={
+                        modelPickerState?.groups.map((group) => ({
+                          value: group.name,
+                          label: group.label,
+                        })) ?? []
+                      }
+                      onChange={(next) => {
                         if (modelSel === null || modelPickerState === null) {
                           return;
                         }
-                        const group = modelPickerState.groups.find(
-                          (entry) => entry.name === e.target.value,
-                        );
+                        const group = modelPickerState.groups.find((entry) => entry.name === next);
                         if (group === undefined || group.variants.length === 0) {
                           return;
                         }
@@ -444,13 +491,7 @@ export function ChatComposer({
                         }));
                         onPickSessionModel(pickVariantForGroup(variants, preferredParams));
                       }}
-                    >
-                      {modelPickerState?.groups.map((group) => (
-                        <option key={group.name} value={group.name}>
-                          {group.label}
-                        </option>
-                      )) ?? null}
-                    </select>
+                    />
                   </div>
                 )}
                 {configParamOptions.length > 0 ? (
@@ -481,7 +522,11 @@ export function ChatComposer({
           disabled={textareaDisabled}
           onClick={() => onSubmit()}
         >
-          Send
+          {sendFollowUpLabel(
+            promptInFlight,
+            draft.trim().length > 0 || pendingImages.length > 0,
+            followUp?.mode ?? null,
+          )}
         </button>
       </div>
     </footer>

@@ -6,6 +6,7 @@ Update any bullet that does not follow this form.
 ## Unreleased
 
 - **Add**: User messages in the chat trace render as markdown, with the same headings, tables, and code blocks as agent replies.
+- **Add**: Enter while the agent is running queues the message, then marks it as steering, then interrupts the current turn.
 - **Add**: A sent message shows each attached image as a small thumbnail.
   Click the thumbnail to view it larger.
 - **Change**: Transcript text uses the normal foreground color.
