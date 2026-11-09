@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./ToolCallCompactBlock.css";
+import { windowToolCallDiffRows } from "../../../../../../../src/acp/mapping/toolCallDiffLines";
 import type { TraceToolItem } from "../../../../chatReducer";
 import {
   type CompactToolDetailParts,
@@ -278,7 +279,7 @@ function CompactDiffLines({
   expandAllToolOutputs: boolean;
   onCollapseExpandAll?: () => void;
 }): ReactElement | null {
-  const rows = item.diffRows ?? [];
+  const rows = windowToolCallDiffRows(item.diffRows ?? []);
   const [localExpanded, setLocalExpanded] = useState(false);
   const prevExpandAllRef = useRef(expandAllToolOutputs);
   useEffect(() => {

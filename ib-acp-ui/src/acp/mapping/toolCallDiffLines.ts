@@ -6,6 +6,50 @@ import type { ToolCallDiffRow } from "../../protocol/extensionHostMessages";
 
 const maxDiffRows = 4000;
 
+/** Unchanged lines kept before and after each edit. */
+const diffContextLineCount = 3;
+
+/**
+ * Keeps each edit and a few unchanged lines around it.
+ * Distant unchanged lines stay out of the preview.
+ */
+export function windowToolCallDiffRows(rows: readonly ToolCallDiffRow[]): ToolCallDiffRow[] {
+    const keep = Array.from({ length: rows.length }, () => false);
+    let anyChange = false;
+    for (let index = 0; index < rows.length; index += 1) {
+        if (rows[index]?.kind === "context") {
+            continue;
+        }
+        anyChange = true;
+        const start = Math.max(0, index - diffContextLineCount);
+        const end = Math.min(rows.length - 1, index + diffContextLineCount);
+        for (let cursor = start; cursor <= end; cursor += 1) {
+            keep[cursor] = true;
+        }
+    }
+    if (!anyChange) {
+        return [...rows];
+    }
+
+    const windowed: ToolCallDiffRow[] = [];
+    let skipped = false;
+    for (let index = 0; index < rows.length; index += 1) {
+        if (!keep[index]) {
+            skipped = windowed.length > 0;
+            continue;
+        }
+        if (skipped) {
+            windowed.push({ kind: "context", text: "…" });
+            skipped = false;
+        }
+        const row = rows[index];
+        if (row !== undefined) {
+            windowed.push(row);
+        }
+    }
+    return windowed;
+}
+
 function splitLinesNormalized(text: string): string[] {
     const normalized = text.replace(/\r\n/g, "\n");
     if (normalized.length === 0) {
@@ -64,5 +108,5 @@ export function computeToolCallDiffRows(oldText: string, newText: string): ToolC
             i -= 1;
         }
     }
-    return rows;
+    return windowToolCallDiffRows(rows);
 }
