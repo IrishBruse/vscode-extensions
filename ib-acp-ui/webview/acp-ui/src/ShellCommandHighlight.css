@@ -2,35 +2,38 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  color: var(--vscode-terminal-ansiWhite, #abb2bf);
+  color: #bcbcbc;
 }
 
 .shell-hl--command {
-  color: var(--vscode-terminal-ansiBlue, #61afef);
-  font-weight: 600;
+  color: #c678dd;
 }
 
 .shell-hl--argument {
-  color: var(--vscode-terminal-ansiWhite, #abb2bf);
+  color: #bcbcbc;
 }
 
 .shell-hl--option {
-  color: var(--vscode-terminal-ansiMagenta, #c678dd);
+  color: #61afef;
+}
+
+.shell-hl--path {
+  color: #56b6c2;
 }
 
 .shell-hl--string {
-  color: var(--vscode-terminal-ansiGreen, #98c379);
+  color: #98c379;
 }
 
 .shell-hl--variable {
-  color: var(--vscode-terminal-ansiCyan, #56b6c2);
+  color: #56b6c2;
 }
 
 .shell-hl--operator,
 .shell-hl--redirect {
-  color: var(--vscode-terminal-ansiYellow, #d19a66);
+  color: #d19a66;
 }
 
 .shell-hl--comment {
-  color: var(--vscode-terminal-ansiBrightBlack, #5c6370);
+  color: #5c6370;
 }

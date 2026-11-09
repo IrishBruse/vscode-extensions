@@ -2,6 +2,7 @@ export type ShellHighlightKind =
   | "command"
   | "argument"
   | "option"
+  | "path"
   | "string"
   | "variable"
   | "operator"
@@ -36,6 +37,7 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
   const tokens: ShellHighlightToken[] = [];
   let index = 0;
   let atSegmentStart = true;
+  let expectRedirectTarget = false;
 
   const readWord = (): string => {
     const start = index;
@@ -89,18 +91,38 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
     return command.slice(start, index);
   };
 
+  const looksLikePath = (word: string): boolean =>
+    word.startsWith("/") ||
+    word.startsWith("~/") ||
+    word.startsWith("./") ||
+    word.startsWith("../") ||
+    word.includes("/");
+
   const classifyWord = (word: string): ShellHighlightKind => {
+    if (expectRedirectTarget) {
+      expectRedirectTarget = false;
+      return looksLikePath(word) ? "path" : "argument";
+    }
     if (atSegmentStart) {
       return "command";
     }
     if (word.startsWith("-")) {
       return "option";
     }
+    if (looksLikePath(word)) {
+      return "path";
+    }
     return "argument";
   };
 
-  const markOperator = (): void => {
+  const markCommandNext = (): void => {
     atSegmentStart = true;
+    expectRedirectTarget = false;
+  };
+
+  const markRedirectTargetNext = (): void => {
+    atSegmentStart = false;
+    expectRedirectTarget = true;
   };
 
   while (index < command.length) {
@@ -124,12 +146,14 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
       const text = readString(ch);
       pushToken(tokens, "string", text);
       atSegmentStart = false;
+      expectRedirectTarget = false;
       continue;
     }
 
     if (ch === "$") {
       pushToken(tokens, "variable", readVariable());
       atSegmentStart = false;
+      expectRedirectTarget = false;
       continue;
     }
 
@@ -141,21 +165,21 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
         index += 1;
       }
       pushToken(tokens, "redirect", text);
-      markOperator();
+      markRedirectTargetNext();
       continue;
     }
 
     if (ch === "|" && (command[index + 1] ?? "") === "|") {
       pushToken(tokens, "operator", "||");
       index += 2;
-      markOperator();
+      markCommandNext();
       continue;
     }
 
     if (ch === "&" && (command[index + 1] ?? "") === "&") {
       pushToken(tokens, "operator", "&&");
       index += 2;
-      markOperator();
+      markCommandNext();
       continue;
     }
 
@@ -163,7 +187,7 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
       pushToken(tokens, "operator", ch);
       index += 1;
       if (ch === "|" || ch === ";") {
-        markOperator();
+        markCommandNext();
       }
       continue;
     }
@@ -172,7 +196,7 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
       if ((command[index + 1] ?? "") === ">") {
         pushToken(tokens, "redirect", "&>");
         index += 2;
-        markOperator();
+        markRedirectTargetNext();
         continue;
       }
       pushToken(tokens, "operator", ch);
@@ -192,15 +216,16 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
         index += 1;
       }
       pushToken(tokens, "redirect", text);
-      markOperator();
+      markRedirectTargetNext();
       continue;
     }
 
     const word = readWord();
     const kind = classifyWord(word);
     pushToken(tokens, kind, word);
-    if (kind === "command") {
+    if (kind === "command" || kind === "argument" || kind === "option" || kind === "path") {
       atSegmentStart = false;
+      expectRedirectTarget = false;
     }
   }
 

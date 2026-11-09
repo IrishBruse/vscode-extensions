@@ -29,7 +29,7 @@ describe("tokenizeShellCommand", () => {
       "whitespace",
       "argument",
       "whitespace",
-      "argument",
+      "path",
     ]);
   });
 
@@ -59,6 +59,29 @@ describe("tokenizeShellCommand", () => {
     expect(kinds(tokens)).toContain("redirect");
     expect(kinds(tokens)).toContain("operator");
     expect(texts(tokens).join("")).toBe("npm test 2>&1 && echo done");
+  });
+
+  it("colors a redirect target as a path and the next command after a pipe", () => {
+    const tokens = tokenizeShellCommand('as --help foo "test" | code test > /dev/null');
+    expect(kinds(tokens)).toEqual([
+      "command",
+      "whitespace",
+      "option",
+      "whitespace",
+      "argument",
+      "whitespace",
+      "string",
+      "whitespace",
+      "operator",
+      "whitespace",
+      "command",
+      "whitespace",
+      "argument",
+      "whitespace",
+      "redirect",
+      "whitespace",
+      "path",
+    ]);
   });
 
   it("treats trailing hash as comment", () => {
