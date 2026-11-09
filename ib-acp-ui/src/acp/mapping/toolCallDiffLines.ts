@@ -50,6 +50,95 @@ export function windowToolCallDiffRows(rows: readonly ToolCallDiffRow[]): ToolCa
     return windowed;
 }
 
+function isChangeRow(row: ToolCallDiffRow | undefined): boolean {
+    return row?.kind === "added" || row?.kind === "removed";
+}
+
+function firstChangeOffset(
+    rows: readonly ToolCallDiffRow[],
+    start: number,
+    length: number,
+): number {
+    const end = Math.min(rows.length, start + length);
+    for (let index = start; index < end; index += 1) {
+        if (isChangeRow(rows[index])) {
+            return index - start;
+        }
+    }
+    return length;
+}
+
+/**
+ * Collapsed diff preview: pick a fixed-height window that shows edits, not file-start context.
+ * Expanded views should pass the full `rows` array instead.
+ */
+export function previewDiffRows(
+    rows: readonly ToolCallDiffRow[],
+    maxRows: number,
+): ToolCallDiffRow[] {
+    if (maxRows <= 0 || rows.length === 0) {
+        return [];
+    }
+    if (rows.length <= maxRows) {
+        const firstChange = rows.findIndex((row) => isChangeRow(row));
+        if (firstChange <= 0) {
+            return [...rows];
+        }
+        let lastChange = rows.length - 1;
+        while (lastChange > firstChange && !isChangeRow(rows[lastChange])) {
+            lastChange -= 1;
+        }
+        const changeSpan = lastChange - firstChange + 1;
+        if (changeSpan > maxRows) {
+            return [...rows];
+        }
+        const previewStart = firstChange;
+        const previewEnd = Math.min(rows.length, previewStart + maxRows);
+        return rows.slice(previewStart, previewEnd);
+    }
+
+    let bestStart = 0;
+    let bestLength = 0;
+    let bestScore = -1;
+    let bestLeadContext = maxRows;
+    for (let start = 0; start < rows.length; start += 1) {
+        const length = Math.min(maxRows, rows.length - start);
+        if (length <= 0) {
+            continue;
+        }
+        let score = 0;
+        for (let index = start; index < start + length; index += 1) {
+            if (isChangeRow(rows[index])) {
+                score += 1;
+            }
+        }
+        const leadContext = firstChangeOffset(rows, start, length);
+        if (
+            score > bestScore ||
+            (score === bestScore &&
+                score > 0 &&
+                (leadContext < bestLeadContext ||
+                    (leadContext === bestLeadContext && length > bestLength)))
+        ) {
+            bestScore = score;
+            bestLeadContext = leadContext;
+            bestStart = start;
+            bestLength = length;
+        }
+    }
+
+    if (bestScore <= 0) {
+        const anchor = rows.findIndex((row) => isChangeRow(row));
+        if (anchor >= 0) {
+            const start = Math.max(0, Math.min(anchor, Math.max(0, rows.length - maxRows)));
+            return rows.slice(start, start + Math.min(maxRows, rows.length - start));
+        }
+        return rows.slice(0, maxRows);
+    }
+
+    return rows.slice(bestStart, bestStart + Math.min(maxRows, rows.length - bestStart));
+}
+
 function splitLinesNormalized(text: string): string[] {
     const normalized = text.replace(/\r\n/g, "\n");
     if (normalized.length === 0) {

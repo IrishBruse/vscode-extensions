@@ -74,6 +74,8 @@ export type ChatComposerProps = {
     images: AcpUiPromptImage[];
     mode: FollowUpMode;
   } | null;
+  onDismissFollowUp?: () => void;
+  onEditFollowUp?: () => void;
   onCancel: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   /** Paste handler on the textarea; captures image clips as attachments. */
@@ -130,6 +132,8 @@ export function ChatComposer({
   onPickSessionConfigOption,
   onSubmit,
   followUp = null,
+  onDismissFollowUp,
+  onEditFollowUp,
   onCancel,
   onKeyDown,
   onPaste,
@@ -261,8 +265,81 @@ export function ChatComposer({
 
   const inflight = activityLabel !== null && activityLabel.length > 0;
   const activityDisplay = inflight ? activityLabel : workspacePathHint;
+  const followUpSummary =
+    followUp === null
+      ? ""
+      : followUp.body.trim().length > 0
+        ? followUp.body.replace(/\s+/g, " ").trim()
+        : followUp.images.length === 1
+          ? "1 image"
+          : `${followUp.images.length} images`;
   return (
-    <footer className="composer-frame">
+    <div className="composer-stack">
+      {followUp !== null ? (
+        <div className="composer-follow-up-bar" role="status">
+          <span className="composer-follow-up-label">
+            {followUp.mode === "queue" ? "Queued" : "Steering"}
+          </span>
+          <span className="composer-follow-up-text" title={followUpSummary}>
+            {followUpSummary}
+          </span>
+          <div className="composer-follow-up-actions">
+            <button
+              type="button"
+              className="composer-follow-up-action"
+              aria-label="Edit queued message"
+              onClick={() => onEditFollowUp?.()}
+            >
+              <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M11.5 1.5a1.2 1.2 0 0 1 1.7 1.7l-9 9L2 13.5l1.3-2.2 9-9zM12.3 2.3 4 10.6l-.7 1.2 1.2-.7 8.3-8.3-1.5-1.5z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="composer-follow-up-action"
+              aria-label="Remove queued message"
+              onClick={() => onDismissFollowUp?.()}
+            >
+              <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M3.7 3.7a.9.9 0 0 1 1.3 0L8 6.7l3-3a.9.9 0 1 1 1.3 1.3L9.3 8l3 3a.9.9 0 1 1-1.3 1.3L8 9.3l-3 3a.9.9 0 1 1-1.3-1.3L6.7 8l-3-3a.9.9 0 0 1 0-1.3z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {pendingImages.length > 0 ? (
+        <div className="composer-image-row" role="list" aria-label="Attached images">
+          {pendingImages.map((image, index) => (
+            <span
+              key={`${index}:${image.mimeType}:${image.data.length}`}
+              className="composer-image-chip"
+              role="listitem"
+            >
+              <img
+                className="composer-image-thumb"
+                src={promptImageSrc(image)}
+                alt={`Pasted image ${index + 1}`}
+                onClick={() => onOpenImage(promptImageSrc(image))}
+              />
+              <button
+                type="button"
+                className="composer-image-remove"
+                aria-label={`Remove pasted image ${index + 1}`}
+                onClick={() => onRemoveImage(index)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <footer className="composer-frame">
       {autocomplete !== null && autocompleteOpen ? (
         <div
           ref={slashMenuRef}
@@ -341,51 +418,6 @@ export function ChatComposer({
         <span className="composer-top-bar-hint">/ commands · @ files</span>
       </div>
       <div className="composer-input-wrap">
-        {followUp !== null ? (
-          <div className="composer-follow-up" role="status">
-            <span className="composer-follow-up-mode">
-              {followUp.mode === "queue" ? "Queued" : "Steering"}
-            </span>
-            <span className="composer-follow-up-text">
-              {followUp.body.trim().length > 0
-                ? followUp.body
-                : followUp.images.length === 1
-                  ? "1 image"
-                  : `${followUp.images.length} images`}
-            </span>
-            <span className="composer-follow-up-hint">
-              {followUp.mode === "queue"
-                ? "Sends when the agent finishes. Enter marks this as steering."
-                : "Sends after the running tool finishes. Enter interrupts the current message."}
-            </span>
-          </div>
-        ) : null}
-        {pendingImages.length > 0 ? (
-          <div className="composer-image-row" role="list" aria-label="Attached images">
-            {pendingImages.map((image, index) => (
-              <span
-                key={`${index}:${image.mimeType}:${image.data.length}`}
-                className="composer-image-chip"
-                role="listitem"
-              >
-                <img
-                  className="composer-image-thumb"
-                  src={promptImageSrc(image)}
-                  alt={`Pasted image ${index + 1}`}
-                  onClick={() => onOpenImage(promptImageSrc(image))}
-                />
-                <button
-                  type="button"
-                  className="composer-image-remove"
-                  aria-label={`Remove pasted image ${index + 1}`}
-                  onClick={() => onRemoveImage(index)}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : null}
         <textarea
           ref={composerInputRef}
           className="composer-input"
@@ -530,5 +562,6 @@ export function ChatComposer({
         </button>
       </div>
     </footer>
+    </div>
   );
 }

@@ -2,8 +2,7 @@
   position: relative;
   flex-shrink: 0;
   margin-top: auto;
-  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
-    var(--vscode-input-border, transparent);
+  border: none;
   border-radius: var(--vscode-cornerRadius-large, 8px);
   background-color: var(--vscode-input-background, var(--acp-ui-surface-panel));
   overflow: visible;
@@ -13,7 +12,6 @@
 .composer-frame:focus-within {
   outline: none;
   box-shadow: none;
-  border-color: var(--vscode-focusBorder);
 }
 
 .composer-top-bar {
@@ -114,40 +112,79 @@
   overflow: visible;
 }
 
-.composer-follow-up {
+.composer-stack {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin: var(--acp-ui-space-8) var(--acp-ui-space-12) 0;
-  padding: var(--acp-ui-space-8);
-  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
-    var(--vscode-input-border, var(--acp-ui-border-chrome));
-  border-radius: var(--vscode-cornerRadius-small, 4px);
-  background: var(--vscode-input-background, transparent);
+  gap: var(--acp-ui-space-6);
+  flex-shrink: 0;
 }
 
-.composer-follow-up-mode {
+.composer-follow-up-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--acp-ui-space-8);
+  min-width: 0;
+  padding: 0 var(--acp-ui-space-4);
+}
+
+.composer-follow-up-label {
+  flex-shrink: 0;
   font-size: var(--acp-ui-font-size-label);
   font-weight: var(--acp-ui-font-weight-semibold);
-  color: var(--acp-ui-text-primary);
+  color: var(--acp-ui-text-secondary);
 }
 
 .composer-follow-up-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--acp-ui-font-size-small);
   color: var(--acp-ui-text-primary);
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.composer-follow-up-hint {
+.composer-follow-up-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--acp-ui-space-4);
+}
+
+.composer-follow-up-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
   color: var(--acp-ui-text-secondary);
-  font-size: var(--acp-ui-font-size-small);
+  background: transparent;
+  border: none;
+  border-radius: var(--acp-ui-radius-sm);
+  cursor: pointer;
+}
+
+.composer-follow-up-action:hover {
+  color: var(--acp-ui-text-primary);
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
+.composer-follow-up-action:focus-visible {
+  outline: var(--acp-ui-stroke-width) solid var(--acp-ui-focus-border);
+  outline-offset: 1px;
+}
+
+.composer-follow-up-icon {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .composer-image-row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--acp-ui-space-6);
-  padding: var(--acp-ui-space-8) var(--acp-ui-space-12) 0;
+  padding: 0 var(--acp-ui-space-4);
 }
 
 .composer-image-chip {

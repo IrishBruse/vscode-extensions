@@ -33,7 +33,7 @@ The composer does not switch agents.
 
 [pickAcpAgentConfig](../../../src/extension/acpUiAgentPicker.ts) shows a quick pick over the merged list, with a **Browse Agent Registry** entry.
 [selectActiveAgent](../../../src/extension/acpUiSessionsView.ts) updates the active agent for the Chats view.
-`.acp` tabs contribute new-chat commands to `editor/title/run` so VS Code renders the `+ ▾` split button.
+`.acp` tabs contribute new-chat commands to `editor/title` (`navigation` group with `alt`) so VS Code renders the `+ ▾` split button.
 
 ### Per-session agent binding
 

@@ -1,6 +1,18 @@
-import { type ReactElement, type SyntheticEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  type ReactElement,
+  type SyntheticEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import "./AgentThoughtBlock.css";
+
+const AgentMarkdown = lazy(() =>
+  import("../AgentMarkdown/AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
+);
 
 function durationLabel(durationMs: number | undefined): string {
   if (durationMs === undefined || !Number.isFinite(durationMs) || durationMs < 0) {
@@ -11,7 +23,7 @@ function durationLabel(durationMs: number | undefined): string {
 }
 
 /**
- * Renders a compact model-thought chunk as a dim terminal-style block.
+ * Renders a compact model-thought chunk with markdown body text.
  * The heading toggles the thought text.
  */
 export function AgentThoughtBlock({
@@ -56,7 +68,11 @@ export function AgentThoughtBlock({
         <span className="agent-thought-chunk-chevron" aria-hidden="true" />
         {durationLabel(durationMs)}
       </summary>
-      <pre className="agent-thought-chunk-body">{text}</pre>
+      <div className="agent-thought-chunk-body">
+        <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>
+          <AgentMarkdown text={text} />
+        </Suspense>
+      </div>
     </details>
   );
 }

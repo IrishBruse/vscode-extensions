@@ -2,7 +2,10 @@ import { type KeyboardEvent, type ReactElement, useEffect, useRef, useState } fr
 import type { ToolCallStatus } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import "./ToolCallBlock.css";
-import { windowToolCallDiffRows } from "../../../../../../../src/acp/mapping/toolCallDiffLines";
+import {
+  previewDiffRows,
+  windowToolCallDiffRows,
+} from "../../../../../../../src/acp/mapping/toolCallDiffLines";
 import type { TraceToolItem } from "../../../../chatReducer";
 
 const collapsiblePreviewLineCount = 3;
@@ -172,7 +175,7 @@ export function ToolCallBlock({
     hasDiff && diffRows !== undefined && diffRows.length > collapsibleDiffPreviewRowCount;
   const displayedDiffRows =
     diffCollapsible && !expandedThis
-      ? diffRows.slice(0, collapsibleDiffPreviewRowCount)
+      ? previewDiffRows(diffRows, collapsibleDiffPreviewRowCount)
       : (diffRows ?? []);
 
   const headerCollapsible = showOutput && (diffCollapsible || outputCollapsible);

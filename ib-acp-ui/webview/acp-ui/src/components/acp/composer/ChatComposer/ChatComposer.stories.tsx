@@ -24,6 +24,8 @@ const baseProps = {
   onPickSessionModel: noop,
   onPickSessionConfigOption: noop,
   onSubmit: noop,
+  onDismissFollowUp: noop,
+  onEditFollowUp: noop,
   onCancel: noop,
   onKeyDown: noop,
   onPaste: noop,

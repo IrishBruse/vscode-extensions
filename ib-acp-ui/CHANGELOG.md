@@ -5,6 +5,11 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: The **New Chat** `+ ▾` control shows on open `.acp` editor tabs.
+- **Fix**: Thought blocks render markdown the same way as agent replies.
+- **Fix**: Collapsed edit diffs preview around changed lines instead of always showing the file start.
+- **Change**: Queued messages sit on one line above the composer with edit and remove actions.
+
 ## 0.7.0
 
 - **Remove**: The tool call verbosity setting (`minimal`, `compact`, and `verbose`).

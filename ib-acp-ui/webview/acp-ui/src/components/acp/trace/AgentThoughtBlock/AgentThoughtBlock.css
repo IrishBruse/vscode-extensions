@@ -4,7 +4,6 @@
   padding: 0;
   border: none;
   background: transparent;
-  font-family: var(--acp-ui-font-mono);
   color: var(--acp-ui-text-primary);
 }
 
@@ -58,8 +57,12 @@
 .agent-thought-chunk-body {
   margin: 0;
   padding-left: var(--acp-ui-trace-content-indent);
+}
+
+.agent-thought-chunk-body .agent-markdown-pending {
+  font-family: var(--acp-ui-font-sans);
+  font-size: var(--acp-markdown-font-size, var(--acp-ui-font-size-body));
+  line-height: var(--acp-markdown-line-height, var(--acp-ui-line-height-body));
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: var(--acp-ui-font-size-body);
-  line-height: var(--acp-ui-line-height-heading);
 }

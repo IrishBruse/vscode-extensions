@@ -4,7 +4,7 @@
 
 This surface is for extension developers, not end users.
 
-Run `npm run storybook` to open the chat UI in a browser without installing the VS Code extension.
+Run `npm run storybook`, then open http://127.0.0.1:6006/ in a browser to view the chat UI without installing the VS Code extension.
 Storybook serves the component catalog on port 6006.
 
 The sidebar has three groups.

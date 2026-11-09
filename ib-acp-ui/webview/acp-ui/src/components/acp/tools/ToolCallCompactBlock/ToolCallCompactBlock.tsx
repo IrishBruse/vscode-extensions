@@ -11,7 +11,10 @@ import { createPortal } from "react-dom";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./ToolCallCompactBlock.css";
-import { windowToolCallDiffRows } from "../../../../../../../src/acp/mapping/toolCallDiffLines";
+import {
+  previewDiffRows,
+  windowToolCallDiffRows,
+} from "../../../../../../../src/acp/mapping/toolCallDiffLines";
 import type { TraceToolItem } from "../../../../chatReducer";
 import {
   type CompactToolDetailParts,
@@ -293,7 +296,8 @@ function CompactDiffLines({
   }
   const expanded = expandAllToolOutputs || localExpanded;
   const collapsible = rows.length > diffPreviewRowCount;
-  const shown = collapsible && !expanded ? rows.slice(0, diffPreviewRowCount) : rows;
+  const shown =
+    collapsible && !expanded ? previewDiffRows(rows, diffPreviewRowCount) : rows;
   return (
     <div className="tool-call-compact-diff">
       <div className="tool-call-diff" role="group" aria-label="File diff">

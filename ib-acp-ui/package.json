@@ -32,7 +32,7 @@
         "screenshots": "npm run build:fixtures && tsx scripts/capture-readme-screenshots.ts",
         "publish:vscode": "bash scripts/publish.sh",
         "sync:docs": "bash scripts/sync-docs.sh",
-        "storybook": "storybook dev -p 6006 -c webview/acp-ui/.storybook",
+        "storybook": "storybook dev -p 6006 -c webview/acp-ui/.storybook --no-open",
         "storybook:build": "storybook build -c webview/acp-ui/.storybook -o ../.tmp/acp-ui-storybook"
     },
     "dependencies": {
@@ -274,6 +274,12 @@
         "menus": {
             "editor/title": [
                 {
+                    "command": "ib-acp-ui.newAcpUiInEditor",
+                    "when": "activeCustomEditorId == 'ibAcpUi.session' || resourceExtname == '.acp'",
+                    "alt": "ib-acp-ui.newAcpUiInEditorPickAgent",
+                    "group": "navigation"
+                },
+                {
                     "command": "ib-acp-ui.openAcpUiView",
                     "when": "resourceExtname == '.acp' && activeCustomEditorId != 'ibAcpUi.session'",
                     "group": "1_acp@1"
@@ -282,18 +288,6 @@
                     "command": "ib-acp-ui.openAcpUiTextEditor",
                     "when": "activeCustomEditorId == 'ibAcpUi.session'",
                     "group": "1_acp@1"
-                }
-            ],
-            "editor/title/run": [
-                {
-                    "command": "ib-acp-ui.newAcpUiInEditor",
-                    "when": "activeCustomEditorId == 'ibAcpUi.session' || resourceExtname == '.acp'",
-                    "group": "navigation@1"
-                },
-                {
-                    "command": "ib-acp-ui.newAcpUiInEditorPickAgent",
-                    "when": "activeCustomEditorId == 'ibAcpUi.session' || resourceExtname == '.acp'",
-                    "group": "navigation@2"
                 }
             ],
             "view/item/context": [

@@ -417,6 +417,26 @@ export function AcpUiApp({
     setComposerAutocompleteDismissed(true);
   }, []);
 
+  const onDismissFollowUp = useCallback((): void => {
+    setQueuedFollowUp(null);
+    steerSawRunningToolRef.current = false;
+  }, []);
+
+  const onEditFollowUp = useCallback((): void => {
+    if (queuedFollowUp === null) {
+      return;
+    }
+    setDraft(queuedFollowUp.body);
+    setPendingImages(queuedFollowUp.images);
+    setQueuedFollowUp(null);
+    steerSawRunningToolRef.current = false;
+    setHistoryBrowse(null);
+    setComposerAutocompleteDismissed(false);
+    requestAnimationFrame(() => {
+      composerTextareaRef.current?.focus();
+    });
+  }, [queuedFollowUp]);
+
   const deliverPrompt = (body: string, images: AcpUiPromptImage[]): void => {
     setDraft("");
     setHistoryBrowse(null);
@@ -926,6 +946,8 @@ export function AcpUiApp({
               }}
               onSubmit={handleComposerSend}
               followUp={queuedFollowUp}
+              onDismissFollowUp={onDismissFollowUp}
+              onEditFollowUp={onEditFollowUp}
               onCancel={postCancel}
               onKeyDown={onComposerKeyDown}
               onPaste={onComposerPaste}
