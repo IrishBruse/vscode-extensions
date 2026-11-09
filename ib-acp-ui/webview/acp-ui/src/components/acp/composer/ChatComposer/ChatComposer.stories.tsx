@@ -33,7 +33,7 @@ const baseProps = {
   onRemoveImage: noop,
   onOpenImage: noop,
   tokenUsage: null,
-} satisfies Omit<ChatComposerProps, "activityLabel" | "promptInFlight">;
+} satisfies Omit<ChatComposerProps, "promptInFlight">;
 
 const meta = {
   title: "ACP/Composer/ChatComposer",
@@ -48,7 +48,6 @@ type Story = StoryObj<typeof meta>;
 export const Idle: Story = {
   args: {
     ...baseProps,
-    activityLabel: null,
     promptInFlight: false,
   },
 };
@@ -56,7 +55,6 @@ export const Idle: Story = {
 export const Running: Story = {
   args: {
     ...baseProps,
-    activityLabel: "Agent is thinking…",
     promptInFlight: true,
     draft: "Follow up when ready",
   },
@@ -65,7 +63,6 @@ export const Running: Story = {
 export const SlashSuggestions: Story = {
   args: {
     ...baseProps,
-    activityLabel: null,
     promptInFlight: false,
     draft: "/cl",
     slashCommands: [
@@ -78,7 +75,6 @@ export const SlashSuggestions: Story = {
 export const FileMentions: Story = {
   args: {
     ...baseProps,
-    activityLabel: null,
     promptInFlight: false,
     draft: "@src/ext",
     workspaceFiles: ["src/extension.ts", "src/extensionHostMessages.ts", "webview/acp-ui/src/AcpUiApp.tsx"],
@@ -88,7 +84,6 @@ export const FileMentions: Story = {
 export const PendingImage: Story = {
   args: {
     ...baseProps,
-    activityLabel: null,
     promptInFlight: false,
     draft: "What is in this screenshot?",
     pendingImages: [
@@ -103,7 +98,6 @@ export const PendingImage: Story = {
 export const FollowUpQueued: Story = {
   args: {
     ...baseProps,
-    activityLabel: "Agent is thinking…",
     promptInFlight: true,
     draft: "",
     followUp: { body: "Also check the failing test.", images: [], mode: "queue" },
@@ -113,7 +107,6 @@ export const FollowUpQueued: Story = {
 export const InputBlocked: Story = {
   args: {
     ...baseProps,
-    activityLabel: "Waiting for permission",
     promptInFlight: true,
     inputBlocked: true,
     draft: "npm test",
@@ -123,7 +116,6 @@ export const InputBlocked: Story = {
 export const ConfigLoading: Story = {
   args: {
     ...baseProps,
-    activityLabel: null,
     promptInFlight: false,
     modelSelection: null,
     sessionConfigLoading: true,

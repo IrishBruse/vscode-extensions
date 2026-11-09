@@ -9,6 +9,12 @@ import {
     window,
     workspace,
 } from "vscode";
+import {
+    type AgentTabIndicator,
+    agentTabGeneratingFrames,
+    agentTabTitleFrameMs,
+    formatAgentTabTitle,
+} from "../protocol/agentTabTitle";
 import { AcpUiSessionController } from "./acpUiSessionController";
 import { ensureSessionFileNameMatchesTitle, parseSessionFile } from "./acpUiSessionJsonl";
 import { updateAcpUiSessionFileUri } from "./acpUiSessionsStore";
@@ -21,17 +27,110 @@ const acpUiPanelTabIcon = new ThemeIcon("comment-discussion");
 const controllersByDocumentUri = new Map<string, AcpUiSessionController>();
 const panelsByDocumentUri = new Map<string, WebviewPanel>();
 
+type AgentTabTitleRuntime = {
+    baseTitle: string;
+    indicator: AgentTabIndicator | null;
+    animate: boolean;
+    frame: number;
+    timer: ReturnType<typeof setInterval> | undefined;
+};
+
+const agentTabTitles = new Map<string, AgentTabTitleRuntime>();
+
 let refreshChatsListHandler: (() => void) | undefined;
+
+function clearAgentTabTimer(state: AgentTabTitleRuntime): void {
+    if (state.timer !== undefined) {
+        clearInterval(state.timer);
+        state.timer = undefined;
+    }
+}
+
+function paintAgentTabTitle(uriKey: string): void {
+    const panel = panelsByDocumentUri.get(uriKey);
+    const state = agentTabTitles.get(uriKey);
+    if (panel === undefined || state === undefined) {
+        return;
+    }
+    panel.title = formatAgentTabTitle(state.baseTitle, state.indicator, state.frame);
+}
+
+function syncAgentTabTimer(uriKey: string, state: AgentTabTitleRuntime): void {
+    const shouldAnimate = state.indicator === "generating" && state.animate;
+    if (!shouldAnimate) {
+        clearAgentTabTimer(state);
+        return;
+    }
+    if (state.timer !== undefined) {
+        return;
+    }
+    state.timer = setInterval(() => {
+        state.frame = (state.frame + 1) % agentTabGeneratingFrames.length;
+        paintAgentTabTitle(uriKey);
+    }, agentTabTitleFrameMs);
+}
+
+function disposeAgentTabTitle(uriKey: string): void {
+    const state = agentTabTitles.get(uriKey);
+    if (state === undefined) {
+        return;
+    }
+    clearAgentTabTimer(state);
+    agentTabTitles.delete(uriKey);
+}
 
 export function setAcpUiCustomEditorTabTitle(uri: Uri, title: string): void {
     const trimmed = title.trim();
     if (trimmed.length === 0) {
         return;
     }
-    const panel = panelsByDocumentUri.get(uri.toString());
-    if (panel !== undefined) {
-        panel.title = trimmed;
+    const key = uri.toString();
+    const existing = agentTabTitles.get(key);
+    if (existing === undefined) {
+        agentTabTitles.set(key, {
+            baseTitle: trimmed,
+            indicator: null,
+            animate: true,
+            frame: 0,
+            timer: undefined,
+        });
+    } else {
+        existing.baseTitle = trimmed;
     }
+    paintAgentTabTitle(key);
+}
+
+/** Applies the Cursor agent monochrome status mark on the editor tab. */
+export function setAcpUiCustomEditorTabActivity(
+    uri: Uri,
+    indicator: AgentTabIndicator | null,
+    animate: boolean,
+): void {
+    const key = uri.toString();
+    const panel = panelsByDocumentUri.get(key);
+    if (panel === undefined) {
+        return;
+    }
+    let state = agentTabTitles.get(key);
+    if (state === undefined) {
+        state = {
+            baseTitle: panel.title,
+            indicator: null,
+            animate: true,
+            frame: 0,
+            timer: undefined,
+        };
+        agentTabTitles.set(key, state);
+    }
+    if (state.indicator === indicator && state.animate === animate) {
+        return;
+    }
+    state.indicator = indicator;
+    state.animate = animate;
+    state.frame = 0;
+    clearAgentTabTimer(state);
+    syncAgentTabTimer(key, state);
+    paintAgentTabTitle(key);
 }
 
 export function moveAcpUiCustomEditorUri(from: Uri, to: Uri): void {
@@ -44,6 +143,14 @@ export function moveAcpUiCustomEditorUri(from: Uri, to: Uri): void {
     if (panel !== undefined) {
         panelsByDocumentUri.delete(fromKey);
         panelsByDocumentUri.set(toKey, panel);
+    }
+    const tabTitle = agentTabTitles.get(fromKey);
+    if (tabTitle !== undefined) {
+        agentTabTitles.delete(fromKey);
+        clearAgentTabTimer(tabTitle);
+        tabTitle.timer = undefined;
+        agentTabTitles.set(toKey, tabTitle);
+        syncAgentTabTimer(toKey, tabTitle);
     }
     const controller = controllersByDocumentUri.get(fromKey);
     if (controller !== undefined) {
@@ -107,7 +214,6 @@ export class AcpUiCustomEditorProvider implements CustomTextEditorProvider {
             this.context.extensionUri,
             webviewPanel.webview,
         );
-        webviewPanel.title = parsed.header.title;
         webviewPanel.iconPath = acpUiPanelTabIcon;
 
         const uriKey = sessionDocument.uri.toString();
@@ -126,11 +232,13 @@ export class AcpUiCustomEditorProvider implements CustomTextEditorProvider {
         });
         controllersByDocumentUri.set(uriKey, controller);
         panelsByDocumentUri.set(uriKey, webviewPanel);
+        setAcpUiCustomEditorTabTitle(sessionDocument.uri, parsed.header.title);
         controller.activate();
 
         webviewPanel.onDidDispose(() => {
             controllersByDocumentUri.delete(uriKey);
             panelsByDocumentUri.delete(uriKey);
+            disposeAgentTabTitle(uriKey);
             controller.dispose();
         });
     }

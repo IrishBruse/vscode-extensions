@@ -1,12 +1,25 @@
-import { commands, type FileStat, FileType, type Uri, workspace } from "vscode";
+import { commands, type FileStat, FileType, type Uri, ViewColumn, workspace } from "vscode";
 
 export type WorkspacePathOpenTarget = "file" | "auto";
+
+function isMarkdownDocument(uri: Uri): boolean {
+    return uri.fsPath.toLowerCase().endsWith(".md");
+}
+
+async function openMarkdownDocument(uri: Uri): Promise<void> {
+    await commands.executeCommand("vscode.openWith", uri, "default", ViewColumn.Active);
+}
 
 /** Opens or reveals a resolved filesystem path in the workbench. */
 export async function openWorkspacePathTarget(
     uri: Uri,
     target: WorkspacePathOpenTarget | undefined,
 ): Promise<void> {
+    if (isMarkdownDocument(uri)) {
+        await openMarkdownDocument(uri);
+        return;
+    }
+
     const openMode = target ?? "file";
 
     if (openMode === "auto") {

@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import type { AgentTabIndicator } from "../../../src/protocol/agentTabTitle";
 import type { AcpUiPromptImage, WorkspacePathOpenTarget } from "../../../src/protocol/extensionHostMessages";
 import { createRoot } from "react-dom/client";
 import type { ChatState, ExtensionMessageAfterInit, InitPayload, TraceItem } from "./chatReducer";
@@ -55,6 +56,7 @@ export function mountChatView(
   postOpenSession?: (sessionId: string) => void,
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void,
   postSaveVisibleTrace?: (items: TraceItem[]) => void,
+  postTabActivity?: (indicator: AgentTabIndicator | null, animate: boolean) => void,
 ): ChatView {
   root.replaceChildren();
   root.className = "root agent-root";
@@ -85,6 +87,7 @@ export function mountChatView(
       postSetSessionConfigOption={postSetSessionConfigOption}
       postSaveHistory={postSaveHistory}
       postSaveVisibleTrace={postSaveVisibleTrace}
+      postTabActivity={postTabActivity}
       postOpenNewChat={postOpenNewChat}
       postSetSessionAgent={postSetSessionAgent}
       postOpenSession={postOpenSession}

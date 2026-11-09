@@ -34,6 +34,7 @@ import { setActiveAgentName } from "./acpUiActiveAgent";
 import { openOrRevealAcpUiEditor } from "./acpUiPanel";
 import {
     moveAcpUiCustomEditorUri,
+    setAcpUiCustomEditorTabActivity,
     setAcpUiCustomEditorTabTitle,
 } from "./acpUiCustomEditorProvider";
 import {
@@ -454,6 +455,11 @@ export class AcpUiSessionController {
 
         if (parsed.type === "openNewChat") {
             void commands.executeCommand("ib-acp-ui.openChat");
+            return;
+        }
+
+        if (parsed.type === "tabActivity") {
+            setAcpUiCustomEditorTabActivity(this.documentUri, parsed.indicator, parsed.animate);
             return;
         }
 

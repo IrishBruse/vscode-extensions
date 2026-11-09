@@ -43,8 +43,7 @@ import { promptImageSrc } from "../../../../pastedImages";
 import type { FollowUpMode } from "./composerFollowUp";
 
 export type ChatComposerProps = {
-  activityLabel: string | null;
-  /** Shown in the activity slot when nothing is in flight (e.g. workspace cwd). */
+  /** Workspace path shown in the composer status slot. */
   workspacePathHint: string;
   modelSelection: AcpUiSessionModelSelection | null;
   sessionConfigOptions: AcpUiSessionConfigOption[] | null;
@@ -109,10 +108,9 @@ function sendFollowUpLabel(
 }
 
 /**
- * Activity hint, optional model picker, message input, and send/cancel actions.
+ * Workspace path, optional model picker, message input, and send/cancel actions.
  */
 export function ChatComposer({
-  activityLabel,
   workspacePathHint,
   modelSelection,
   sessionConfigOptions,
@@ -263,8 +261,6 @@ export function ChatComposer({
     onPickSessionConfigOption(configId, value);
   };
 
-  const inflight = activityLabel !== null && activityLabel.length > 0;
-  const activityDisplay = inflight ? activityLabel : workspacePathHint;
   const followUpSummary =
     followUp === null
       ? ""
@@ -397,15 +393,8 @@ export function ChatComposer({
         </div>
       ) : null}
       <div className="composer-top-bar">
-        <div
-          className={
-            inflight ? "composer-activity composer-activity--inflight" : "composer-activity"
-          }
-          role="status"
-          aria-live="polite"
-          title={inflight ? undefined : workspacePathHint}
-        >
-          {activityDisplay}
+        <div className="composer-activity" role="status" title={workspacePathHint}>
+          {workspacePathHint}
         </div>
         {tokenUsage !== null ? (
           <span

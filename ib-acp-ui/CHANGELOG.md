@@ -5,6 +5,13 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Thought blocks use quieter text, and the open body stays a three-line window on the newest lines.
+- **Add**: A markdown file path in a tool result opens that file in the editor.
+- **Change**: The composer shows the workspace path while the agent is working.
+- **Add**: The editor tab title shows the Cursor agent monochrome status mark, and cycles it while the agent is generating.
+- **Fix**: File names on tool-call lines use the link color.
+- **Change**: A thought heading says Thinking while it is running and Thought once it finishes.
+- **Change**: Attached image thumbnails use the input outline color for their border.
 - **Add**: Thought blocks keep their elapsed time across reload and count up in tenths of a second while thinking.
 - **Add**: Bash command tool calls use fish-style syntax colors on the command line.
 - **Fix**: The **New Chat** `+ ▾` control shows on open `.acp` editor tabs.

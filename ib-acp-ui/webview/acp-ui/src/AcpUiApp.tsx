@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { cycleSessionModePick } from "../../../src/acp/session/sessionConfigOptions";
+import { agentTabIndicatorForTurn, type AgentTabIndicator } from "../../../src/protocol/agentTabTitle";
 import type {
   AcpUiPromptImage,
   AcpUiSlashCommand,
@@ -79,6 +80,7 @@ export type AcpUiAppProps = {
   postSetSessionConfigOption: (configId: string, value: string | boolean) => void;
   postSaveHistory: (entries: string[]) => void;
   postSaveVisibleTrace?: (items: TraceItem[]) => void;
+  postTabActivity?: (indicator: AgentTabIndicator | null, animate: boolean) => void;
   postOpenNewChat?: () => void;
   postSetSessionAgent?: (agentName: string) => void;
   postOpenSession?: (sessionId: string) => void;
@@ -123,6 +125,7 @@ export function AcpUiApp({
   postSetSessionConfigOption,
   postSaveHistory,
   postSaveVisibleTrace,
+  postTabActivity,
   postOpenNewChat,
   postSetSessionAgent,
   postOpenSession,
@@ -369,6 +372,16 @@ export function AcpUiApp({
     () => composerActivityLabel(state.promptInFlight, state.trace, state.openStreamIndex),
     [state.promptInFlight, state.trace, state.openStreamIndex],
   );
+  const tabIndicator = agentTabIndicatorForTurn({
+    promptInFlight: state.promptInFlight,
+    activityLabel,
+    waitingForUser: state.askQuestionPrompt !== null,
+    waitingForConfirmation: state.permissionPrompt !== null || state.createPlanPrompt !== null,
+  });
+  useEffect(() => {
+    const animate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    postTabActivity?.(tabIndicator, animate);
+  }, [postTabActivity, tabIndicator]);
 
   const builtInSlashCommands = useMemo((): AcpUiSlashCommand[] => {
     return [
@@ -916,7 +929,6 @@ export function AcpUiApp({
               />
             ) : null}
             <ChatComposer
-              activityLabel={activityLabel}
               workspacePathHint={workspaceText}
               modelSelection={state.modelSelection}
               sessionConfigOptions={state.sessionConfigOptions}

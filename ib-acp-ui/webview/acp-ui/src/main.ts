@@ -143,6 +143,9 @@ async function mountView(): Promise<void> {
     (items) => {
       host.post({ type: "saveVisibleTrace", items });
     },
+    (indicator, animate) => {
+      host.post({ type: "tabActivity", indicator, animate });
+    },
   );
   flushPendingExtensionMessages();
 }

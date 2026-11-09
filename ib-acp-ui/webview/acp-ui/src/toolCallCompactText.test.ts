@@ -77,6 +77,23 @@ describe("toolCallDetailKind", () => {
 });
 
 describe("toolCallCompactText", () => {
+  it("links a saved plan markdown file so it opens as that file", () => {
+    setCompactToolPathHome("/home/econn");
+    const parts = compactToolDetailParts(
+      toolItem({
+        toolCallId: "plan-1",
+        title: "Create Plan",
+        subtitle: '{"_toolName":"createPlan"}',
+        content:
+          "Plan saved to file:///home/econn/.cursor/plans/Thought%20block%20redesign-4084c8ed.plan.md",
+      }),
+    );
+    expect(parts.pathSegment?.openPath).toBe(
+      "/home/econn/.cursor/plans/Thought block redesign-4084c8ed.plan.md",
+    );
+    expect(parts.pathSegment?.openTarget).toBeUndefined();
+  });
+
   it("shortens absolute paths under home in compact labels", () => {
     setCompactToolPathHome("/home/econn");
     const item = toolItem({

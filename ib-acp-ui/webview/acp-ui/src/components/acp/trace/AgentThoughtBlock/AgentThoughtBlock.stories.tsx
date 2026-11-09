@@ -1,6 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactElement, useLayoutEffect, useState } from "react";
+import { AgentMarkdown } from "../AgentMarkdown/AgentMarkdown";
 import { AgentThoughtBlock } from "./AgentThoughtBlock";
+
+const longThought = [
+  "First pass reads the session file and the reducer.",
+  "Second pass checks how the previous thought closes.",
+  "Third pass looks at the compact tool line.",
+  "Fourth pass checks the markdown inside the thought.",
+  "Fifth pass tightens the paragraph spacing.",
+  "Newest thought line stays in view.",
+].join("\n\n");
 
 const meta = {
   title: "ACP/Trace/AgentThoughtBlock",
@@ -40,6 +50,19 @@ function CollapsedThought(): ReactElement {
     />
   );
 }
+
+export const Long: Story = {
+  render: () => (
+    <div>
+      <AgentThoughtBlock text={longThought} durationMs={1_700} />
+      <AgentMarkdown text="The reply below still uses the primary body text." />
+    </div>
+  ),
+  args: {
+    text: longThought,
+    durationMs: 1_700,
+  },
+};
 
 export const Collapsed: Story = {
   render: () => <CollapsedThought />,

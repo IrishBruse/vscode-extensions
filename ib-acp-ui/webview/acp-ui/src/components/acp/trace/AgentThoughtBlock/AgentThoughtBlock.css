@@ -14,7 +14,8 @@
   margin: 0 0 var(--acp-ui-space-6);
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-heading);
-  font-weight: var(--acp-ui-font-weight-semibold);
+  font-weight: var(--acp-ui-font-weight-regular);
+  color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -57,12 +58,40 @@
 .agent-thought-chunk-body {
   margin: 0;
   padding-left: var(--acp-ui-trace-content-indent);
+  max-height: 3lh;
+  overflow-y: auto;
+  font-size: var(--acp-ui-font-size-small);
+  color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
+}
+
+.agent-thought-chunk-body .agent-markdown,
+.agent-thought-chunk-body .agent-markdown-pending {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.agent-thought-chunk-body .agent-markdown :is(h1, h2, h3, h4, h5, h6, p, li, code, a) {
+  color: inherit;
+}
+
+.agent-thought-chunk-body .agent-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0.15em 0;
+  font-size: inherit;
+  font-weight: var(--acp-ui-font-weight-regular);
+}
+
+.agent-thought-chunk-body .agent-markdown :is(p, ul, ol) {
+  margin-top: 0;
+  margin-bottom: 0.2em;
+}
+
+.agent-thought-chunk-body .agent-markdown :is(ul, ol) {
+  padding-left: 1.1em;
 }
 
 .agent-thought-chunk-body .agent-markdown-pending {
   font-family: var(--acp-ui-font-sans);
-  font-size: var(--acp-markdown-font-size, var(--acp-ui-font-size-body));
-  line-height: var(--acp-markdown-line-height, var(--acp-ui-line-height-body));
   white-space: pre-wrap;
   word-break: break-word;
 }

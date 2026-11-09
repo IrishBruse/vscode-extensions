@@ -1,4 +1,5 @@
 import type { AcpUiSessionConfigOption } from "../acp/session/sessionConfigOptions";
+import { type AgentTabIndicator, isAgentTabIndicator } from "./agentTabTitle";
 import type { AcpUiSessionModelSelection } from "../acp/session/sessionModels";
 import type { AcpUiVisibleTraceItem } from "./visibleTrace";
 import { normalizeVisibleTrace } from "./visibleTrace";
@@ -125,6 +126,12 @@ export type WebviewToExtensionMessage =
           type: "openWorkspacePath";
           path: string;
           target?: WorkspacePathOpenTarget;
+      }
+    /** Editor tab status. `null` restores the chat name. `animate` cycles the generating mark. */
+    | {
+          type: "tabActivity";
+          indicator: AgentTabIndicator | null;
+          animate: boolean;
       };
 
 /**
@@ -463,6 +470,16 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
     }
     if (messageType === "openNewChat") {
         return { type: "openNewChat" };
+    }
+    if (messageType === "tabActivity") {
+        if (record.indicator !== null && !isAgentTabIndicator(record.indicator)) {
+            return null;
+        }
+        return {
+            type: "tabActivity",
+            indicator: record.indicator === null ? null : record.indicator,
+            animate: record.animate !== false,
+        };
     }
     if (
         messageType === "openWorkspacePath" &&

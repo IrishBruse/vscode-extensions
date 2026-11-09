@@ -1,4 +1,5 @@
 import { isAbsolute, join } from "node:path";
+import { filesystemPathFromFileUri } from "./fileUriPath";
 import { resolveUserHomeDir } from "./resolveUserHomeDir";
 
 /** Expands a leading `~` using `HOME` (then `homedir()`). */
@@ -23,7 +24,8 @@ export function normalizePathForCompare(fsPath: string): string {
 
 /** Resolves a workspace-relative or absolute tool path to an absolute filesystem path. */
 export function resolveWorkspacePath(path: string, workspaceRoot: string | undefined): string {
-    const expanded = expandTildeInPath(path);
+    const fromFileUri = filesystemPathFromFileUri(path);
+    const expanded = expandTildeInPath(fromFileUri ?? path);
     if (isAbsolute(expanded)) {
         return expanded;
     }

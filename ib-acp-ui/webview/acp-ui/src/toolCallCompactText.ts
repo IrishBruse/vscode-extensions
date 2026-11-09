@@ -1,5 +1,6 @@
 import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import type { ToolCallDiffRow } from "../../../src/protocol/extensionHostMessages";
+import { markdownFilesystemPathFromText } from "../../../src/platform/fileUriPath";
 import { formatPathWithTilde } from "../../../src/platform/pathDisplay";
 import type { TraceToolItem } from "./chatReducer";
 
@@ -426,6 +427,19 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
     return {
       verb: "Ran",
       detail: cmd.startsWith("$") ? cmd.slice(1).trimStart() : cmd,
+    };
+  }
+
+  const markdownPath =
+    markdownFilesystemPathFromText(item.content ?? "") ??
+    markdownFilesystemPathFromText(subtitle);
+  if (markdownPath !== undefined) {
+    const blob = `${subtitle}\n${item.content ?? ""}`;
+    const prefix = /plan saved to/i.test(blob) ? "Plan saved to " : "";
+    const title = item.title.trim();
+    return {
+      verb: title.length > 0 ? title : "Tool",
+      ...pathSegmentFromRaw(markdownPath, prefix.length > 0 ? { prefix } : {}),
     };
   }
 

@@ -75,7 +75,7 @@
   .tool-call-compact-detail-row
   .tool-call-compact-detail-text
   .tool-call-compact-path-link:visited {
-  color: var(--vscode-terminal-ansiGreen, #98c379);
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
   text-decoration: none;
 }
 
@@ -120,7 +120,7 @@
 .tool-call-compact-detail-text .tool-call-compact-path-link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:visited {
-  color: var(--vscode-terminal-ansiGreen, #98c379);
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
   text-decoration: none;
   cursor: pointer;
 }

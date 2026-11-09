@@ -15,12 +15,13 @@ const AgentMarkdown = lazy(() =>
   import("../AgentMarkdown/AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
 );
 
-function durationLabel(durationMs: number | undefined): string {
+function durationLabel(durationMs: number | undefined, running: boolean): string {
+  const verb = running ? "Thinking" : "Thought";
   if (durationMs === undefined || !Number.isFinite(durationMs) || durationMs < 0) {
-    return "Thought";
+    return verb;
   }
   const seconds = formatThoughtSeconds(durationMs);
-  return seconds.length > 0 ? `Thought for ${seconds}` : "Thought";
+  return seconds.length > 0 ? `${verb} for ${seconds}` : verb;
 }
 
 /**
@@ -58,7 +59,19 @@ export function AgentThoughtBlock({
   const liveDurationMs =
     ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
   const [expanded, setExpanded] = useState(true);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const seenCollapseNonceRef = useRef(collapseNonce);
+
+  useLayoutEffect(() => {
+    if (!expanded) {
+      return;
+    }
+    const body = bodyRef.current;
+    if (body === null) {
+      return;
+    }
+    body.scrollTop = body.scrollHeight;
+  }, [expanded, text]);
 
   useLayoutEffect(() => {
     if (collapseNonce === seenCollapseNonceRef.current) {
@@ -85,9 +98,9 @@ export function AgentThoughtBlock({
     >
       <summary className="agent-thought-chunk-title">
         <span className="agent-thought-chunk-chevron" aria-hidden="true" />
-        {durationLabel(liveDurationMs)}
+        {durationLabel(liveDurationMs, ticking)}
       </summary>
-      <div className="agent-thought-chunk-body">
+      <div className="agent-thought-chunk-body" ref={bodyRef}>
         <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>
           <AgentMarkdown text={text} />
         </Suspense>

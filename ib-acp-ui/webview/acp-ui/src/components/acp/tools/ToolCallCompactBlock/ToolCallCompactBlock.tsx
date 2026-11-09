@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { splitMarkdownFileUris } from "../../../../../../../src/platform/fileUriPath";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./ToolCallCompactBlock.css";
@@ -400,7 +401,26 @@ function CompactToolEntry({
         />
       ) : null}
       {detailKind === "expandable" && expanded && (item.content?.trim().length ?? 0) > 0 ? (
-        <pre className="tool-call-compact-preview">{item.content}</pre>
+        <pre className="tool-call-compact-preview">
+          {splitMarkdownFileUris(item.content ?? "").map((span, index) =>
+            span.kind === "text" ? (
+              <span key={index}>{span.text}</span>
+            ) : (
+              <a
+                key={index}
+                className="tool-call-compact-path-link"
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onOpenWorkspacePath?.(span.path);
+                }}
+              >
+                {span.text}
+              </a>
+            ),
+          )}
+        </pre>
       ) : null}
     </>
   );
