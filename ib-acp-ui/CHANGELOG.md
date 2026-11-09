@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+## 0.7.0
+
 - **Remove**: The tool call verbosity setting (`minimal`, `compact`, and `verbose`).
 - **Change**: Tool calls use one line each.
   Click a line that has more text to show it.
