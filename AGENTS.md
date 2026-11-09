@@ -53,6 +53,12 @@ Add a tool name for one tool, for example `vp toolchain vite`.
 `vp toolchain --global` ignores the local `vite-plus` package.
 `vp why <package>` shows why that package is installed.
 
+### Git hooks
+
+`.vite-hooks/pre-commit` runs `vp staged`.
+That checks staged files with `vp check --fix`.
+`.vite-hooks/pre-push` runs `vp lint`, then `npm test`.
+
 ### Review checklist
 
 - After a pull, run `vp install`.

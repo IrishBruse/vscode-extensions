@@ -18,13 +18,15 @@ describe("activityGroupRanges", () => {
 });
 
 describe("trace text color and group padding", () => {
-  it("uses the normal foreground for thought text", () => {
+  it("uses quieter description text for the thought heading and body", () => {
     const css = readFileSync(
       new URL("../AgentThoughtBlock/AgentThoughtBlock.css", import.meta.url),
       "utf8",
     );
-    expect(css).toContain("color: var(--acp-ui-text-primary)");
-    expect(css).not.toContain("--acp-ui-text-secondary");
+    const quiet = String.raw`color:\s*var\(--vscode-descriptionForeground,\s*var\(--acp-ui-text-secondary\)\)`;
+    expect(css).toMatch(new RegExp(String.raw`\.agent-thought-chunk-title\s*\{[^}]*${quiet}`));
+    expect(css).toMatch(new RegExp(String.raw`\.agent-thought-chunk-body\s*\{[^}]*${quiet}`));
+    expect(css).toMatch(/\.agent-thought-chunk-body\s*\{[^}]*max-height:\s*3lh/);
   });
 
   it("adds padding around a thought and tool-call group", () => {
