@@ -2,6 +2,7 @@ import { type KeyboardEvent, type ReactElement, useEffect, useRef, useState } fr
 import type { ToolCallStatus } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import "./ToolCallBlock.css";
+import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import {
   previewDiffRows,
   windowToolCallDiffRows,
@@ -266,7 +267,7 @@ export function ToolCallBlock({
                       $
                     </span>
                     <span className="tool-call-terminal-command-text">
-                      {executeCommandLine}
+                      <ShellCommandHighlight command={executeCommandLine} />
                       {executeDurationLabel.length > 0 ? (
                         <span className="tool-call-terminal-duration"> {executeDurationLabel}</span>
                       ) : null}

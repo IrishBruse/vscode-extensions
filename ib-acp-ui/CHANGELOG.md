@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: Bash command tool calls use fish-style syntax colors on the command line.
 - **Fix**: The **New Chat** `+ ▾` control shows on open `.acp` editor tabs.
 - **Fix**: Thought blocks render markdown the same way as agent replies.
 - **Fix**: Collapsed edit diffs preview around changed lines instead of always showing the file start.

@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import "./ToolCallCompactExecuteBlock.css";
+import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import type { TraceToolItem } from "../../../../chatReducer";
 import { executeCommandText, executeOutputPreview } from "../../../../toolCallCompactText";
 
@@ -51,7 +52,7 @@ export function ToolCallCompactExecuteBlock({
           $
         </span>
         <span className="tool-call-compact-execute-command-text">
-          {command.length > 0 ? command : "Terminal"}
+          {command.length > 0 ? <ShellCommandHighlight command={command} /> : "Terminal"}
           {durationLabel.length > 0 ? (
             <span className="tool-call-compact-execute-duration"> {durationLabel}</span>
           ) : null}

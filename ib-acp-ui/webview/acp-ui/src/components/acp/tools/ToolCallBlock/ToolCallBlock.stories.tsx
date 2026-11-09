@@ -71,3 +71,20 @@ export const InProgress: Story = {
     onCollapseExpandAll: () => undefined,
   },
 };
+
+export const Execute: Story = {
+  args: {
+    item: {
+      ...completedItem,
+      toolCallId: "sh-1",
+      title: "`rg -n pattern src/ | head`",
+      kind: "execute",
+      subtitle: "rg -n pattern src/ | head",
+      content: "src/app.ts:12:match\n",
+      detailVisible: true,
+      durationMs: 240,
+    },
+    expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};
