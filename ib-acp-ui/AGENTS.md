@@ -15,3 +15,4 @@ Shared scripts are documented in the root `AGENTS.md`.
 - `dev:playground` / `dev:playground:demo` — local playground
 - `build:fixtures` / `screenshots` / `sync:playground-theme` — docs assets
 - `publish:vscode` / `sync:docs` — marketplace and vendor docs
+- `storybook` / `storybook:build` — ACP UI webview component Storybook (port 6006; static output in repo `.tmp/acp-ui-storybook`)

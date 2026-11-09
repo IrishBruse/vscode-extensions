@@ -17,7 +17,7 @@ export default defineConfig({
     test: {
         clearMocks: false,
         environment: "node",
-        include: ["src/**/*.test.ts", "webview/**/*.test.ts"],
+        include: ["src/**/*.test.ts", "webview/**/*.test.ts", "webview/**/.storybook/**/*.test.ts"],
     },
     run: {
         tasks: {

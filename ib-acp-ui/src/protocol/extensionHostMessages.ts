@@ -213,6 +213,8 @@ export type ExtensionToWebviewMessage =
           kind?: string;
           status?: ToolCallStatus;
           subtitle?: string;
+          /** Task prompt when the tool is a Cursor subagent task. */
+          content?: string;
           durationMs?: number;
       }
     | {

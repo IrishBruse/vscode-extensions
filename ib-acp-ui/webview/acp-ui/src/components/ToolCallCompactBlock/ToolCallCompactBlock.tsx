@@ -1,8 +1,8 @@
 import { type MouseEvent, type ReactElement, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { WorkspacePathOpenTarget } from "../../../../src/protocol/extensionHostMessages";
+import type { WorkspacePathOpenTarget } from "../../../../../src/protocol/extensionHostMessages";
 import "./ToolCallCompactBlock.css";
-import type { TraceToolItem } from "../chatReducer";
+import type { TraceToolItem } from "../../chatReducer";
 import {
   type CompactToolDetailParts,
   compactGroupHiddenDetailCount,
@@ -10,7 +10,7 @@ import {
   compactToolGroupSummaryParts,
   compactToolShowsDiffStats,
   diffLineStats,
-} from "../toolCallCompactText";
+} from "../../toolCallCompactText";
 
 export type OpenWorkspacePathOptions = {
   target?: WorkspacePathOpenTarget;

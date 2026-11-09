@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactElement } from "react";
-import type { AskQuestionPromptState } from "../chatReducer";
-import "./PermissionDialog.css";
+import type { AskQuestionPromptState } from "../../chatReducer";
+import "../PermissionDialog/PermissionDialog.css";
 
 export function CursorAskQuestionDialog({
   request,

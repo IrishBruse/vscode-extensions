@@ -14,9 +14,9 @@ import {
   formatModelDisplayName,
   parseModelIdBracketParams,
   pickVariantForGroup,
-} from "../../../../src/acp/session/modelVariantPicker";
-import type { AcpUiSessionModelSelection } from "../../../../src/acp/session/sessionModels";
-import { formatTokenUsage, type AcpUiTokenUsage } from "../tokenUsage";
+} from "../../../../../src/acp/session/modelVariantPicker";
+import type { AcpUiSessionModelSelection } from "../../../../../src/acp/session/sessionModels";
+import { formatTokenUsage, type AcpUiTokenUsage } from "../../tokenUsage";
 import {
   groupedModelChoices,
   modeConfigOption,
@@ -28,18 +28,18 @@ import {
   isDerivedConfigId,
   usesAgentOrderedConfigLayout,
   configOptionsSummaryLabel,
-} from "../../../../src/acp/session/sessionConfigOptions";
-import type { AcpUiSessionConfigOption } from "../../../../src/acp/session/sessionConfigOptions";
+} from "../../../../../src/acp/session/sessionConfigOptions";
+import type { AcpUiSessionConfigOption } from "../../../../../src/acp/session/sessionConfigOptions";
 import {
   isSessionModeConfigOption,
   resolveComposerPlaceholder,
-} from "../../../../src/acp/session/sessionModeIndicator";
-import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../src/protocol/extensionHostMessages";
+} from "../../../../../src/acp/session/sessionModeIndicator";
+import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../../src/protocol/extensionHostMessages";
 import { buildComposerAutocompleteState, wrapIndex } from "./composerAutocomplete";
-import { ConfigOptionControls, ComposerConfigLoading } from "./ConfigOptionControls";
-import { SessionModeIndicator } from "./SessionModeIndicator";
-import { VsDropdown } from "./VsDropdown";
-import { promptImageSrc } from "../pastedImages";
+import { ConfigOptionControls, ComposerConfigLoading } from "../ConfigOptionControls/ConfigOptionControls";
+import { SessionModeIndicator } from "../SessionModeIndicator/SessionModeIndicator";
+import { VsDropdown } from "../VsDropdown/VsDropdown";
+import { promptImageSrc } from "../../pastedImages";
 import type { FollowUpMode } from "./composerFollowUp";
 
 export type ChatComposerProps = {

@@ -19,7 +19,10 @@ describe("activityGroupRanges", () => {
 
 describe("trace text color and group padding", () => {
   it("uses the normal foreground for thought text", () => {
-    const css = readFileSync(new URL("./AgentThoughtBlock.css", import.meta.url), "utf8");
+    const css = readFileSync(
+      new URL("../AgentThoughtBlock/AgentThoughtBlock.css", import.meta.url),
+      "utf8",
+    );
     expect(css).toContain("color: var(--acp-ui-text-primary)");
     expect(css).not.toContain("--acp-ui-text-secondary");
   });

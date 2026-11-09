@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
-import type { AcpUiRecentSession } from "../../../../src/protocol/extensionHostMessages";
-import { formatRelativeTime } from "../relativeTime";
+import type { AcpUiRecentSession } from "../../../../../src/protocol/extensionHostMessages";
+import { formatRelativeTime } from "../../relativeTime";
 import "./EmptyChatState.css";
-import { VsDropdown } from "./VsDropdown";
+import { VsDropdown } from "../VsDropdown/VsDropdown";
 
 export type EmptyChatStateProps = {
   providers: string[];

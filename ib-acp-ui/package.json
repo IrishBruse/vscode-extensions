@@ -33,7 +33,9 @@
         "sync:playground-theme": "tsx scripts/sync-playground-theme.ts",
         "screenshots": "npm run build:fixtures && tsx scripts/capture-readme-screenshots.ts",
         "publish:vscode": "bash scripts/publish.sh",
-        "sync:docs": "bash scripts/sync-docs.sh"
+        "sync:docs": "bash scripts/sync-docs.sh",
+        "storybook": "storybook dev -p 6006 -c webview/acp-ui/.storybook",
+        "storybook:build": "storybook build -c webview/acp-ui/.storybook -o ../.tmp/acp-ui-storybook"
     },
     "dependencies": {
         "@agentclientprotocol/sdk": "^1.9.0",
@@ -44,11 +46,14 @@
         "ws": "^8.21.0"
     },
     "devDependencies": {
+        "@storybook/react": "^10.6.6",
+        "@storybook/react-vite": "^10.6.6",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@types/ws": "^8.18.2",
         "@vitejs/plugin-react": "^6.1.2",
         "playwright": "^1.64.1",
+        "storybook": "^10.6.6",
         "tsx": "^4.23.15"
     },
     "contributes": {

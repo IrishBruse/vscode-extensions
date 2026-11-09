@@ -168,6 +168,62 @@ describe("sessionUpdateToWebviewMessages", () => {
         );
     });
 
+    it("maps a Cursor task tool call to the subagent type and prompt, not raw argument JSON", () => {
+        const prompt =
+            "Decompile cursor Back call\nReturn the declaration, the body, and a short description of what value 2 does to the cursor.";
+        const rawInput = {
+            _toolName: "task",
+            prompt,
+            description: "Decompile cursor Back call",
+            subagentType: "generalPurpose",
+        };
+        const tracking = createToolCallKindTracking();
+        const started = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call",
+                toolCallId: "call-task-1",
+                title: "Task: Decompile cursor Back call",
+                kind: "other",
+                status: "pending",
+                rawInput,
+            },
+            tracking,
+        );
+        expect(started).toEqual([
+            {
+                type: "appendToolCall",
+                toolCallId: "call-task-1",
+                title: "Task: Decompile cursor Back call",
+                kind: "other",
+                status: "pending",
+                subtitle: "generalPurpose",
+                content: prompt,
+            },
+        ]);
+        const finished = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call_update",
+                toolCallId: "call-task-1",
+                status: "completed",
+                rawOutput: { durationMs: 1200, isBackground: false },
+            },
+            tracking,
+        );
+        expect(finished).toEqual([
+            {
+                type: "updateToolCall",
+                toolCallId: "call-task-1",
+                status: "completed",
+                subtitle: "generalPurpose",
+                durationMs: 1200,
+            },
+        ]);
+        const dumped = JSON.stringify(finished);
+        expect(dumped).not.toContain('"_toolName"');
+        expect(dumped).not.toContain('"description"');
+        expect(dumped).not.toContain("isBackground");
+    });
+
     it("forwards permission toolCall diff content as updateToolCall", () => {
         const messages = extensionMessagesForPermissionRequest("perm-1", {
             sessionId: "sess-1",

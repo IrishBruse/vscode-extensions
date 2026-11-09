@@ -1,25 +1,30 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 import "./TraceList.css";
-import type { ToolCallVerbosity } from "../../../../src/protocol/extensionHostMessages";
-import type { WorkspacePathOpenTarget } from "../../../../src/protocol/extensionHostMessages";
-import type { TraceItem, TraceToolItem } from "../chatReducer";
+import type { ToolCallVerbosity } from "../../../../../src/protocol/extensionHostMessages";
+import type { WorkspacePathOpenTarget } from "../../../../../src/protocol/extensionHostMessages";
+import type { TraceItem, TraceToolItem } from "../../chatReducer";
 import {
   previousThoughtIndexToCollapse,
   rectIntersectsScrollport,
   rectIsFullyAboveScrollport,
 } from "./thoughtCollapse";
 import { activityGroupRanges, isActivityTraceType } from "./traceActivityGroup";
-import { promptImageSrc } from "../pastedImages";
+import { promptImageSrc } from "../../pastedImages";
 
 const AgentMarkdown = lazy(() =>
-  import("./AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
+  import("../AgentMarkdown/AgentMarkdown").then((module) => ({ default: module.AgentMarkdown })),
 );
-import { AgentThoughtBlock } from "./AgentThoughtBlock";
-import { PlanBlock } from "./PlanBlock";
-import { ToolCallBlock } from "./ToolCallBlock";
-import { ToolCallCompactBlock } from "./ToolCallCompactBlock";
-import { ToolCallCompactExecuteBlock } from "./ToolCallCompactExecuteBlock";
-import { compactGroupMaxVisibleDetails, isCompactGroupableTool } from "../toolCallCompactText";
+import { AgentThoughtBlock } from "../AgentThoughtBlock/AgentThoughtBlock";
+import { PlanBlock } from "../PlanBlock/PlanBlock";
+import { SubagentTaskBlock } from "../SubagentTaskBlock/SubagentTaskBlock";
+import { ToolCallBlock } from "../ToolCallBlock/ToolCallBlock";
+import { ToolCallCompactBlock } from "../ToolCallCompactBlock/ToolCallCompactBlock";
+import { ToolCallCompactExecuteBlock } from "../ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock";
+import {
+  compactGroupMaxVisibleDetails,
+  isCompactGroupableTool,
+  isSubagentTaskTool,
+} from "../../toolCallCompactText";
 
 function traceSegmentGapClass(
   previousType: TraceItem["type"] | undefined,
@@ -102,6 +107,11 @@ function partitionTraceSegments(
   for (let index = 0; index < items.length; index++) {
     const item = items[index]!;
     if (item.type === "thought" && !showThoughts) {
+      continue;
+    }
+    if (item.type === "tool" && isSubagentTaskTool(item)) {
+      flushTools();
+      segments.push({ kind: "single", item, index });
       continue;
     }
     if (item.type === "tool") {
@@ -394,13 +404,23 @@ export function TraceList({
           return traceRow(
             segment.index,
             segment.index,
-            <ToolCallBlock
-              key={item.toolCallId}
-              className={gapClass.trim()}
-              item={item}
-              expandAllToolOutputs={expandAllToolOutputs}
-              onCollapseExpandAll={onCollapseExpandAll}
-            />,
+            isSubagentTaskTool(item) ? (
+              <SubagentTaskBlock
+                key={item.toolCallId}
+                className={gapClass.trim()}
+                item={item}
+                expandAllToolOutputs={expandAllToolOutputs}
+                onCollapseExpandAll={onCollapseExpandAll}
+              />
+            ) : (
+              <ToolCallBlock
+                key={item.toolCallId}
+                className={gapClass.trim()}
+                item={item}
+                expandAllToolOutputs={expandAllToolOutputs}
+                onCollapseExpandAll={onCollapseExpandAll}
+              />
+            ),
           );
         }
         return traceRow(

@@ -653,6 +653,7 @@ function appendToolCall(
   status: ToolCallStatus | undefined,
   subtitle: string | undefined,
   durationMs: number | undefined,
+  content: string | undefined,
 ): ChatState {
   state = stateAfterLeavingOpenThoughtStream(state);
   const id = canonicalToolCallId(toolCallId);
@@ -663,6 +664,8 @@ function appendToolCall(
       const mergedStatus = status ?? existing.status;
       const mergedSubtitle =
         subtitle !== undefined && subtitle.trim().length > 0 ? subtitle.trim() : existing.subtitle;
+      const mergedContent =
+        content !== undefined && content.trim().length > 0 ? content : existing.content;
       const startedAtMs = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
       const resolvedDuration = resolveToolDurationMs(
         durationMs,
@@ -677,6 +680,10 @@ function appendToolCall(
         kind: kind !== undefined ? kind : existing.kind,
         status: mergedStatus,
         subtitle: mergedSubtitle,
+        content: mergedContent,
+        detailVisible:
+          (mergedContent !== undefined && mergedContent.trim().length > 0) ||
+          (existing.diffRows !== undefined && existing.diffRows.length > 0),
         ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
       };
       const toolIndexById = new Map(state.toolIndexById);
@@ -706,9 +713,9 @@ function appendToolCall(
     kind,
     subtitle,
     status: newStatus,
-    content: undefined,
+    content: content !== undefined && content.trim().length > 0 ? content : undefined,
     diffRows: undefined,
-    detailVisible: false,
+    detailVisible: content !== undefined && content.trim().length > 0,
     ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
   };
   const trace = [...state.trace, newItem];
@@ -918,6 +925,60 @@ function withReplayResult(state: ChatState, next: ChatState): ChatState {
   };
 }
 
+function upsertCursorTask(
+  state: ChatState,
+  action: Extract<ChatAction, { type: "cursorTask" }>,
+): ChatState {
+  const base = stateAfterLeavingOpenThoughtStream(state);
+  const title = `Task: ${action.description}`;
+  const subtitle =
+    action.subagentType.trim().length > 0 && action.subagentType !== "unspecified"
+      ? action.subagentType.trim()
+      : undefined;
+  const prompt = action.prompt.trim();
+  const idx = resolveToolIndexByCallId(base.toolIndexById, action.toolCallId);
+  const existing = idx !== undefined ? base.trace[idx] : undefined;
+  if (existing?.type === "tool" && idx !== undefined) {
+    const status =
+      existing.status === "failed" || existing.status === "completed"
+        ? existing.status
+        : "completed";
+    const content = prompt.length > 0 ? prompt : existing.content;
+    const trace = base.trace.slice();
+    trace[idx] = {
+      ...existing,
+      title: existing.title.startsWith("Task:") ? existing.title : title,
+      subtitle: subtitle ?? existing.subtitle,
+      content,
+      detailVisible:
+        (content !== undefined && content.trim().length > 0) ||
+        (existing.diffRows !== undefined && existing.diffRows.length > 0),
+      status,
+      ...(action.durationMs !== undefined ? { durationMs: action.durationMs } : {}),
+    };
+    return { ...base, trace, openStreamIndex: null };
+  }
+  const id = canonicalToolCallId(action.toolCallId);
+  const trace = [
+    ...base.trace,
+    {
+      type: "tool" as const,
+      toolCallId: id,
+      title,
+      kind: "other",
+      subtitle,
+      status: "completed" as const,
+      content: prompt.length > 0 ? prompt : undefined,
+      diffRows: undefined,
+      detailVisible: prompt.length > 0,
+      ...(action.durationMs !== undefined ? { durationMs: action.durationMs } : {}),
+    },
+  ];
+  const toolIndexById = new Map(base.toolIndexById);
+  rememberToolIndex(toolIndexById, id, trace.length - 1);
+  return { ...base, trace, toolIndexById, openStreamIndex: null };
+}
+
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   if (state.viewportCacheActive && state.sessionHistoryLoading && isReplayTranscriptAction(action)) {
     return withReplayResult(state, chatReducer(replayShadow(state), action));
@@ -1107,6 +1168,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.status,
         action.subtitle,
         action.durationMs,
+        action.content,
       );
     case "updateToolCall":
       return updateToolCall(
@@ -1152,12 +1214,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       ];
       return { ...base, trace, openStreamIndex: null };
     }
-    case "cursorTask": {
-      const base = stateAfterLeavingOpenThoughtStream(state);
-      const taskLine = `Subagent task: ${action.description}`;
-      const trace = [...base.trace, { type: "agent" as const, text: taskLine }];
-      return { ...base, trace, openStreamIndex: trace.length - 1 };
-    }
+    case "cursorTask":
+      return upsertCursorTask(state, action);
     case "cursorGenerateImage": {
       const base = stateAfterLeavingOpenThoughtStream(state);
       const text =

@@ -33,31 +33,31 @@ import {
   type TraceItem,
 } from "./chatReducer";
 import { visibleTraceTail, type VisibleTraceRow } from "./visibleTraceTail";
-import { ChatComposer } from "./components/ChatComposer";
+import { ChatComposer } from "./components/ChatComposer/ChatComposer";
 import { installSessionModeIndicatorThemeColors } from "./sessionModeIndicatorTheme";
 import {
   installAgentMarkdownThemeColors,
   updateAgentMarkdownThemeColors,
 } from "./agentMarkdownTheme";
-import { buildComposerAutocompleteState, wrapIndex } from "./components/composerAutocomplete";
+import { buildComposerAutocompleteState, wrapIndex } from "./components/ChatComposer/composerAutocomplete";
 import {
   shouldCancelRunOnCtrlC,
   shouldCycleSessionModeOnShiftTab,
   shouldOpenNewChatOnCtrlT,
-} from "./components/composerKeybindings";
+} from "./components/ChatComposer/composerKeybindings";
 import {
   hasRunningTool,
   resolveFollowUpEnter,
   steerShouldStopAfterTool,
   type FollowUpMode,
-} from "./components/composerFollowUp";
-import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog";
-import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog";
-import { EmptyChatState } from "./components/EmptyChatState";
-import { ImageViewer } from "./components/ImageViewer";
-import { PermissionDialog } from "./components/PermissionDialog";
-import { TraceList } from "./components/TraceList";
-import { SessionHistoryLoader } from "./components/SessionHistoryLoader";
+} from "./components/ChatComposer/composerFollowUp";
+import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog/CursorAskQuestionDialog";
+import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog/CursorCreatePlanDialog";
+import { EmptyChatState } from "./components/EmptyChatState/EmptyChatState";
+import { ImageViewer } from "./components/ImageViewer/ImageViewer";
+import { PermissionDialog } from "./components/PermissionDialog/PermissionDialog";
+import { TraceList } from "./components/TraceList/TraceList";
+import { SessionHistoryLoader } from "./components/SessionHistoryLoader/SessionHistoryLoader";
 import {
   appendFileMentionsToDraft,
   collectPathsFromDataTransfer,

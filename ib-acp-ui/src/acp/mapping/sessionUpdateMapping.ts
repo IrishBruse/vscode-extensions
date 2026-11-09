@@ -8,6 +8,11 @@ import { positiveDurationMs } from "../../protocol/visibleTrace";
 import { sessionConfigOptionsFromAgent } from "../session/sessionConfigOptions";
 import { normalizeSlashCommand } from "../slashCommandMetadata";
 import { canonicalToolCallId } from "./canonicalToolCallId";
+import {
+    taskDurationMsFromRawOutput,
+    taskToolFieldsFromRaw,
+    type TaskToolFields,
+} from "./taskToolPresentation";
 import { computeToolCallDiffRows } from "./toolCallDiffLines";
 
 function durationMsFromUpdatePayload(value: unknown): number | undefined {
@@ -433,11 +438,13 @@ function formatToolRawInput(raw: unknown): string | undefined {
 /** Tracks tool kinds from `tool_call` so `tool_call_update` can classify sparse completions (for example read tools with only `rawOutput.content`). */
 export type ToolCallKindTracking = {
     kindByToolId: Map<string, string | undefined>;
+    /** Cursor task tools, so a completion that only sends `rawOutput` does not replace the prompt with JSON. */
+    taskByToolId: Map<string, TaskToolFields>;
 };
 
 /** Creates a fresh map for one prompt turn (tool IDs are unique per session but clearing each turn avoids unbounded growth). */
 export function createToolCallKindTracking(): ToolCallKindTracking {
-    return { kindByToolId: new Map() };
+    return { kindByToolId: new Map(), taskByToolId: new Map() };
 }
 
 /**
@@ -481,6 +488,10 @@ export function toolCallUpdateSubtitleHint(
     update: acp.ToolCallUpdate,
     options?: { pendingKind?: string },
 ): string | undefined {
+    const task = taskToolFieldsFromRaw(update.rawInput);
+    if (task !== undefined) {
+        return task.subagentType.length > 0 ? task.subagentType : undefined;
+    }
     const kind = effectiveToolKindForUpdate(update, options?.pendingKind);
     if (kind === "execute" || kind === "terminal") {
         const cmd =
@@ -702,6 +713,10 @@ function fileNameFromPath(pathText: string): string {
  * Builds the dim subtitle line for a tool call (paths, arguments, or inline text from the agent).
  */
 export function toolCallSubtitleFromToolCall(call: acp.ToolCall): string | undefined {
+    const task = taskToolFieldsFromRaw(call.rawInput);
+    if (task !== undefined) {
+        return task.subagentType.length > 0 ? task.subagentType : undefined;
+    }
     const execLine = toolCallExecuteCommandSubtitle(call);
     if (execLine !== undefined) {
         return execLine;
@@ -802,8 +817,18 @@ export function sessionUpdateToWebviewMessages(
         case "tool_call": {
             const toolCallId = canonicalToolCallId(update.toolCallId);
             toolKindTracking?.kindByToolId.set(toolCallId, update.kind);
-            const subtitle = toolCallSubtitleFromToolCall(update);
+            const task = taskToolFieldsFromRaw(update.rawInput);
+            if (task !== undefined) {
+                toolKindTracking?.taskByToolId.set(toolCallId, task);
+            }
+            const subtitle =
+                task !== undefined
+                    ? task.subagentType.length > 0
+                        ? task.subagentType
+                        : undefined
+                    : toolCallSubtitleFromToolCall(update);
             const durationMs = durationMsFromUpdatePayload(update);
+            const prompt = task !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
             return [
                 {
                     type: "appendToolCall",
@@ -812,12 +837,46 @@ export function sessionUpdateToWebviewMessages(
                     kind: update.kind,
                     status: update.status ?? undefined,
                     ...(subtitle !== undefined ? { subtitle } : {}),
+                    ...(prompt.length > 0 ? { content: prompt } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
                 },
             ];
         }
         case "tool_call_update": {
             const toolCallId = canonicalToolCallId(update.toolCallId);
+            const incomingTask = taskToolFieldsFromRaw(update.rawInput);
+            if (incomingTask !== undefined) {
+                toolKindTracking?.taskByToolId.set(toolCallId, incomingTask);
+            }
+            const task = incomingTask ?? toolKindTracking?.taskByToolId.get(toolCallId);
+            if (task !== undefined) {
+                const kindFromUpdate =
+                    update.kind !== undefined &&
+                    update.kind !== null &&
+                    String(update.kind).length > 0
+                        ? String(update.kind)
+                        : undefined;
+                if (kindFromUpdate !== undefined) {
+                    toolKindTracking?.kindByToolId.set(toolCallId, kindFromUpdate);
+                }
+                const durationMs =
+                    durationMsFromUpdatePayload(update) ??
+                    taskDurationMsFromRawOutput(update.rawOutput);
+                const subtitle = task.subagentType.length > 0 ? task.subagentType : undefined;
+                const prompt =
+                    incomingTask !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
+                return [
+                    {
+                        type: "updateToolCall",
+                        toolCallId,
+                        status: update.status ?? "completed",
+                        ...(kindFromUpdate !== undefined ? { kind: kindFromUpdate } : {}),
+                        ...(prompt.length > 0 ? { content: prompt } : {}),
+                        ...(subtitle !== undefined ? { subtitle } : {}),
+                        ...(durationMs !== undefined ? { durationMs } : {}),
+                    },
+                ];
+            }
             const parts = toolCallUpdateToDisplayParts(update);
             const pendingKind = toolKindTracking?.kindByToolId.get(toolCallId);
             const subtitleHint = toolCallUpdateSubtitleHint(update, {

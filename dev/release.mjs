@@ -219,10 +219,20 @@ async function getBrowserOAuthToken() {
     return token.token;
 }
 
-function runVscePublish(extension, env) {
+function vscePublishCommand(extension) {
     const command = hasServicePrincipalAuth()
         ? "npx @vscode/vsce publish --azure-credential --no-dependencies --skip-license"
         : "npx @vscode/vsce publish --no-dependencies --skip-license";
+    const proposals = readJson(extension.packageJsonPath).enabledApiProposals;
+    if (!Array.isArray(proposals) || proposals.length === 0) {
+        return command;
+    }
+
+    return `${command} --allow-proposed-apis ${proposals.join(" ")}`;
+}
+
+function runVscePublish(extension, env) {
+    const command = vscePublishCommand(extension);
 
     console.log(`\n> ${command}`);
 

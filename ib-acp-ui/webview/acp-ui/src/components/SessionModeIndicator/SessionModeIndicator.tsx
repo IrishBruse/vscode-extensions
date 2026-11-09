@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import type { AcpUiSessionConfigOption } from "../../../../src/acp/session/sessionConfigOptions";
-import { sessionModeIndicatorFromOption } from "../../../../src/acp/session/sessionModeIndicator";
+import type { AcpUiSessionConfigOption } from "../../../../../src/acp/session/sessionConfigOptions";
+import { sessionModeIndicatorFromOption } from "../../../../../src/acp/session/sessionModeIndicator";
 import "./SessionModeIndicator.css";
 
 export type SessionModeIndicatorProps = {

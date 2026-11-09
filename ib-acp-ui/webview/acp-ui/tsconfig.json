@@ -10,5 +10,11 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["../vite-env.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./vite.config.ts"]
+  "include": [
+    "../vite-env.d.ts",
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    "./vite.config.ts",
+    "./.storybook/**/*.ts"
+  ]
 }

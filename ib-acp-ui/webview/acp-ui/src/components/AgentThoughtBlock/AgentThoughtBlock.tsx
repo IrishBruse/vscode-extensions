@@ -1,5 +1,5 @@
 import { type ReactElement, type SyntheticEvent, useLayoutEffect, useRef, useState } from "react";
-import { formatCompactDurationMs } from "../../../../src/protocol/visibleTrace";
+import { formatCompactDurationMs } from "../../../../../src/protocol/visibleTrace";
 import "./AgentThoughtBlock.css";
 
 function durationLabel(durationMs: number | undefined): string {

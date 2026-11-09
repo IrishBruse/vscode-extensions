@@ -1,5 +1,5 @@
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
-import type { AcpUiSessionConfigOption } from "../../../../src/acp/session/sessionConfigOptions";
+import type { AcpUiSessionConfigOption } from "../../../../../src/acp/session/sessionConfigOptions";
 import "./ModelConfigPopover.css";
 
 export type ModelConfigPopoverProps = {

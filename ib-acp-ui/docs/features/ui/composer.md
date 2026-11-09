@@ -33,17 +33,17 @@ Today prompts are a single text block.
 
 ### Autocomplete
 
-[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/composerAutocomplete.ts) inspects the draft and caret.
-It uses [queryFromCaret](../../../webview/acp-ui/src/components/composerAutocomplete.ts) to detect a `/query` or `@query` token.
+[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts) inspects the draft and caret.
+It uses [queryFromCaret](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts) to detect a `/query` or `@query` token.
 Detection applies at the start of a line or after whitespace.
 
-- **`/` mode** — filters [slashCommands](../../../webview/acp-ui/src/components/composerAutocomplete.ts).
-  Builds items via [slashSuggestionItem](../../../webview/acp-ui/src/components/composerAutocomplete.ts).
-  Groups with [groupSlashSuggestionItems](../../../webview/acp-ui/src/components/composerAutocomplete.ts).
-- **`@` mode** — filters [workspaceFiles](../../../webview/acp-ui/src/components/composerAutocomplete.ts).
-  Formats inserts with [formatPathMention](../../../webview/acp-ui/src/components/composerAutocomplete.ts).
+- **`/` mode** — filters [slashCommands](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts).
+  Builds items via [slashSuggestionItem](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts).
+  Groups with [groupSlashSuggestionItems](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts).
+- **`@` mode** — filters [workspaceFiles](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts).
+  Formats inserts with [formatPathMention](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts).
 
-[ChatComposer](../../../webview/acp-ui/src/components/ChatComposer.tsx) recomputes autocomplete from the draft (caret at end).
+[ChatComposer](../../../webview/acp-ui/src/components/ChatComposer/ChatComposer.tsx) recomputes autocomplete from the draft (caret at end).
 [AcpUiApp.onComposerKeyDown](../../../webview/acp-ui/src/AcpUiApp.tsx) handles keyboard navigation.
 
 **Built-in commands** — [builtInSlashCommands](../../../webview/acp-ui/src/AcpUiApp.tsx) defines `/clear`, `/new`, `/rename`, `/show-thinking`.
@@ -75,10 +75,10 @@ Task: covered by [sessions](../acp/sessions.md).
 
 ### Keyboard bindings
 
-[shouldCycleSessionModeOnShiftTab](../../../webview/acp-ui/src/components/composerKeybindings.ts#L16-L30) gates Shift+Tab mode cycling.
-[shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/composerKeybindings.ts#L32-L46) gates Ctrl+C cancel.
-[shouldOpenNewChatOnCtrlT](../../../webview/acp-ui/src/components/composerKeybindings.ts#L1-L14) gates Ctrl+T new chat.
-[resolveFollowUpEnter](../../../webview/acp-ui/src/components/composerFollowUp.ts#L12-L30) queues, steers, or interrupts a follow-up while a turn is running.
+[shouldCycleSessionModeOnShiftTab](../../../webview/acp-ui/src/components/ChatComposer/composerKeybindings.ts#L16-L30) gates Shift+Tab mode cycling.
+[shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/ChatComposer/composerKeybindings.ts#L32-L46) gates Ctrl+C cancel.
+[shouldOpenNewChatOnCtrlT](../../../webview/acp-ui/src/components/ChatComposer/composerKeybindings.ts#L1-L14) gates Ctrl+T new chat.
+[resolveFollowUpEnter](../../../webview/acp-ui/src/components/ChatComposer/composerFollowUp.ts#L12-L30) queues, steers, or interrupts a follow-up while a turn is running.
 
 ### Multimodal prompts
 

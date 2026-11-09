@@ -25,6 +25,10 @@ Choose how much detail you want with the **Tool call verbosity** setting (`minim
   The full path appears in a tooltip after the pointer rests on the name.
 - **Minimal** groups consecutive tool calls with a short summary and shows details for the last three only.
 
+A subagent task shows as its own card in every verbosity mode.
+The card shows the short description, the subagent type, and the prompt.
+A long prompt starts collapsed.
+
 While a session loads from the agent, a saved last screen is shown when one exists.
 A loading indicator fills the panel only when that cache is empty.
 Scrolling up to the top of the saved screen can show a loading overlay that does not change the transcript height.
@@ -57,22 +61,24 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 ### Trace rendering
 
-[TraceList](../../../webview/acp-ui/src/components/TraceList.tsx#L170-L447) walks trace items and picks presentation by type and verbosity.
-[usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList.tsx#L47-L49) gates minimal and compact modes.
+[TraceList](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L170-L447) walks trace items and picks presentation by type and verbosity.
+[usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L47-L49) gates minimal and compact modes.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
-  Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/codeHighlighting.tsx#L101-L120) with workbench theme colors.
-- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock.tsx#L17-L62) is a disclosure.
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
+- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock/AgentThoughtBlock.tsx#L17-L62) is a disclosure.
   The heading stays open until it is clicked and shows a duration when known (`Thought for 1.2s`).
-  [previousThoughtIndexToCollapse](../../../webview/acp-ui/src/components/thoughtCollapse.ts#L12-L30) closes the previous thought when a new one appears.
+  [previousThoughtIndexToCollapse](../../../webview/acp-ui/src/components/TraceList/thoughtCollapse.ts#L12-L30) closes the previous thought when a new one appears.
   The close is skipped when the transcript is scrolled up and that row is on screen.
-  [activityGroupRanges](../../../webview/acp-ui/src/components/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
-  [trace-activity-group](../../../webview/acp-ui/src/components/TraceList.css#L91-L96) adds padding around that run.
-- Plans: [PlanBlock](../../../webview/acp-ui/src/components/PlanBlock.tsx#L8-L40).
-- Verbose tools: [ToolCallBlock](../../../webview/acp-ui/src/components/ToolCallBlock.tsx).
-- Compact tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/ToolCallCompactBlock.tsx).
-  [CompactPathLink](../../../webview/acp-ui/src/components/ToolCallCompactBlock.tsx#L33-L152) shows the file name and the full path in a workbench-style tooltip.
-  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/ToolCallCompactExecuteBlock.tsx).
+  [activityGroupRanges](../../../webview/acp-ui/src/components/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
+  [trace-activity-group](../../../webview/acp-ui/src/components/TraceList/TraceList.css#L91-L96) adds padding around that run.
+- Plans: [PlanBlock](../../../webview/acp-ui/src/components/PlanBlock/PlanBlock.tsx#L8-L40).
+- Verbose tools: [ToolCallBlock](../../../webview/acp-ui/src/components/ToolCallBlock/ToolCallBlock.tsx).
+- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
+  [partitionTraceSegments](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L112-L116) keeps each task out of the compact and minimal groups.
+- Compact tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/ToolCallCompactBlock/ToolCallCompactBlock.tsx).
+  [CompactPathLink](../../../webview/acp-ui/src/components/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L33-L152) shows the file name and the full path in a workbench-style tooltip.
+  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx).
   Command lines show a compact duration when known (`$ ls 117ms`).
   Summaries come from [toolCallCompactText.ts](../../../webview/acp-ui/src/toolCallCompactText.ts).
 
@@ -82,7 +88,7 @@ When loading ends, the buffer replaces the visible trace in one step ([sessionHi
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.
 [visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport and the webview writes them beside the session file.
-[SessionHistoryLoader](../../../webview/acp-ui/src/components/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
+[SessionHistoryLoader](../../../webview/acp-ui/src/components/SessionHistoryLoader/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
 A zero-height overlay is used at the top of a cached screen when you scroll up during load.
 
 ### Tool call verbosity setting

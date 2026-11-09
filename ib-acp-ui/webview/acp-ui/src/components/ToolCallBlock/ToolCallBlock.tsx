@@ -1,8 +1,8 @@
 import { type KeyboardEvent, type ReactElement, useEffect, useRef, useState } from "react";
-import type { ToolCallStatus } from "../../../../src/protocol/extensionHostMessages";
-import { formatCompactDurationMs } from "../../../../src/protocol/visibleTrace";
+import type { ToolCallStatus } from "../../../../../src/protocol/extensionHostMessages";
+import { formatCompactDurationMs } from "../../../../../src/protocol/visibleTrace";
 import "./ToolCallBlock.css";
-import type { TraceToolItem } from "../chatReducer";
+import type { TraceToolItem } from "../../chatReducer";
 
 const collapsiblePreviewLineCount = 3;
 

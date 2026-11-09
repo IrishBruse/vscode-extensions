@@ -3,7 +3,7 @@ import {
   normalizeSlashCommand,
   parseTrailingParenLabels,
   slashCommandGroupLabel,
-} from "../../../../src/acp/slashCommandMetadata";
+} from "../../../../../src/acp/slashCommandMetadata";
 
 export type ComposerSuggestionItem = {
   key: string;

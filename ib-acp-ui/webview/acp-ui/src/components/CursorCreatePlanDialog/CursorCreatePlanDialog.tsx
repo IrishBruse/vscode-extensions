@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import type { CreatePlanPromptState } from "../chatReducer";
-import "./PermissionDialog.css";
+import type { CreatePlanPromptState } from "../../chatReducer";
+import "../PermissionDialog/PermissionDialog.css";
 
 export function CursorCreatePlanDialog({
   request,

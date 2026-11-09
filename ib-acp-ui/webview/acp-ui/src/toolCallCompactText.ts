@@ -1,3 +1,4 @@
+import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import type { ToolCallDiffRow } from "../../../src/protocol/extensionHostMessages";
 import { formatPathWithTilde } from "../../../src/platform/pathDisplay";
 import type { TraceToolItem } from "./chatReducer";
@@ -490,9 +491,13 @@ export function isExecuteTool(item: TraceToolItem): boolean {
   return kind === "execute" || kind === "terminal";
 }
 
-/** Execute/terminal tools render on their own in compact mode (never grouped). */
+export function isSubagentTaskTool(item: TraceToolItem): boolean {
+  return subagentTaskViewFromTool(item) !== undefined;
+}
+
+/** Execute/terminal tools and subagent tasks render on their own (never grouped). */
 export function isCompactGroupableTool(item: TraceToolItem): boolean {
-  return !isExecuteTool(item);
+  return !isExecuteTool(item) && !isSubagentTaskTool(item);
 }
 
 export function executeCommandText(item: TraceToolItem): string {

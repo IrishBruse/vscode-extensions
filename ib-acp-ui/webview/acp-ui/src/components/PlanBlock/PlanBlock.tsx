@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import "./PlanBlock.css";
-import type { PlanEntry } from "../../../../src/protocol/extensionHostMessages";
+import type { PlanEntry } from "../../../../../src/protocol/extensionHostMessages";
 
 /**
  * Renders an ACP agent plan as a titled list of status rows.

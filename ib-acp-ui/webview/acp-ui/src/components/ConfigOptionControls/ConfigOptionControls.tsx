@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
-import type { AcpUiSessionConfigOption } from "../../../../src/acp/session/sessionConfigOptions";
+import type { AcpUiSessionConfigOption } from "../../../../../src/acp/session/sessionConfigOptions";
 import "./ConfigOptionControls.css";
-import { VsDropdown } from "./VsDropdown";
+import { VsDropdown } from "../VsDropdown/VsDropdown";
 
 export type ConfigOptionControlsProps = {
   options: AcpUiSessionConfigOption[];

@@ -1,0 +1,62 @@
+.subagent-task {
+  margin: 0 0 var(--acp-ui-space-10);
+  padding: var(--acp-ui-space-6) var(--acp-ui-space-10);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+  line-height: 1.35;
+  color: var(--vscode-foreground);
+  background-color: var(
+    --vscode-terminal-background,
+    color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-widget-border) 10%)
+  );
+  border: var(--acp-ui-stroke-width) solid
+    var(--vscode-terminal-ansiBlack, var(--vscode-panel-border, var(--vscode-widget-border)));
+  border-radius: var(--acp-ui-radius-md);
+  min-width: 0;
+}
+
+.subagent-task-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  min-width: 0;
+}
+
+.subagent-task-label {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+}
+
+.subagent-task-description {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.subagent-task-meta {
+  margin-top: 1px;
+  padding-left: 1.05rem;
+  font-size: var(--acp-ui-font-size-label);
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+}
+
+.subagent-task-prompt {
+  margin: var(--acp-ui-space-6) 0 0;
+  padding-left: 1.05rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.subagent-task-expand {
+  margin: var(--acp-ui-space-4) 0 0 1.05rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  font: inherit;
+  cursor: pointer;
+}

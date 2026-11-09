@@ -1,8 +1,8 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import { formatCompactDurationMs } from "../../../../src/protocol/visibleTrace";
+import { formatCompactDurationMs } from "../../../../../src/protocol/visibleTrace";
 import "./ToolCallCompactExecuteBlock.css";
-import type { TraceToolItem } from "../chatReducer";
-import { executeCommandText, executeOutputPreview } from "../toolCallCompactText";
+import type { TraceToolItem } from "../../chatReducer";
+import { executeCommandText, executeOutputPreview } from "../../toolCallCompactText";
 
 /**
  * Compact terminal tool: command line plus a short output preview.
