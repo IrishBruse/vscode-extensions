@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import type { AcpUiRecentSession } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatRelativeTime } from "../../../../relativeTime";
 import "./EmptyChatState.css";
-import { VsDropdown } from "../../../vscode/VsDropdown/VsDropdown";
+import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 
 export type EmptyChatStateProps = {
   providers: string[];
@@ -28,7 +28,7 @@ export function EmptyChatState({
         <label className="empty-chat-label" htmlFor="empty-chat-provider">
           Provider
         </label>
-        <VsDropdown
+        <Dropdown
           id="empty-chat-provider"
           className="empty-chat-select"
           ariaLabel="Provider"

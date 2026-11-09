@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import type { AcpUiSessionConfigOption } from "../../../../../../../src/acp/session/sessionConfigOptions";
 import "./ConfigOptionControls.css";
-import { VsDropdown } from "../../../vscode/VsDropdown/VsDropdown";
+import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 
 export type ConfigOptionControlsProps = {
   options: AcpUiSessionConfigOption[];
@@ -46,7 +46,7 @@ export function ComposerConfigLoading({
       >
         {label}
       </label>
-      <VsDropdown
+      <Dropdown
         id={fieldId}
         className="composer-config-select composer-config-select--model"
         ariaLabel={`${label}: Loading model configuration`}
@@ -93,7 +93,7 @@ export function ConfigOptionControls({
               >
                 {option.name}
               </label>
-              <VsDropdown
+              <Dropdown
                 id={fieldId}
                 className="composer-config-select"
                 ariaLabel={option.name}
@@ -120,7 +120,7 @@ export function ConfigOptionControls({
             >
               {option.name}
             </label>
-            <VsDropdown
+            <Dropdown
               id={fieldId}
               className={
                 option.category === "model"

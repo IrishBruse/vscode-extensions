@@ -20,7 +20,10 @@ const STORY_MODULES = [
   "../src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.stories.tsx",
   "../src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.stories.tsx",
   "../src/components/acp/trace/TraceList/TraceList.stories.tsx",
-  "../src/components/vscode/VsDropdown/VsDropdown.stories.tsx",
+  "../src/components/vscode/Button/Button.stories.tsx",
+  "../src/components/vscode/Checkbox/Checkbox.stories.tsx",
+  "../src/components/vscode/Dropdown/Dropdown.stories.tsx",
+  "../src/components/vscode/Input/Input.stories.tsx",
   "../src/components/scenarios/Scenarios.stories.tsx",
 ] as const;
 

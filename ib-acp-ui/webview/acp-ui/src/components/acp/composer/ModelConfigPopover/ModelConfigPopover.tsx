@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import type { AcpUiSessionConfigOption } from "../../../../../../../src/acp/session/sessionConfigOptions";
+import { Checkbox } from "../../../vscode/Checkbox/Checkbox";
 import "./ModelConfigPopover.css";
 
 export type ModelConfigPopoverProps = {
@@ -69,12 +70,12 @@ export function ModelConfigPopover({
               <div className="model-config-popover-section-title">{option.name}</div>
               {option.type === "boolean" ? (
                 <label className="model-config-popover-boolean">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={option.currentValue}
                     disabled={disabled}
-                    onChange={(event) => {
-                      onPick(option.configId, event.target.checked);
+                    ariaLabel={option.name}
+                    onChange={(checked) => {
+                      onPick(option.configId, checked);
                     }}
                   />
                   <span>{option.name}</span>

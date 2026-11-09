@@ -1,0 +1,60 @@
+.vs-input {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--vscode-foreground, var(--acp-ui-text-primary));
+  font-family: inherit;
+  font-size: var(--vscode-font-size, 13px);
+  cursor: default;
+}
+
+.vs-input-modified {
+  flex: none;
+  width: 2px;
+  background: var(--vscode-settings-modifiedItemIndicator, #35a854);
+}
+
+.vs-input-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vs-input-description {
+  color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
+  font-size: var(--vscode-font-size, 13px);
+  line-height: 1.4;
+}
+
+.vs-input-control {
+  box-sizing: border-box;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  padding: 4px 6px;
+  border: 1px solid
+    var(--vscode-settings-textInputBorder, var(--vscode-input-border, transparent));
+  border-radius: 4px;
+  background: var(--vscode-settings-textInputBackground, var(--vscode-input-background));
+  color: var(--vscode-settings-textInputForeground, var(--vscode-input-foreground));
+  font: inherit;
+  line-height: 16px;
+}
+
+.vs-input-control::placeholder {
+  color: var(--vscode-input-placeholderForeground, var(--acp-ui-text-secondary));
+}
+
+.vs-input-control:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.vs-input-control:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

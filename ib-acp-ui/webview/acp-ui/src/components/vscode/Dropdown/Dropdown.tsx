@@ -7,20 +7,20 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import "./VsDropdown.css";
+import "./Dropdown.css";
 
-export type VsDropdownOption = {
+export type DropdownOption = {
   value: string;
   label: string;
   title?: string;
 };
 
-export type VsDropdownProps = {
+export type DropdownProps = {
   id?: string;
   ariaLabel: string;
   title?: string;
   value: string;
-  options: VsDropdownOption[];
+  options: DropdownOption[];
   disabled?: boolean;
   busy?: boolean;
   className?: string;
@@ -40,7 +40,7 @@ function wrapIndex(index: number, length: number): number {
  * Closed control plus a themed list, matching the VS Code settings dropdown.
  * The option list is drawn in the page so it does not use the native menu.
  */
-export function VsDropdown({
+export function Dropdown({
   id,
   ariaLabel,
   title,
@@ -51,7 +51,7 @@ export function VsDropdown({
   className,
   block = false,
   onChange,
-}: VsDropdownProps): ReactElement {
+}: DropdownProps): ReactElement {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const triggerRef = useRef<HTMLButtonElement | null>(null);

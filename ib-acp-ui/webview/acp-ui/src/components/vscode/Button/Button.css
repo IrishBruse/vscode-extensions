@@ -1,0 +1,35 @@
+.vs-button {
+  font: inherit;
+  font-size: var(--acp-ui-font-size-small);
+  padding: 4px 8px;
+  border-radius: var(--vscode-cornerRadius-small, 4px);
+  border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
+    var(--vscode-button-border, transparent);
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+}
+
+.vs-button:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.vs-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.vs-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.vs-button--secondary {
+  background: transparent;
+  color: var(--acp-ui-text-primary);
+  border-color: var(--vscode-button-secondaryHoverBackground, var(--acp-ui-border-chrome));
+}
+
+.vs-button--secondary:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}

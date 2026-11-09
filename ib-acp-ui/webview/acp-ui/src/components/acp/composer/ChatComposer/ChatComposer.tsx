@@ -38,7 +38,7 @@ import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../../../../s
 import { buildComposerAutocompleteState, wrapIndex } from "./composerAutocomplete";
 import { ConfigOptionControls, ComposerConfigLoading } from "../ConfigOptionControls/ConfigOptionControls";
 import { SessionModeIndicator } from "../SessionModeIndicator/SessionModeIndicator";
-import { VsDropdown } from "../../../vscode/VsDropdown/VsDropdown";
+import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 import { promptImageSrc } from "../../../../pastedImages";
 import type { FollowUpMode } from "./composerFollowUp";
 
@@ -434,7 +434,7 @@ export function ChatComposer({
                     <label className="composer-config-label" htmlFor="acp-ui-model-select">
                       Model
                     </label>
-                    <VsDropdown
+                    <Dropdown
                       id="acp-ui-model-select"
                       className="composer-config-select composer-config-select--model"
                       ariaLabel="Model"
@@ -462,7 +462,7 @@ export function ChatComposer({
                     <label className="composer-config-label" htmlFor="acp-ui-model-select">
                       Model
                     </label>
-                    <VsDropdown
+                    <Dropdown
                       id="acp-ui-model-select"
                       className="composer-config-select composer-config-select--model"
                       ariaLabel="Model"
