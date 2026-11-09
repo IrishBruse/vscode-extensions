@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { CreatePlanPromptState } from "../../../../chatReducer";
+import { AgentMarkdown } from "../../trace/AgentMarkdown/AgentMarkdown";
 import "../PermissionDialog/PermissionDialog.css";
 
 export function CursorCreatePlanDialog({
@@ -18,16 +19,9 @@ export function CursorCreatePlanDialog({
       <div className="ib-permission-dialog" role="dialog" aria-modal="true">
         <div className="ib-permission-title">{request.name?.trim() || "Approve plan"}</div>
         {request.overview ? <div className="ib-permission-tool">{request.overview}</div> : null}
-        <pre
-          style={{
-            margin: "0 0 0.75rem 0",
-            whiteSpace: "pre-wrap",
-            maxHeight: "220px",
-            overflow: "auto",
-          }}
-        >
-          {request.plan}
-        </pre>
+        <div className="ib-permission-plan">
+          <AgentMarkdown text={request.plan} />
+        </div>
         <div className="ib-permission-actions">
           <button type="button" className="ib-permission-button" onClick={onAccept}>
             Accept

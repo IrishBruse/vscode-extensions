@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: The plan approval dialog renders the plan as markdown.
 - **Change**: Thought blocks use quieter text, and the open body stays a three-line window on the newest lines.
 - **Add**: A markdown file path in a tool result opens that file in the editor.
 - **Change**: The composer shows the workspace path while the agent is working.

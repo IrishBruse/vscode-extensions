@@ -38,6 +38,12 @@
   word-break: break-word;
 }
 
+.ib-permission-plan {
+  margin: 0 0 var(--acp-ui-space-12);
+  max-height: 220px;
+  overflow: auto;
+}
+
 .ib-permission-actions {
   display: flex;
   flex-wrap: wrap;
