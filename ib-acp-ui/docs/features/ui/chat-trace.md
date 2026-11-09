@@ -16,16 +16,14 @@ Transcript text uses the normal foreground color.
 A run of thought blocks and tool calls has extra padding so the group stays separate from the reply.
 Each code block has a copy button.
 
-Tool calls appear inline while the agent works.
-Choose how much detail you want with the **Tool call verbosity** setting (`minimal`, `compact`, or `verbose`):
+Tool calls appear as one line each while the agent works.
+A file name on that line stays the file name.
+The full path appears in a tooltip after the pointer rests on the name.
+Click a tool line that has more text to show that text.
+A write always shows its diff under the line.
+A long diff starts with the first lines and an Expand control.
 
-- **Verbose** (default) shows full file previews and diffs per tool call.
-- **Compact** shows one summary line per tool call.
-  A file name on that line stays the file name.
-  The full path appears in a tooltip after the pointer rests on the name.
-- **Minimal** groups consecutive tool calls with a short summary and shows details for the last three only.
-
-A subagent task shows as its own card in every verbosity mode.
+A subagent task shows as its own card.
 The card shows the short description, the subagent type, and the prompt.
 A long prompt starts collapsed.
 
@@ -51,7 +49,7 @@ ACP `session/update` events map in [sessionUpdateToWebviewMessages](../../../src
 - `tool_call` and `tool_call_update` to tool trace items
 - `plan` to plan blocks
 
-Edit tools with ACP `diff` content get line-level `diffRows` for the verbose inline preview.
+Edit tools with ACP `diff` content get line-level `diffRows` and the trace always shows that diff.
 Cursor multi-line `toolCallId` values are normalized to the first line so pending and completed updates land on the same row.
 Permission requests that carry edit diffs also update that row before you approve.
 
@@ -61,24 +59,23 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 ### Trace rendering
 
-[TraceList](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L170-L447) walks trace items and picks presentation by type and verbosity.
-[usesCompactToolPresentation](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L47-L49) gates minimal and compact modes.
+[TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L101-L373) walks trace items and picks a presentation by type.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
-  Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
-- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/AgentThoughtBlock/AgentThoughtBlock.tsx#L17-L62) is a disclosure.
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
+- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L17-L62) is a disclosure.
   The heading stays open until it is clicked and shows a duration when known (`Thought for 1.2s`).
-  [previousThoughtIndexToCollapse](../../../webview/acp-ui/src/components/TraceList/thoughtCollapse.ts#L12-L30) closes the previous thought when a new one appears.
+  [previousThoughtIndexToCollapse](../../../webview/acp-ui/src/components/acp/trace/TraceList/thoughtCollapse.ts#L12-L30) closes the previous thought when a new one appears.
   The close is skipped when the transcript is scrolled up and that row is on screen.
-  [activityGroupRanges](../../../webview/acp-ui/src/components/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
-  [trace-activity-group](../../../webview/acp-ui/src/components/TraceList/TraceList.css#L91-L96) adds padding around that run.
-- Plans: [PlanBlock](../../../webview/acp-ui/src/components/PlanBlock/PlanBlock.tsx#L8-L40).
-- Verbose tools: [ToolCallBlock](../../../webview/acp-ui/src/components/ToolCallBlock/ToolCallBlock.tsx).
-- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
-  [partitionTraceSegments](../../../webview/acp-ui/src/components/TraceList/TraceList.tsx#L112-L116) keeps each task out of the compact and minimal groups.
-- Compact tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/ToolCallCompactBlock/ToolCallCompactBlock.tsx).
-  [CompactPathLink](../../../webview/acp-ui/src/components/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L33-L152) shows the file name and the full path in a workbench-style tooltip.
-  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx).
+  [activityGroupRanges](../../../webview/acp-ui/src/components/acp/trace/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
+  [trace-activity-group](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.css#L91-L96) adds padding around that run.
+- Plans: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L8-L40).
+- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
+  [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L45-L67) keeps each task on its own row.
+- Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
+  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts#L482-L493) shows a write as a diff and makes other tools with extra text clickable.
+  [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L33-L152) shows the file name and the full path in a workbench-style tooltip.
+  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx).
   Command lines show a compact duration when known (`$ ls 117ms`).
   Summaries come from [toolCallCompactText.ts](../../../webview/acp-ui/src/toolCallCompactText.ts).
 
@@ -88,13 +85,8 @@ When loading ends, the buffer replaces the visible trace in one step ([sessionHi
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.
 [visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport and the webview writes them beside the session file.
-[SessionHistoryLoader](../../../webview/acp-ui/src/components/SessionHistoryLoader/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
+[SessionHistoryLoader](../../../webview/acp-ui/src/components/acp/trace/SessionHistoryLoader/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
 A zero-height overlay is used at the top of a cached screen when you scroll up during load.
-
-### Tool call verbosity setting
-
-[readToolCallVerbosityFromSettings](../../../src/acp/config/toolCallVerbositySetting.ts#L13-L19) reads `ib-acp-ui.toolCallVerbosity`.
-[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L112-L115) posts updates on configuration change.
 
 ### Content width setting
 

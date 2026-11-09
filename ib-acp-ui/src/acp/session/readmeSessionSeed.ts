@@ -70,7 +70,7 @@ function modelSelectionFromRaw(raw: unknown): AcpUiSessionModelSelection | null 
 
 /**
  * Extracts bootstrap `models` and `configOptions` from a captured ACP NDJSON log
- * (e.g. `playground/mock/readme.ndjson`).
+ * (a captured ACP NDJSON log).
  */
 export function parseReadmeSessionSeedFromNdjson(text: string): ReadmeSessionSeed {
     let modelSelection = parseSessionModelsFromReadmeNdjson(text);

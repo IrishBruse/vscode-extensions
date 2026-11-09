@@ -29,12 +29,12 @@ See [AcpUiSessionConfigOption](../../../src/acp/session/sessionConfigOptions.ts#
 
 ### Composer controls
 
-[ConfigOptionControls](../../../webview/acp-ui/src/components/ConfigOptionControls/ConfigOptionControls.tsx#L69-L162) renders select and boolean fields.
-[ComposerConfigLoading](../../../webview/acp-ui/src/components/ConfigOptionControls/ConfigOptionControls.tsx#L29-L64) shows a disabled placeholder while options load.
+[ConfigOptionControls](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx#L69-L162) renders select and boolean fields.
+[ComposerConfigLoading](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx#L29-L64) shows a disabled placeholder while options load.
 
-[ModelConfigPopover](../../../webview/acp-ui/src/components/ModelConfigPopover/ModelConfigPopover.tsx) handles the Cursor-style family picker UI.
+[ModelConfigPopover](../../../webview/acp-ui/src/components/acp/composer/ModelConfigPopover/ModelConfigPopover.tsx) handles the Cursor-style family picker UI.
 
-[SessionModeIndicator](../../../webview/acp-ui/src/components/SessionModeIndicator/SessionModeIndicator.tsx#L13-L28) reads mode metadata.
+[SessionModeIndicator](../../../webview/acp-ui/src/components/acp/composer/SessionModeIndicator/SessionModeIndicator.tsx#L13-L28) reads mode metadata.
 It calls [sessionModeIndicatorFromOption](../../../src/acp/session/sessionModeIndicator.ts).
 
 ### Applying picks to the agent

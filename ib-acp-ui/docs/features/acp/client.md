@@ -19,7 +19,7 @@ See [session-config](../ui/session-config.md) for the shipped model toolbar.
 All agents advertise filesystem read and write support.
 
 For Cursor spawn configs, [isCursorAcpAgent](../../../src/acp/domain/agentSpawnConfig.ts) gates `_meta.parameterizedModelPicker: true`.
-That unlocks agent-ordered `configOptions` rendered in [ConfigOptionControls](../../../webview/acp-ui/src/components/ConfigOptionControls/ConfigOptionControls.tsx).
+That unlocks agent-ordered `configOptions` rendered in [ConfigOptionControls](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx).
 
 Remaining Zed parity gaps (terminal, terminal auth, boolean config options, elicitation) are listed in the task checklist.
 Do not advertise a capability until the matching client callback exists.

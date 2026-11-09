@@ -26,7 +26,7 @@ When the permission `toolCall` includes content (for example a `diff`), it also 
 Execute-style tools still get a command subtitle when the shell line can be resolved.
 
 [chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L707-L718) stores `permissionPrompt` state.
-[PermissionDialog](../../../webview/acp-ui/src/components/PermissionDialog/PermissionDialog.tsx#L18-L68) renders the modal strip.
+[PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L18-L68) renders the modal strip.
 
 [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L643-L660) wires button handlers to `postPermissionResponse`.
 [acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L589) forwards responses to the bridge.

@@ -13,10 +13,6 @@ import {
     readContentWidthRatioFromSettings,
 } from "../acp/config/contentWidthRatioSetting";
 import {
-    readToolCallVerbosityFromSettings,
-    toolCallVerbositySettingKey,
-} from "../acp/config/toolCallVerbositySetting";
-import {
     type AcpAgentConfig,
     getAcpAgentConfigByNameMerged,
     getAcpAgentConfigsMerged,
@@ -117,9 +113,6 @@ export class AcpUiSessionController {
         );
         this.disposables.push(
             workspace.onDidChangeConfiguration((event) => {
-                if (event.affectsConfiguration(toolCallVerbositySettingKey)) {
-                    this.postToolCallVerbosity();
-                }
                 if (event.affectsConfiguration(contentWidthPercentSettingKey)) {
                     this.postContentWidthRatio();
                 }
@@ -280,16 +273,8 @@ export class AcpUiSessionController {
             ...(cachedSeed.modelSelection !== null
                 ? { sessionModels: cachedSeed.modelSelection }
                 : {}),
-            toolCallVerbosity: readToolCallVerbosityFromSettings(),
             contentWidthRatio: readContentWidthRatioFromSettings(),
         };
-    }
-
-    private postToolCallVerbosity(): void {
-        this.post({
-            type: "toolCallVerbosity",
-            verbosity: readToolCallVerbosityFromSettings(),
-        });
     }
 
     private postContentWidthRatio(): void {

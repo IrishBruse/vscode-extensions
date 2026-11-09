@@ -1,5 +1,5 @@
 /**
- * Capture README screenshots from the playground demo (no VS Code required).
+ * Capture README screenshots from Storybook scenario stories.
  *
  * Usage: npm run screenshots
  */
@@ -9,36 +9,24 @@ import { mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Browser, chromium, type Page } from "playwright";
+import { chromium, type Page } from "playwright";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const docsDir = join(root, "docs");
 
 type CaptureSpec = {
     filename: string;
-    fixture?: string;
-    seed?: string;
-    replay?: boolean;
+    storyId: string;
     composerOnly?: boolean;
 };
 
 const captures: CaptureSpec[] = [
-    { fixture: "showcase", seed: "cursor-model", filename: "Fullscreen.png" },
-    { fixture: "markdown", seed: "cursor-model", filename: "Markdown.png" },
-    { fixture: "tools", seed: "cursor-model", filename: "Tool-call.png" },
-    { fixture: "plan", seed: "cursor-model", filename: "Plan.png" },
-    {
-        seed: "cursor-model",
-        filename: "Model-picker-cursor.png",
-        replay: false,
-        composerOnly: true,
-    },
-    {
-        seed: "opus-model",
-        filename: "Model-picker-opus.png",
-        replay: false,
-        composerOnly: true,
-    },
+    { storyId: "scenarios--showcase", filename: "Fullscreen.png" },
+    { storyId: "scenarios--markdown", filename: "Markdown.png" },
+    { storyId: "scenarios--tools", filename: "Tool-call.png" },
+    { storyId: "scenarios--plan", filename: "Plan.png" },
+    { storyId: "scenarios--cursor-model", filename: "Model-picker-cursor.png", composerOnly: true },
+    { storyId: "scenarios--opus-model", filename: "Model-picker-opus.png", composerOnly: true },
 ];
 
 async function reservePort(): Promise<number> {
@@ -135,79 +123,51 @@ async function waitForComposer(page: Page, requireTrace: boolean): Promise<void>
     await page.waitForTimeout(400);
 }
 
-async function captureSpec(browser: Browser, capture: CaptureSpec): Promise<void> {
-    const vitePort = await reservePort();
-    const wsPort = await reservePort();
-    const baseUrl = `http://127.0.0.1:${vitePort}`;
-    const demoEnv: NodeJS.ProcessEnv = {
-        ...process.env,
-        ACP_UI_DEMO: "1",
-        ACP_UI_DEMO_SEED: capture.seed ?? "cursor-model",
-        ACP_UI_DEMO_REPLAY: capture.replay === false ? "0" : "1",
-        ACP_UI_VITE_PORT: String(vitePort),
-        ACP_WS_PORT: String(wsPort),
-    };
-    if (capture.fixture !== undefined) {
-        demoEnv.ACP_UI_DEMO_FIXTURE = capture.fixture;
+async function captureSpec(page: Page, baseUrl: string, capture: CaptureSpec): Promise<void> {
+    const url = `${baseUrl}/iframe.html?id=${capture.storyId}&viewMode=story`;
+    await page.goto(url, { waitUntil: "networkidle" });
+    await waitForComposer(page, capture.composerOnly !== true);
+    if (capture.composerOnly === true) {
+        await page.locator(".composer-footer").screenshot({
+            path: join(docsDir, capture.filename),
+        });
+    } else {
+        await page.screenshot({
+            path: join(docsDir, capture.filename),
+            fullPage: false,
+        });
     }
+    console.log(`Captured ${capture.filename}`);
+}
 
-    const vite = startProcess(
-        "vite",
-        "npx",
-        [
-            "vite",
-            "--config",
-            "playground/vite.config.ts",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            String(vitePort),
-        ],
-        demoEnv,
+async function main(): Promise<void> {
+    await mkdir(docsDir, { recursive: true });
+    const port = await reservePort();
+    const baseUrl = `http://127.0.0.1:${port}`;
+    const storybook = startProcess(
+        "storybook",
+        "npm",
+        ["run", "storybook", "--", "--port", String(port), "--ci"],
+        process.env,
     );
-    const server = startProcess("server", "npx", ["tsx", "playground/server.ts"], demoEnv);
-
+    const browser = await chromium.launch();
     try {
-        await waitForUrl(baseUrl);
-        if (server.child.exitCode !== null) {
-            throw new Error(`Playground demo server exited before capturing ${capture.filename}.`);
-        }
+        await waitForUrl(`${baseUrl}/iframe.html`);
         const page = await browser.newPage({
             viewport: { width: 1280, height: 900 },
             deviceScaleFactor: 2,
         });
         try {
-            await page.goto(baseUrl, { waitUntil: "networkidle" });
-            await waitForComposer(page, capture.composerOnly !== true);
-            if (capture.composerOnly === true) {
-                await page.locator(".composer-footer").screenshot({
-                    path: join(docsDir, capture.filename),
-                });
-            } else {
-                await page.screenshot({
-                    path: join(docsDir, capture.filename),
-                    fullPage: false,
-                });
+            for (const capture of captures) {
+                await captureSpec(page, baseUrl, capture);
             }
-            console.log(`Captured ${capture.filename}`);
         } finally {
             await page.close();
-        }
-    } finally {
-        await stopProcesses([vite, server]);
-    }
-}
-
-async function main(): Promise<void> {
-    await mkdir(docsDir, { recursive: true });
-    const browser = await chromium.launch();
-    try {
-        for (const capture of captures) {
-            await captureSpec(browser, capture);
         }
         console.log(`Wrote screenshots under ${docsDir}`);
     } finally {
         await browser.close();
+        await stopProcesses([storybook]);
     }
 }
 

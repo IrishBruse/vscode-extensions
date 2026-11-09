@@ -33,9 +33,6 @@ export type TodoEntry = {
 /** Tool call status forwarded from ACP. */
 export type ToolCallStatus = "pending" | "in_progress" | "completed" | "failed";
 
-/** How tool calls render in the chat trace. */
-export type ToolCallVerbosity = "minimal" | "compact" | "verbose";
-
 /** Line-level diff for tool output (git-style presentation in a webview). */
 export type ToolCallDiffRow = {
     kind: "removed" | "added" | "context";
@@ -166,14 +163,8 @@ export type ExtensionToWebviewMessage =
           sessionHistoryLoading?: boolean;
           /** Last on-screen transcript slice, restored before `session/load` finishes. */
           visibleTrace?: AcpUiVisibleTraceItem[];
-          /** Tool call display mode (`minimal`, `compact`, or `verbose`). */
-          toolCallVerbosity?: ToolCallVerbosity;
           /** Fraction of panel width for transcript and composer (1 = full width). */
           contentWidthRatio?: number;
-      }
-    | {
-          type: "toolCallVerbosity";
-          verbosity: ToolCallVerbosity;
       }
     | {
           type: "contentWidthRatio";

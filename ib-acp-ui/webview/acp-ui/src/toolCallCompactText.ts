@@ -473,6 +473,25 @@ export function compactToolShowsDiffStats(item: TraceToolItem): boolean {
   return normalizedKind(item) === "edit";
 }
 
+export type ToolCallDetailKind = "diff" | "expandable" | "summary";
+
+/**
+ * Writes with diff rows always open as a diff.
+ * Other tools with extra text are a compact line you can click.
+ */
+export function toolCallDetailKind(item: TraceToolItem): ToolCallDetailKind {
+  if (isExecuteTool(item) || isSubagentTaskTool(item)) {
+    return "summary";
+  }
+  if (normalizedKind(item) === "edit" && (item.diffRows?.length ?? 0) > 0) {
+    return "diff";
+  }
+  if ((item.content?.trim().length ?? 0) > 0) {
+    return "expandable";
+  }
+  return "summary";
+}
+
 export const compactExecutePreviewLineCount = 3;
 
 /** Grouped minimal mode shows only the last N per-tool detail lines. */

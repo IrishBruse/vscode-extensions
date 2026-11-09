@@ -45,6 +45,20 @@
                 "panel": "dedicated",
                 "group": "watchers"
             }
+        },
+        {
+            "label": "ib-acp-ui: storybook",
+            "type": "shell",
+            "command": "npm run storybook -w ib-acp-ui",
+            "options": { "cwd": "${workspaceFolder}" },
+            "isBackground": true,
+            "problemMatcher": [],
+            "runOptions": { "runOn": "folderOpen" },
+            "presentation": {
+                "reveal": "never",
+                "panel": "dedicated",
+                "group": "watchers"
+            }
         }
     ]
 }

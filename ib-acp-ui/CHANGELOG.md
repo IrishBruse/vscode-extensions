@@ -5,6 +5,10 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Remove**: The tool call verbosity setting (`minimal`, `compact`, and `verbose`).
+- **Change**: Tool calls use one line each.
+  Click a line that has more text to show it.
+  A write always shows its diff.
 - **Change**: Subagent task calls show the short description, the subagent type, and the prompt.
   The raw argument JSON is no longer shown in the transcript.
 - **Add**: User messages in the chat trace render as markdown, with the same headings, tables, and code blocks as agent replies.

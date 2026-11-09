@@ -10,6 +10,7 @@ import {
   executeOutputPreview,
   isCompactGroupableTool,
   setCompactToolPathHome,
+  toolCallDetailKind,
 } from "./toolCallCompactText";
 
 function toolItem(
@@ -27,6 +28,53 @@ function toolItem(
     ...overrides,
   };
 }
+
+describe("toolCallDetailKind", () => {
+  it("always shows a write as a diff when diff rows exist", () => {
+    expect(
+      toolCallDetailKind(
+        toolItem({
+          toolCallId: "edit-1",
+          kind: "edit",
+          title: "Write File",
+          subtitle: "src/app.ts",
+          detailVisible: false,
+          diffRows: [
+            { kind: "context", text: "const a = 1;" },
+            { kind: "removed", text: "const b = 2;" },
+            { kind: "added", text: "const b = 3;" },
+          ],
+        }),
+      ),
+    ).toBe("diff");
+  });
+
+  it("makes a read with file text clickable for more detail", () => {
+    expect(
+      toolCallDetailKind(
+        toolItem({
+          toolCallId: "read-1",
+          kind: "read",
+          subtitle: "src/app.ts",
+          content: "export const value = 1;\n",
+          detailVisible: true,
+        }),
+      ),
+    ).toBe("expandable");
+  });
+
+  it("leaves a read with no file text as a summary line", () => {
+    expect(
+      toolCallDetailKind(
+        toolItem({
+          toolCallId: "read-2",
+          kind: "read",
+          subtitle: "src/app.ts",
+        }),
+      ),
+    ).toBe("summary");
+  });
+});
 
 describe("toolCallCompactText", () => {
   it("shortens absolute paths under home in compact labels", () => {

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { parseReadmeSessionSeedFromJson } from "./readmeSessionSeed";
 import { usesAgentOrderedConfigLayout } from "./sessionConfigOptions";
 
-const fixtureRoot = join(import.meta.dirname, "../../../playground/fixtures");
+const fixtureRoot = join(import.meta.dirname, "../../../fixtures");
 
 describe("parseReadmeSessionSeedFromJson", () => {
     it("loads the committed readme fixture seed for composer bootstrap", () => {

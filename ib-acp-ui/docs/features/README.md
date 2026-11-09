@@ -33,5 +33,5 @@ See [AGENTS.md](./AGENTS.md) for authoring rules.
 | Feature                       | Doc                                        |
 | ----------------------------- | ------------------------------------------ |
 | Protocol v2 and SDK unstables | [platform](./maintainer/platform.md)       |
-| Playground webview dev server | [playground](./maintainer/playground.md)   |
+| Storybook component catalog   | [playground](./maintainer/playground.md)   |
 | ACP RPC NDJSON logging        | [rpc-logging](./maintainer/rpc-logging.md) |

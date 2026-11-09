@@ -27,8 +27,6 @@
         "build:webview": "vp build --config webview/acp-ui/vite.config.ts",
         "build:extension": "vp pack --sourcemap",
         "watch:webview": "vp build --watch --config webview/acp-ui/vite.config.ts",
-        "dev:playground": "vp run playground",
-        "dev:playground:demo": "vp run playground:demo",
         "build:fixtures": "tsx scripts/build-showcase-fixtures.ts",
         "sync:playground-theme": "tsx scripts/sync-playground-theme.ts",
         "screenshots": "npm run build:fixtures && tsx scripts/capture-readme-screenshots.ts",
@@ -121,16 +119,6 @@
                     "type": "string",
                     "default": "",
                     "description": "Directory for chat .acp files. Empty uses extension global storage. Absolute path or workspace-relative."
-                },
-                "ib-acp-ui.toolCallVerbosity": {
-                    "type": "string",
-                    "enum": [
-                        "minimal",
-                        "compact",
-                        "verbose"
-                    ],
-                    "default": "verbose",
-                    "description": "How tool calls appear in the chat trace. Minimal groups tool calls with a summary and shows the last three details. Compact shows one line per tool call. Verbose shows full file previews and diffs."
                 },
                 "ib-acp-ui.contentWidthPercent": {
                     "type": "number",

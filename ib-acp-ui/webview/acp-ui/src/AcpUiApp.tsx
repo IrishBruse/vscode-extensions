@@ -19,7 +19,6 @@ import { cycleSessionModePick } from "../../../src/acp/session/sessionConfigOpti
 import type {
   AcpUiPromptImage,
   AcpUiSlashCommand,
-  ToolCallVerbosity,
   WorkspacePathOpenTarget,
 } from "../../../src/protocol/extensionHostMessages";
 import { anchoredScrollTop } from "./anchoredScroll";
@@ -33,31 +32,31 @@ import {
   type TraceItem,
 } from "./chatReducer";
 import { visibleTraceTail, type VisibleTraceRow } from "./visibleTraceTail";
-import { ChatComposer } from "./components/ChatComposer/ChatComposer";
+import { ChatComposer } from "./components/acp/composer/ChatComposer/ChatComposer";
 import { installSessionModeIndicatorThemeColors } from "./sessionModeIndicatorTheme";
 import {
   installAgentMarkdownThemeColors,
   updateAgentMarkdownThemeColors,
 } from "./agentMarkdownTheme";
-import { buildComposerAutocompleteState, wrapIndex } from "./components/ChatComposer/composerAutocomplete";
+import { buildComposerAutocompleteState, wrapIndex } from "./components/acp/composer/ChatComposer/composerAutocomplete";
 import {
   shouldCancelRunOnCtrlC,
   shouldCycleSessionModeOnShiftTab,
   shouldOpenNewChatOnCtrlT,
-} from "./components/ChatComposer/composerKeybindings";
+} from "./components/acp/composer/ChatComposer/composerKeybindings";
 import {
   hasRunningTool,
   resolveFollowUpEnter,
   steerShouldStopAfterTool,
   type FollowUpMode,
-} from "./components/ChatComposer/composerFollowUp";
-import { CursorAskQuestionDialog } from "./components/CursorAskQuestionDialog/CursorAskQuestionDialog";
-import { CursorCreatePlanDialog } from "./components/CursorCreatePlanDialog/CursorCreatePlanDialog";
-import { EmptyChatState } from "./components/EmptyChatState/EmptyChatState";
-import { ImageViewer } from "./components/ImageViewer/ImageViewer";
-import { PermissionDialog } from "./components/PermissionDialog/PermissionDialog";
-import { TraceList } from "./components/TraceList/TraceList";
-import { SessionHistoryLoader } from "./components/SessionHistoryLoader/SessionHistoryLoader";
+} from "./components/acp/composer/ChatComposer/composerFollowUp";
+import { CursorAskQuestionDialog } from "./components/acp/dialogs/CursorAskQuestionDialog/CursorAskQuestionDialog";
+import { CursorCreatePlanDialog } from "./components/acp/dialogs/CursorCreatePlanDialog/CursorCreatePlanDialog";
+import { EmptyChatState } from "./components/acp/session/EmptyChatState/EmptyChatState";
+import { ImageViewer } from "./components/acp/dialogs/ImageViewer/ImageViewer";
+import { PermissionDialog } from "./components/acp/dialogs/PermissionDialog/PermissionDialog";
+import { TraceList } from "./components/acp/trace/TraceList/TraceList";
+import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
 import {
   appendFileMentionsToDraft,
   collectPathsFromDataTransfer,
@@ -148,9 +147,6 @@ export function AcpUiApp({
   } | null>(null);
   const [expandAllToolOutputs, setExpandAllToolOutputs] = useState(false);
   const [showThinkingBlocks, setShowThinkingBlocks] = useState(true);
-  const [toolCallVerbosity, setToolCallVerbosity] = useState<ToolCallVerbosity>(
-    init.toolCallVerbosity ?? "verbose",
-  );
   const [contentWidthRatio, setContentWidthRatio] = useState(init.contentWidthRatio ?? 1);
   const traceRef = useRef<HTMLElement | null>(null);
   const traceContentRef = useRef<HTMLDivElement | null>(null);
@@ -204,10 +200,6 @@ export function AcpUiApp({
   extensionDispatchRef.current = (message: ExtensionMessageAfterInit) => {
     if (message.type === "vscodeThemeVariables") {
       updateAgentMarkdownThemeColors(message.variables);
-      return;
-    }
-    if (message.type === "toolCallVerbosity") {
-      setToolCallVerbosity(message.verbosity);
       return;
     }
     if (message.type === "contentWidthRatio") {
@@ -824,7 +816,6 @@ export function AcpUiApp({
               items={state.trace}
               showThoughts={showThinkingBlocks}
               expandAllToolOutputs={expandAllToolOutputs}
-              toolCallVerbosity={toolCallVerbosity}
               followBottom={stickToBottomRef.current}
               historyCommit={state.historyCommit}
               traceScrollRef={traceRef}

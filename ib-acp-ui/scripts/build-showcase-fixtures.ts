@@ -9,8 +9,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const chatsDir = join(root, "playground/fixtures/chats");
-const fixturesDir = join(root, "playground/fixtures");
+const chatsDir = join(root, "fixtures/chats");
+const fixturesDir = join(root, "fixtures");
 const sessionId = "acp-ui-showcase-session";
 
 type SessionUpdate = Record<string, unknown>;

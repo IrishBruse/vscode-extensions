@@ -1,10 +1,31 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import react from "@vitejs/plugin-react";
 import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig } from "vite";
+import type { Plugin } from "vite";
+import { resolvePlaygroundThemeCssVariables } from "../../../src/platform/node/resolvePlaygroundThemeCssVariables";
 
-const configDir = path.dirname(fileURLToPath(import.meta.url));
+function playgroundThemePlugin(): Plugin {
+  return {
+    name: "acp-ui-playground-theme",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = req.url?.split("?")[0];
+        if (path !== "/api/playground-theme") {
+          next();
+          return;
+        }
+        try {
+          const theme = resolvePlaygroundThemeCssVariables();
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(theme));
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: message }));
+        }
+      });
+    },
+  };
+}
 
 const config: StorybookConfig = {
   stories: ["../src/components/**/*.stories.tsx"],
@@ -14,14 +35,9 @@ const config: StorybookConfig = {
   },
   staticDirs: [],
   async viteFinal(viteConfig) {
+    const { mergeConfig } = await import("vite");
     return mergeConfig(viteConfig, {
-      plugins: [react()],
-      resolve: {
-        alias: {
-          ...viteConfig.resolve?.alias,
-        },
-      },
-      root: path.join(configDir, ".."),
+      plugins: [playgroundThemePlugin()],
     });
   },
 };

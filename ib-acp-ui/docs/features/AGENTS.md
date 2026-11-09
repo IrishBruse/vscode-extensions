@@ -64,7 +64,7 @@ Link to the exact file and line range instead.
 Use relative markdown links from `docs/features/<group>/` (three levels up to the repo root):
 
 ```markdown
-[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts#L85-L124)
+[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerAutocomplete.ts#L85-L124)
 ```
 
 Rules:
@@ -78,8 +78,8 @@ Rules:
 Example implementation paragraph:
 
 ```markdown
-[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts#L85-L124)
-calls [queryFromCaret](../../../webview/acp-ui/src/components/ChatComposer/composerAutocomplete.ts#L33-L43)
+[buildComposerAutocompleteState](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerAutocomplete.ts#L85-L124)
+calls [queryFromCaret](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerAutocomplete.ts#L33-L43)
 to detect `/` and `@` tokens at the caret.
 ```
 
