@@ -3,11 +3,12 @@ import {
   Suspense,
   type ReactElement,
   type SyntheticEvent,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
-import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
+import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
 import "./AgentThoughtBlock.css";
 
 const AgentMarkdown = lazy(() =>
@@ -18,8 +19,8 @@ function durationLabel(durationMs: number | undefined): string {
   if (durationMs === undefined || !Number.isFinite(durationMs) || durationMs < 0) {
     return "Thought";
   }
-  const compact = formatCompactDurationMs(durationMs);
-  return compact.length > 0 ? `Thought for ${compact}` : "Thought";
+  const seconds = formatThoughtSeconds(durationMs);
+  return seconds.length > 0 ? `Thought for ${seconds}` : "Thought";
 }
 
 /**
@@ -29,15 +30,33 @@ function durationLabel(durationMs: number | undefined): string {
 export function AgentThoughtBlock({
   text,
   durationMs,
+  startedAtMs,
   className,
   collapseNonce = 0,
 }: {
   text: string;
   durationMs?: number;
+  /** Epoch ms when this thought started. Present only while it is still running. */
+  startedAtMs?: number;
   className?: string;
   /** Increments to close this block without a click. */
   collapseNonce?: number;
 }): ReactElement {
+  const ticking = durationMs === undefined && startedAtMs !== undefined;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ticking) {
+      return;
+    }
+    const handle = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 100);
+    return () => {
+      window.clearInterval(handle);
+    };
+  }, [ticking]);
+  const liveDurationMs =
+    ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
   const [expanded, setExpanded] = useState(true);
   const seenCollapseNonceRef = useRef(collapseNonce);
 
@@ -66,7 +85,7 @@ export function AgentThoughtBlock({
     >
       <summary className="agent-thought-chunk-title">
         <span className="agent-thought-chunk-chevron" aria-hidden="true" />
-        {durationLabel(durationMs)}
+        {durationLabel(liveDurationMs)}
       </summary>
       <div className="agent-thought-chunk-body">
         <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>

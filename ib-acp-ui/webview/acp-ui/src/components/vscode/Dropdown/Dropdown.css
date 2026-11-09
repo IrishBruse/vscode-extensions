@@ -20,12 +20,9 @@
   margin: 0;
   padding: 2px 4px 2px 8px;
   color: var(--vscode-dropdown-foreground, var(--acp-ui-text-primary));
-  background-color: var(
-    --vscode-dropdown-background,
-    var(--vscode-input-background, var(--acp-ui-surface-panel))
-  );
+  background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
   border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
-    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
+    var(--vscode-dropdown-border, transparent);
   border-radius: var(--vscode-cornerRadius-small, 4px);
   font-family: inherit;
   font-size: var(--vscode-font-size, 13px);
@@ -36,8 +33,8 @@
 
 .vs-dropdown-trigger:hover:not(:disabled) {
   background-color: var(
-    --vscode-list-hoverBackground,
-    var(--vscode-toolbar-hoverBackground, var(--acp-ui-surface-panel))
+    --vscode-dropdown-background,
+    var(--vscode-input-background, var(--acp-ui-surface-panel))
   );
 }
 

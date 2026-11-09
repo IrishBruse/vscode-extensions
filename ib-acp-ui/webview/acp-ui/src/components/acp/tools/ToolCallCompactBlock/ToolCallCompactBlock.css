@@ -75,7 +75,8 @@
   .tool-call-compact-detail-row
   .tool-call-compact-detail-text
   .tool-call-compact-path-link:visited {
-  color: var(--vscode-foreground);
+  color: var(--vscode-terminal-ansiGreen, #98c379);
+  text-decoration: none;
 }
 
 .tool-call-compact--truncated-details
@@ -86,7 +87,8 @@
   .tool-call-compact-detail-row
   .tool-call-compact-detail-text
   .tool-call-compact-path-link:focus-visible {
-  color: var(--vscode-textLink-foreground);
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  text-decoration: none;
 }
 
 .tool-call-compact[data-status="in_progress"] .tool-call-compact-summary-verbs,
@@ -118,17 +120,15 @@
 .tool-call-compact-detail-text .tool-call-compact-path-link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:visited {
-  color: var(--vscode-foreground);
+  color: var(--vscode-terminal-ansiGreen, #98c379);
   text-decoration: none;
   cursor: pointer;
 }
 
 .tool-call-compact-detail-text .tool-call-compact-path-link:hover,
 .tool-call-compact-detail-text .tool-call-compact-path-link:focus-visible {
-  color: var(--vscode-textLink-foreground);
-  text-decoration: underline;
-  text-decoration-style: solid;
-  text-underline-offset: 2px;
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  text-decoration: none;
 }
 
 .acp-ui-hover-tooltip {

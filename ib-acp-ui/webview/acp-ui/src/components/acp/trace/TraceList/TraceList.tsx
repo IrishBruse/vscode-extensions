@@ -301,6 +301,7 @@ export function TraceList({
               className={gapClass.trim()}
               text={item.text}
               durationMs={item.durationMs}
+              startedAtMs={item.startedAtMs}
               collapseNonce={collapseNonceByIndex.get(segment.index) ?? 0}
             />,
           );

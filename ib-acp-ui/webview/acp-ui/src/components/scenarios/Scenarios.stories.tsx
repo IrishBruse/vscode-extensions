@@ -122,7 +122,7 @@ const createPlan: ExtensionMessageAfterInit = {
 const meta = {
   title: "Scenarios",
   component: ScenarioChat,
-  parameters: { fullWidth: true },
+  parameters: { fullWidth: true, frameWidth: "75%" },
 } satisfies Meta<typeof ScenarioChat>;
 
 export default meta;

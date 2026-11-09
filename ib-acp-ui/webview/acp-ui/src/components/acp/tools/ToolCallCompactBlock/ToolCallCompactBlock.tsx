@@ -312,9 +312,6 @@ function CompactDiffLines({
                   : "tool-call-diff-line tool-call-diff-line--context"
             }
           >
-            <span className="tool-call-diff-prefix" aria-hidden="true">
-              {row.kind === "removed" ? "-" : row.kind === "added" ? "+" : " "}
-            </span>
             <span className="tool-call-diff-text">{row.text}</span>
           </div>
         ))}

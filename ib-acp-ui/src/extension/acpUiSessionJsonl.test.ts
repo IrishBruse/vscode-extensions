@@ -202,6 +202,13 @@ describe("visible trace jsonl", () => {
         expect(document.items).toEqual(items);
     });
 
+    it("round-trips an in-progress thought start time", () => {
+        const items = [
+            { type: "thought" as const, text: "Still thinking.", startedAtMs: 1_700_000_000_000 },
+        ];
+        expect(parseVisibleTraceJsonl(serializeVisibleTraceJsonl(items))).toEqual(items);
+    });
+
     it("drops non-positive thought durations", () => {
         const text = [
             JSON.stringify({ type: "thought", text: "A", durationMs: 0 }),

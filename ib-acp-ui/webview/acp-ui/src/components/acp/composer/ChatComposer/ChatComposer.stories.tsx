@@ -38,6 +38,7 @@ const baseProps = {
 const meta = {
   title: "ACP/Composer/ChatComposer",
   component: ChatComposer,
+  parameters: { pinBottom: true },
 } satisfies Meta<typeof ChatComposer>;
 
 export default meta;

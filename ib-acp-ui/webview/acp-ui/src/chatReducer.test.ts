@@ -498,6 +498,58 @@ describe("chatReducer", () => {
     expect(state.historyCommit).toBe(1);
   });
 
+  it("keeps the saved thought duration when replay measures a shorter clock", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const cached = [
+      { type: "thought" as const, text: "Planning the change.", durationMs: 3200 },
+    ];
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      sessionHistoryLoading: true,
+      visibleTrace: cached,
+    });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Planning the change." });
+    vi.advanceTimersByTime(40);
+    state = chatReducer(state, { type: "appendAgentText", text: "Done" });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    const thought = state.trace[0];
+    expect(thought).toEqual({
+      type: "thought",
+      text: "Planning the change.",
+      durationMs: 3200,
+    });
+  });
+
+  it("restores an in-progress thought clock from the saved start time", () => {
+    const startedAtMs = Date.now() - 2500;
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      visibleTrace: [
+        { type: "thought", text: "Still thinking.", startedAtMs },
+      ],
+    });
+    expect(state.thoughtStartedAtMs).toBe(startedAtMs);
+    const thought = state.trace[0];
+    expect(thought).toEqual({ type: "thought", text: "Still thinking.", startedAtMs });
+  });
+
+  it("records thought start time on the trace item so it can be saved", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "appendAgentThought", text: "Thinking…" });
+    expect(state.trace[0]).toEqual({
+      type: "thought",
+      text: "Thinking…",
+      startedAtMs: Date.now(),
+    });
+  });
+
   it("merges cached thought durations onto agent replay when load finishes", () => {
     const cached = [
       { type: "user" as const, text: "hi" },

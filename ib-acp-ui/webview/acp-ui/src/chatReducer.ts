@@ -51,7 +51,7 @@ export type TraceToolItem = {
 
 export type TraceItem =
   | { type: "user"; text: string; imageCount?: number; images?: AcpUiPromptImage[] }
-  | { type: "thought"; text: string; durationMs?: number }
+  | { type: "thought"; text: string; durationMs?: number; startedAtMs?: number }
   | { type: "agent"; text: string }
   | TraceToolItem
   | { type: "plan"; entries: PlanEntry[] };
@@ -307,12 +307,13 @@ function finalizeOpenThoughtDuration(state: ChatState): ChatState {
   if (existing?.type !== "thought" || existing.durationMs !== undefined) {
     return state;
   }
-  const durationMs = Date.now() - state.thoughtStartedAtMs;
+  const startedAtMs = existing.startedAtMs ?? state.thoughtStartedAtMs;
+  const durationMs = Date.now() - startedAtMs;
   if (!(durationMs > 0)) {
     return { ...state, thoughtStartedAtMs: null };
   }
   const trace = state.trace.slice();
-  trace[open] = { ...existing, durationMs };
+  trace[open] = { type: "thought", text: existing.text, durationMs };
   return { ...state, trace, thoughtStartedAtMs: null };
 }
 
@@ -324,13 +325,23 @@ export function mergeThoughtDurationsFromCache(
   authoritative: readonly TraceItem[],
   metadataSource: readonly TraceItem[],
 ): TraceItem[] {
-  const cachedDurations: number[] = [];
+  const cachedThoughts: { durationMs?: number; startedAtMs?: number }[] = [];
   for (const item of metadataSource) {
-    if (item.type === "thought" && item.durationMs !== undefined && item.durationMs > 0) {
-      cachedDurations.push(item.durationMs);
+    if (item.type !== "thought") {
+      continue;
     }
+    const durationMs = positiveDurationMs(item.durationMs);
+    const startedAtMs = positiveDurationMs(item.startedAtMs);
+    if (durationMs === undefined && startedAtMs === undefined) {
+      cachedThoughts.push({});
+      continue;
+    }
+    cachedThoughts.push({
+      ...(durationMs !== undefined ? { durationMs } : {}),
+      ...(startedAtMs !== undefined ? { startedAtMs } : {}),
+    });
   }
-  if (cachedDurations.length === 0) {
+  if (cachedThoughts.length === 0) {
     return authoritative.slice();
   }
   let thoughtIndex = 0;
@@ -338,15 +349,18 @@ export function mergeThoughtDurationsFromCache(
     if (item.type !== "thought") {
       return item;
     }
-    const cached = cachedDurations[thoughtIndex];
+    const cached = cachedThoughts[thoughtIndex];
     thoughtIndex += 1;
-    if (item.durationMs !== undefined && item.durationMs > 0) {
-      return item;
-    }
     if (cached === undefined) {
       return item;
     }
-    return { ...item, durationMs: cached };
+    if (cached.durationMs !== undefined) {
+      return { type: "thought", text: item.text, durationMs: cached.durationMs };
+    }
+    if (cached.startedAtMs !== undefined) {
+      return { type: "thought", text: item.text, startedAtMs: cached.startedAtMs };
+    }
+    return item;
   });
 }
 
@@ -438,12 +452,26 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
   return { trace, toolIndexById };
 }
 
+function thoughtClockFromTrace(trace: readonly TraceItem[]): number | null {
+  const last = trace.at(-1);
+  if (
+    last?.type === "thought" &&
+    last.durationMs === undefined &&
+    last.startedAtMs !== undefined &&
+    last.startedAtMs > 0
+  ) {
+    return last.startedAtMs;
+  }
+  return null;
+}
+
 export function createChatStateFromInit(payload: InitPayload): ChatState {
   const seeded = traceFromVisibleCache(payload.visibleTrace);
   const base: ChatState = {
     ...createInitialChatState(),
     trace: seeded.trace,
     toolIndexById: seeded.toolIndexById,
+    thoughtStartedAtMs: thoughtClockFromTrace(seeded.trace),
     sessionHistoryLoading: payload.sessionHistoryLoading === true,
     viewportCacheActive: seeded.trace.length > 0 && payload.sessionHistoryLoading === true,
     acpAgentSelection: buildAcpAgentSelectionFromInit(payload),
@@ -566,34 +594,39 @@ function appendAgentThought(
     const existing = state.trace[open];
     if (existing?.type === "thought") {
       const mergedDuration = resolvedDuration ?? existing.durationMs;
+      const startedAtMs =
+        mergedDuration !== undefined && mergedDuration > 0
+          ? undefined
+          : (existing.startedAtMs ?? state.thoughtStartedAtMs ?? Date.now());
       const trace = state.trace.slice();
       trace[open] = {
         type: "thought",
         text: joinThoughtChunks(existing.text, text),
-        ...(mergedDuration !== undefined && mergedDuration > 0
-          ? { durationMs: mergedDuration }
-          : {}),
+        ...(mergedDuration !== undefined && mergedDuration > 0 ? { durationMs: mergedDuration } : {}),
+        ...(startedAtMs !== undefined ? { startedAtMs } : {}),
       };
-      const thoughtStartedAtMs =
-        mergedDuration !== undefined && mergedDuration > 0
-          ? null
-          : (state.thoughtStartedAtMs ?? Date.now());
-      return { ...state, trace, thoughtStartedAtMs };
+      return {
+        ...state,
+        trace,
+        thoughtStartedAtMs: startedAtMs ?? null,
+      };
     }
   }
+  const startedAtMs = resolvedDuration !== undefined ? undefined : Date.now();
   const trace = [
     ...state.trace,
     {
       type: "thought" as const,
       text,
       ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
+      ...(startedAtMs !== undefined ? { startedAtMs } : {}),
     },
   ];
   return {
     ...state,
     trace,
     openStreamIndex: trace.length - 1,
-    thoughtStartedAtMs: resolvedDuration !== undefined ? null : Date.now(),
+    thoughtStartedAtMs: startedAtMs ?? null,
   };
 }
 
@@ -1126,17 +1159,18 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         return { ...state, sessionHistoryLoading: true };
       }
       if (state.viewportCacheActive && state.replayTrace.length > 0) {
+        const trace = mergeToolDurationsFromCache(
+          mergeThoughtDurationsFromCache(state.replayTrace, state.trace),
+          state.trace,
+        );
         return {
           ...state,
           sessionHistoryLoading: false,
           viewportCacheActive: false,
-          trace: mergeToolDurationsFromCache(
-            mergeThoughtDurationsFromCache(state.replayTrace, state.trace),
-            state.trace,
-          ),
+          trace,
           toolIndexById: state.replayToolIndexById,
           openStreamIndex: state.replayOpenStreamIndex,
-          thoughtStartedAtMs: state.replayThoughtStartedAtMs,
+          thoughtStartedAtMs: thoughtClockFromTrace(trace),
           toolStartedAtMsById: state.replayToolStartedAtMsById,
           replayTrace: [],
           replayToolIndexById: new Map(),

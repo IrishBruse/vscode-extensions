@@ -37,12 +37,9 @@
   padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
   text-align: left;
   color: var(--acp-ui-text-primary);
-  background-color: var(
-    --vscode-dropdown-background,
-    var(--vscode-input-background, var(--acp-ui-surface-panel))
-  );
+  background-color: var(--vscode-dropdown-background, var(--vscode-editor-background));
   border: var(--vscode-strokeThickness, var(--acp-ui-stroke-width)) solid
-    var(--vscode-dropdown-border, var(--acp-ui-border-chrome));
+    var(--vscode-dropdown-border, transparent);
   border-radius: var(--vscode-cornerRadius-small, 4px);
   font-family: inherit;
   font-size: var(--acp-ui-font-size-small);
@@ -67,6 +64,11 @@
 
 .empty-chat-recent:hover {
   background-color: var(--vscode-list-hoverBackground, var(--acp-ui-border-chrome));
+}
+
+.empty-chat-recent:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .empty-chat-recent-empty {

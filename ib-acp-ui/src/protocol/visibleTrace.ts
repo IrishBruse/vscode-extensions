@@ -30,7 +30,7 @@ export type AcpUiVisibleTraceItem =
           imageCount?: number;
           images?: { data: string; mimeType: string }[];
       }
-    | { type: "thought"; text: string; durationMs?: number }
+    | { type: "thought"; text: string; durationMs?: number; startedAtMs?: number }
     | { type: "agent"; text: string }
     | {
           type: "tool";
@@ -68,6 +68,14 @@ export function positiveDurationMs(value: unknown): number | undefined {
 
 function positiveInteger(value: unknown): number | undefined {
     return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+/** Thought heading clock, always seconds with one decimal (for example `0.4s`, `1.2s`). */
+export function formatThoughtSeconds(durationMs: number): string {
+    if (!Number.isFinite(durationMs) || durationMs < 0) {
+        return "";
+    }
+    return `${(durationMs / 1000).toFixed(1)}s`;
 }
 
 /** Compact clock label for thought and command durations (for example `450ms`, `1.2s`). */
@@ -192,10 +200,12 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             return null;
         }
         const durationMs = positiveDurationMs(value.durationMs);
+        const startedAtMs = positiveDurationMs(value.startedAtMs);
         return {
             type: "thought",
             text: value.text,
             ...(durationMs !== undefined ? { durationMs } : {}),
+            ...(durationMs === undefined && startedAtMs !== undefined ? { startedAtMs } : {}),
         };
     }
     if (value.type === "plan") {
