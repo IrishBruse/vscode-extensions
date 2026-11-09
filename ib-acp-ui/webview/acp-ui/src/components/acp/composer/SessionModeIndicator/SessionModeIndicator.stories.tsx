@@ -28,3 +28,17 @@ export const PlanMode: Story = {
     modeOption: planModeOption,
   },
 };
+
+export const AskMode: Story = {
+  args: {
+    modeOption: {
+      ...planModeOption,
+      currentValue: "ask",
+      options: [
+        { value: "agent", name: "Agent" },
+        { value: "ask", name: "Ask" },
+        { value: "plan", name: "Plan mode" },
+      ],
+    },
+  },
+};

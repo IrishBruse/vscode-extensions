@@ -33,3 +33,13 @@ export const Default: Story = {
     onOpenSession: () => undefined,
   },
 };
+
+export const NoRecents: Story = {
+  args: {
+    providers: ["cursor-agent"],
+    currentProvider: "cursor-agent",
+    recentSessions: [],
+    onPickProvider: () => undefined,
+    onOpenSession: () => undefined,
+  },
+};

@@ -8,11 +8,16 @@ const noop = () => undefined;
 export function ScenarioChat({
   ndjson,
   seedText,
+  extraMessages = [],
 }: {
   ndjson: string;
   seedText?: string;
+  extraMessages?: ExtensionMessageAfterInit[];
 }): ReactElement {
-  const { init, state } = useMemo(() => chatFromFixture(ndjson, seedText), [ndjson, seedText]);
+  const { init, state } = useMemo(
+    () => chatFromFixture(ndjson, seedText, extraMessages),
+    [ndjson, seedText, extraMessages],
+  );
   const extensionDispatchRef = useRef<((message: ExtensionMessageAfterInit) => void) | null>(null);
   return (
     <AcpUiApp

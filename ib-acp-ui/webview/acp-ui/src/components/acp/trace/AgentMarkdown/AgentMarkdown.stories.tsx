@@ -25,3 +25,16 @@ export const Default: Story = {
     text: sampleMarkdown,
   },
 };
+
+export const TableAndQuote: Story = {
+  args: {
+    text: `> Quote the setting before you change it.
+
+| Setting | Default |
+| --- | --- |
+| content width | 100 |
+| sessions directory | extension storage |
+
+A [link](https://agentclientprotocol.com) stays in the paragraph.`,
+  },
+};

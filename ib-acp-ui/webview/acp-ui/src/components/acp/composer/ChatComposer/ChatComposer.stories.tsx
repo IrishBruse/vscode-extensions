@@ -58,3 +58,71 @@ export const Running: Story = {
     draft: "Follow up when ready",
   },
 };
+
+export const SlashSuggestions: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: null,
+    promptInFlight: false,
+    draft: "/cl",
+    slashCommands: [
+      { name: "clear", description: "Start a new chat" },
+      { name: "compact", description: "Summarize the transcript" },
+    ],
+  },
+};
+
+export const FileMentions: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: null,
+    promptInFlight: false,
+    draft: "@src/ext",
+    workspaceFiles: ["src/extension.ts", "src/extensionHostMessages.ts", "webview/acp-ui/src/AcpUiApp.tsx"],
+  },
+};
+
+export const PendingImage: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: null,
+    promptInFlight: false,
+    draft: "What is in this screenshot?",
+    pendingImages: [
+      {
+        mimeType: "image/png",
+        data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      },
+    ],
+  },
+};
+
+export const FollowUpQueued: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: "Agent is thinking…",
+    promptInFlight: true,
+    draft: "",
+    followUp: { body: "Also check the failing test.", images: [], mode: "queue" },
+  },
+};
+
+export const InputBlocked: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: "Waiting for permission",
+    promptInFlight: true,
+    inputBlocked: true,
+    draft: "npm test",
+  },
+};
+
+export const ConfigLoading: Story = {
+  args: {
+    ...baseProps,
+    activityLabel: null,
+    promptInFlight: false,
+    modelSelection: null,
+    sessionConfigLoading: true,
+  },
+};

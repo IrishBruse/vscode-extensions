@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { DialogStoryFrame } from "../DialogStoryFrame";
 import { CursorCreatePlanDialog } from "./CursorCreatePlanDialog";
 
 const meta = {
   title: "ACP/Dialogs/CursorCreatePlanDialog",
   component: CursorCreatePlanDialog,
+  decorators: [
+    (Story) => (
+      <DialogStoryFrame>
+        <Story />
+      </DialogStoryFrame>
+    ),
+  ],
 } satisfies Meta<typeof CursorCreatePlanDialog>;
 
 export default meta;

@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { DialogStoryFrame } from "../DialogStoryFrame";
 import { CursorAskQuestionDialog } from "./CursorAskQuestionDialog";
 
 const meta = {
   title: "ACP/Dialogs/CursorAskQuestionDialog",
   component: CursorAskQuestionDialog,
+  decorators: [
+    (Story) => (
+      <DialogStoryFrame>
+        <Story />
+      </DialogStoryFrame>
+    ),
+  ],
 } satisfies Meta<typeof CursorAskQuestionDialog>;
 
 export default meta;

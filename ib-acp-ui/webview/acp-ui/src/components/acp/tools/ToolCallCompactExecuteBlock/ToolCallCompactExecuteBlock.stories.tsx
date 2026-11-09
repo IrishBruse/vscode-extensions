@@ -34,3 +34,23 @@ export const Default: Story = {
     onCollapseExpandAll: () => undefined,
   },
 };
+
+export const Running: Story = {
+  args: {
+    item: { ...executeItem, status: "in_progress", content: "$ npm run build:webview\nbuilding…", durationMs: undefined },
+    expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};
+
+export const Failed: Story = {
+  args: {
+    item: {
+      ...executeItem,
+      status: "failed",
+      content: "$ npm test\nFAIL src/chatReducer.test.ts",
+    },
+    expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};

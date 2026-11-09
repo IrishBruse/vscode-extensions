@@ -29,3 +29,39 @@ export const Default: Story = {
     onOpenWorkspacePath: () => undefined,
   },
 };
+
+export const Diff: Story = {
+  args: {
+    items: [
+      {
+        ...readItem,
+        toolCallId: "edit-1",
+        title: "Write File",
+        kind: "edit",
+        subtitle: "src/extension.ts",
+        detailVisible: true,
+        diffRows: [
+          { kind: "context", text: "export function activate(): void {" },
+          { kind: "removed", text: '  window.showInformationMessage("ready");' },
+          { kind: "added", text: '  window.showInformationMessage("ACP UI ready");' },
+        ],
+      },
+    ],
+    expandAllToolOutputs: true,
+    onOpenWorkspacePath: () => undefined,
+  },
+};
+
+export const Grouped: Story = {
+  args: {
+    items: [
+      readItem,
+      {
+        ...readItem,
+        toolCallId: "read-2",
+        subtitle: "src/extension/acpUiSessionController.ts",
+      },
+    ],
+    onOpenWorkspacePath: () => undefined,
+  },
+};

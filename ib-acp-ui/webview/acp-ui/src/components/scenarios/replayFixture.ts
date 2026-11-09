@@ -34,6 +34,7 @@ function isAfterInit(message: ExtensionToWebviewMessage): message is ExtensionMe
 export function chatFromFixture(
   ndjson: string,
   seedText?: string,
+  extraMessages: readonly ExtensionMessageAfterInit[] = [],
 ): { init: InitPayload; state: ChatState } {
   const seed =
     seedText !== undefined && seedText.length > 0
@@ -85,6 +86,9 @@ export function chatFromFixture(
   }
   if (ndjson.trim().length > 0) {
     state = chatReducer(state, { type: "turnComplete", stopReason });
+  }
+  for (const message of extraMessages) {
+    state = chatReducer(state, message);
   }
   return { init, state };
 }
