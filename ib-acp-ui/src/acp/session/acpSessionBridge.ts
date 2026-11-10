@@ -40,6 +40,12 @@ import {
     formatAgentProcessExitMessage,
     isAcpDisconnectError,
 } from "./agentDisconnect";
+import {
+    type PermissionGrant,
+    grantForSelectedOption,
+    stickyPermissionOutcome,
+    upsertPermissionGrant,
+} from "./permissionMemory";
 
 /** Callback that forwards an extension-to-webview message to the UI host. */
 export type PostToWebview = (message: ExtensionToWebviewMessage) => void;
@@ -62,6 +68,10 @@ export type AcpSessionBridgeHooks = {
     onLoadSessionFailed?: () => void | Promise<void>;
     /** Called when the agent subprocess exits and the bridge is no longer usable. */
     onAgentDisconnected?: (message: string) => void;
+    /** Allow always and Reject always choices restored from the session file. */
+    initialPermissionGrants?: readonly PermissionGrant[];
+    /** Called when the user picks Allow always or Reject always. */
+    onPermissionGrantsChanged?: (grants: readonly PermissionGrant[]) => void;
 };
 
 export type AcpSessionConnectOptions = {
@@ -94,6 +104,8 @@ export class AcpSessionBridge {
     /** Read tool calls awaiting `fs/readTextFile` path correlation (FIFO). */
     private readToolCallQueue: string[] = [];
     private nextPermissionRequestId = 0;
+    private permissionGrants: PermissionGrant[];
+    private pendingPermissionRequests = new Map<string, acp.RequestPermissionRequest>();
     private permissionWaiters = new Map<string, (outcome: acp.RequestPermissionResponse) => void>();
     private nextCursorExtensionRequestId = 0;
     private askQuestionWaiters = new Map<string, (result: Record<string, unknown>) => void>();
@@ -105,6 +117,7 @@ export class AcpSessionBridge {
         host: AcpSessionHostRuntime,
         private readonly hooks?: AcpSessionBridgeHooks,
     ) {
+        this.permissionGrants = [...(hooks?.initialPermissionGrants ?? [])];
         this.agentProcess = new AcpAgentProcess({
             config,
             requestPermission: (params) => this.queuePermissionRequest(params),
@@ -127,9 +140,19 @@ export class AcpSessionBridge {
     private async queuePermissionRequest(
         params: acp.RequestPermissionRequest,
     ): Promise<acp.RequestPermissionResponse> {
+        const remembered = stickyPermissionOutcome(this.permissionGrants, params);
+        if (remembered !== undefined) {
+            for (const msg of extensionMessagesForPermissionRequest("perm-remembered", params)) {
+                if (msg.type !== "permissionRequest") {
+                    this.postToWebview(msg);
+                }
+            }
+            return remembered;
+        }
         const requestId = `perm-${this.nextPermissionRequestId++}`;
         return new Promise((resolve) => {
             this.permissionWaiters.set(requestId, resolve);
+            this.pendingPermissionRequests.set(requestId, params);
             for (const msg of extensionMessagesForPermissionRequest(requestId, params)) {
                 this.postToWebview(msg);
             }
@@ -147,11 +170,20 @@ export class AcpSessionBridge {
             return;
         }
         this.permissionWaiters.delete(message.requestId);
+        const request = this.pendingPermissionRequests.get(message.requestId);
+        this.pendingPermissionRequests.delete(message.requestId);
         if ("cancelled" in message && message.cancelled === true) {
             resolve({ outcome: { outcome: "cancelled" } });
             return;
         }
         if ("selectedOptionId" in message) {
+            if (request !== undefined) {
+                const grant = grantForSelectedOption(request, message.selectedOptionId);
+                if (grant !== undefined) {
+                    this.permissionGrants = upsertPermissionGrant(this.permissionGrants, grant);
+                    this.hooks?.onPermissionGrantsChanged?.(this.permissionGrants);
+                }
+            }
             resolve({
                 outcome: {
                     outcome: "selected",
@@ -190,6 +222,7 @@ export class AcpSessionBridge {
             resolve({ outcome: { outcome: "cancelled" } });
         }
         this.permissionWaiters.clear();
+        this.pendingPermissionRequests.clear();
     }
 
     private cancelPendingExtensionRequests(): void {

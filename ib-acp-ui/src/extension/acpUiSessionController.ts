@@ -41,6 +41,7 @@ import {
     type AcpUiSessionDocument,
     applySavedModelConfig,
     clearSessionModelConfig,
+    clearSessionPermissionGrants,
     modelConfigFromSessionOptions,
     parseSessionFile,
     readSessionCache,
@@ -48,6 +49,7 @@ import {
     updateSessionHistory,
     writeSessionCache,
     writeSessionModelConfig,
+    writeSessionPermissionGrants,
 } from "./acpUiSessionJsonl";
 import {
     clearAcpUiSessionRuntimeSessionId,
@@ -225,6 +227,7 @@ export class AcpUiSessionController {
         this.pendingModelId = undefined;
         this.pendingConfigOption = undefined;
         await clearSessionModelConfig(this.documentUri);
+        await clearSessionPermissionGrants(this.documentUri);
         const current = getAcpUiSession(this.sessionId);
         const oldUri = current?.uri;
         if (current !== undefined && emptyChatTitlePattern.test(current.title)) {
@@ -431,6 +434,7 @@ export class AcpUiSessionController {
         }
         const { rpcNdjsonSink } = getAcpUiExtensionActivation();
         const host = createDefaultAcpSessionHostRuntime(rpcNdjsonSink);
+        const header = parseSessionFile(this.options.document.getText()).header;
         const bridge = new AcpSessionBridge(config, (msg) => this.post(msg), host, {
             onSessionInfoUpdate: (update) => {
                 void this.applySessionInfoUpdate(update);
@@ -440,12 +444,15 @@ export class AcpUiSessionController {
                 setAcpUiSessionConnection(this.sessionId, "disconnected", message);
                 this.releaseDeadBridge();
             },
+            initialPermissionGrants: header?.permissionGrants,
+            onPermissionGrantsChanged: (grants) => {
+                void writeSessionPermissionGrants(this.documentUri, grants);
+            },
         });
         const userModelPick = this.pendingModelId;
         this.pendingModelId = undefined;
         const pendingConfig = this.pendingConfigOption;
         this.pendingConfigOption = undefined;
-        const header = parseSessionFile(this.options.document.getText()).header;
         const savedModelConfig = header?.modelConfig;
         const preferred = userModelPick ?? savedModelConfig?.modelId;
         const runtimeSessionId = header?.runtimeSessionId?.trim();
@@ -588,6 +595,7 @@ export class AcpUiSessionController {
             this.pendingModelId = undefined;
             this.pendingConfigOption = undefined;
             await clearSessionModelConfig(this.documentUri);
+            await clearSessionPermissionGrants(this.documentUri);
             await clearAcpUiSessionRuntimeSessionId(this.sessionId);
             this.post({ type: "sessionReset" });
             this.postSessionConfigSeedOrLoading();

@@ -50,6 +50,9 @@ See [editor-shell](../ui/editor-shell.md).
 [acpUiSessionController.ts](../../../src/extension/acpUiSessionController.ts) passes composer `history` in the `init` bootstrap payload.
 [deleteSessionFile](../../../src/extension/acpUiSessionJsonl.ts) removes the per-session folder (or a legacy flat file only).
 
+Allow always and Reject always choices are `permissionGrants` on the session document.
+Reopening the chat restores them.
+Resetting the chat or switching clients clears them.
 The last model id and config values are `modelConfig` on the session document.
 Reopening the chat seeds the composer from that snapshot and applies it again after the agent connects.
 Resetting the chat or switching clients clears it.

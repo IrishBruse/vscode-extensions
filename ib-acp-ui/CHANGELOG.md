@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Allow always is remembered for that tool kind, and later requests of the same kind are approved without asking again.
+- **Remove**: Edited file previews no longer show an Expand control.
 - **Add**: A chat remembers its last model configuration in the `.acp` file and restores it when the chat opens.
 - **Change**: Connecting and Thinking sit in the center of the composer top line and pulse, without a trailing ellipsis.
 - **Add**: The Setup sidebar lists the open chat's ACP connection status and disconnect error.

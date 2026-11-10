@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { basename, dirname, isAbsolute } from "node:path";
 import { type ExtensionContext, FileType, Range, Uri, WorkspaceEdit, workspace } from "vscode";
 import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
+import type { PermissionGrant } from "../acp/session/permissionMemory";
 import {
     ACP_UI_SESSION_FILE_SUFFIX,
     ACP_UI_SESSION_SCHEMA,
@@ -42,7 +43,7 @@ export {
 
 /**
  * Client-owned session files (`acpUi/session/1`) store session metadata,
- * composer user message history, the viewport transcript under `cache`, and `modelConfig`.
+ * composer user message history, the viewport transcript under `cache`, `modelConfig`, and `permissionGrants`.
  */
 const sessionsDirectorySettingKey = "ib-acp-ui.sessionsDirectory";
 const chatsSubdir = "chats";
@@ -129,6 +130,28 @@ export async function writeSessionModelConfig(
             updatedAt: Date.now(),
         };
     });
+}
+
+export async function writeSessionPermissionGrants(
+    sessionFileUri: Uri,
+    grants: readonly PermissionGrant[],
+): Promise<void> {
+    await mutateSessionDocument(sessionFileUri, (current) => {
+        const next: AcpUiSessionDocument = { ...current, updatedAt: Date.now() };
+        if (grants.length === 0) {
+            delete next.permissionGrants;
+            return next;
+        }
+        next.permissionGrants = grants.map((grant) => ({
+            scopeKey: grant.scopeKey,
+            decision: grant.decision,
+        }));
+        return next;
+    });
+}
+
+export async function clearSessionPermissionGrants(sessionFileUri: Uri): Promise<void> {
+    await writeSessionPermissionGrants(sessionFileUri, []);
 }
 
 export async function clearSessionModelConfig(sessionFileUri: Uri): Promise<void> {

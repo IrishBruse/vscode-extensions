@@ -157,6 +157,21 @@ describe("serializeSessionDocument", () => {
         );
     });
 
+    it("round-trips remembered permission grants", () => {
+        const document = {
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            permissionGrants: [{ scopeKey: "kind:execute", decision: "allow" as const }],
+        };
+        expect(parseSessionDocument(serializeSessionDocument(document))?.permissionGrants).toEqual(
+            document.permissionGrants,
+        );
+    });
+
     it("drops derived composer controls from a saved model configuration", () => {
         expect(
             normalizeSessionModelConfig({

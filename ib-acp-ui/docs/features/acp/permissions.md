@@ -5,6 +5,10 @@
 When an agent needs approval before running a tool, ACP UI shows a permission dialog above the composer.
 The dialog names the tool (for example a shell command or file write) and lists the options the agent provided.
 Pick an option to continue, or dismiss to cancel.
+Allow always is remembered for that tool kind for this chat.
+A later request of the same kind is approved without asking again.
+Allow once still asks every time.
+Resetting the chat or switching clients clears the remembered choice.
 For file edits, the Write File row in the chat trace shows a small inline diff preview when the agent included the change in the permission request.
 
 While a permission prompt is open, the composer is blocked so you cannot send another message until you respond.
@@ -14,9 +18,11 @@ While a permission prompt is open, the composer is blocked so you cannot send an
 ### ACP callback
 
 [AcpAgentProcess](../../../src/acp/infrastructure/acpAgentProcess.ts#L303-L304) registers `requestPermission` on the SDK client connection.
-[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L122-L135) assigns a request id, posts webview messages, and waits on a promise.
+[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L140-L160) assigns a request id, posts webview messages, and waits on a promise.
 
-[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L140-L165) resolves the waiter when the webview replies.
+[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts) resolves the waiter when the webview replies.
+[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
+The grants are `permissionGrants` on the session document.
 Dispose cancels all pending waiters.
 
 ### Webview dialog
@@ -29,6 +35,6 @@ Execute-style tools still get a command subtitle when the shell line can be reso
 [PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L18-L68) renders the modal strip.
 
 [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L643-L660) wires button handlers to `postPermissionResponse`.
-[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L589) forwards responses to the bridge.
+[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L714) forwards responses to the bridge.
 
 Protocol: [tool calls](../../acp/protocol/v1/tool-calls.mdx).

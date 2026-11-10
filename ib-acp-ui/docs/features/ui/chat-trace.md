@@ -28,7 +28,7 @@ The full path appears in a tooltip after the pointer rests on the path.
 A markdown file path on a tool line opens that file in the editor.
 Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
-A long diff starts with the first lines and an Expand control.
+A long diff shows a short window around the edits.
 
 A subagent task shows as its own card.
 The card shows the short description, the subagent type, and the prompt.

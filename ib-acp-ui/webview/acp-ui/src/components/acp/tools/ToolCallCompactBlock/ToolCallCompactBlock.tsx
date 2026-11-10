@@ -274,31 +274,13 @@ function CompactGroupSummary({
 
 const diffPreviewRowCount = 6;
 
-function CompactDiffLines({
-  item,
-  expandAllToolOutputs,
-  onCollapseExpandAll,
-}: {
-  item: TraceToolItem;
-  expandAllToolOutputs: boolean;
-  onCollapseExpandAll?: () => void;
-}): ReactElement | null {
+function CompactDiffLines({ item }: { item: TraceToolItem }): ReactElement | null {
   const rows = windowToolCallDiffRows(item.diffRows ?? []);
-  const [localExpanded, setLocalExpanded] = useState(false);
-  const prevExpandAllRef = useRef(expandAllToolOutputs);
-  useEffect(() => {
-    if (prevExpandAllRef.current && !expandAllToolOutputs) {
-      setLocalExpanded(false);
-    }
-    prevExpandAllRef.current = expandAllToolOutputs;
-  }, [expandAllToolOutputs]);
   if (rows.length === 0) {
     return null;
   }
-  const expanded = expandAllToolOutputs || localExpanded;
-  const collapsible = rows.length > diffPreviewRowCount;
   const shown =
-    collapsible && !expanded ? previewDiffRows(rows, diffPreviewRowCount) : rows;
+    rows.length > diffPreviewRowCount ? previewDiffRows(rows, diffPreviewRowCount) : rows;
   return (
     <div className="tool-call-compact-diff">
       <div className="tool-call-diff" role="group" aria-label="File diff">
@@ -318,24 +300,6 @@ function CompactDiffLines({
           </div>
         ))}
       </div>
-      {collapsible ? (
-        <button
-          type="button"
-          className="tool-call-compact-expand"
-          onClick={() => {
-            if (expanded) {
-              setLocalExpanded(false);
-              if (expandAllToolOutputs) {
-                onCollapseExpandAll?.();
-              }
-            } else {
-              setLocalExpanded(true);
-            }
-          }}
-        >
-          {expanded ? "Collapse" : "Expand"}
-        </button>
-      ) : null}
     </div>
   );
 }
@@ -394,13 +358,7 @@ function CompactToolEntry({
       ) : (
         <div className="tool-call-compact-summary">{line}</div>
       )}
-      {detailKind === "diff" ? (
-        <CompactDiffLines
-          item={item}
-          expandAllToolOutputs={expandAllToolOutputs}
-          onCollapseExpandAll={onCollapseExpandAll}
-        />
-      ) : null}
+      {detailKind === "diff" ? <CompactDiffLines item={item} /> : null}
       {detailKind === "expandable" && expanded && (item.content?.trim().length ?? 0) > 0 ? (
         <pre className="tool-call-compact-preview">
           {splitMarkdownFileUris(item.content ?? "").map((span, index) =>

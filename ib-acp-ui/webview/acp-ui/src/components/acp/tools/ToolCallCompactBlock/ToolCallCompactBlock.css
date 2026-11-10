@@ -27,16 +27,6 @@
   margin-top: var(--acp-ui-space-4);
 }
 
-.tool-call-compact-expand {
-  margin-top: var(--acp-ui-space-4);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
-  font: inherit;
-  cursor: pointer;
-}
-
 .tool-call-compact-summary-verbs {
   color: var(--vscode-foreground);
   font-weight: 500;

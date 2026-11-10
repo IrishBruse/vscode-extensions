@@ -1,4 +1,5 @@
 import { dirname } from "node:path";
+import { type PermissionGrant, normalizePermissionGrants } from "../acp/session/permissionMemory";
 import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
 
 export const ACP_UI_SESSION_SCHEMA = "acpUi/session/1" as const;
@@ -111,6 +112,8 @@ export type AcpUiSessionDocument = AcpUiSessionMetadata & {
     cache?: AcpUiVisibleTraceItem[];
     /** Last model and config values, restored when the chat reconnects. */
     modelConfig?: AcpUiSessionModelConfig;
+    /** Allow always and Reject always choices, restored when the chat reconnects. */
+    permissionGrants?: PermissionGrant[];
 };
 
 /** One saved session config value (model, mode, or another agent option). */
@@ -300,11 +303,13 @@ function documentFromParsedValue(value: unknown): AcpUiSessionDocument | null {
     const row = value as Record<string, unknown>;
     const cache = normalizeVisibleTrace(row.cache);
     const modelConfig = normalizeSessionModelConfig(row.modelConfig);
+    const permissionGrants = normalizePermissionGrants(row.permissionGrants);
     return {
         ...metadata,
         history: userMessageHistoryFromRow(row),
         ...(cache.length > 0 ? { cache } : {}),
         ...(modelConfig !== undefined ? { modelConfig } : {}),
+        ...(permissionGrants.length > 0 ? { permissionGrants } : {}),
     };
 }
 
