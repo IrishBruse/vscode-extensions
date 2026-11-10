@@ -127,6 +127,22 @@ describe("toolCallCompactText", () => {
     );
   });
 
+  it("shows a tilde path under the agent working directory as a relative path", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("/home/econn/git/agent-canvas");
+    const item = toolItem({
+      toolCallId: "read-cwd",
+      kind: "read",
+      subtitle: "~/git/agent-canvas/.tmp/compare.png",
+    });
+    expect(compactToolDetailLine(item)).toBe("Read .tmp/compare.png");
+    expect(compactToolDetailParts(item).pathSegment).toMatchObject({
+      label: ".tmp/compare.png",
+      title: ".tmp/compare.png",
+      openPath: "~/git/agent-canvas/.tmp/compare.png",
+    });
+  });
+
   it("clips absolute paths under the workspace root to workspace-relative labels", () => {
     setCompactToolPathHome("/home/econn");
     setCompactToolWorkspaceRoot("/home/econn/git/vscode-extensions");

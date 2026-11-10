@@ -871,25 +871,6 @@ export function AcpUiApp({
         </main>
         <div className="acp-ui-composer-stack">
           <div className="acp-ui-content-column">
-            {state.errorText !== null ? (
-              <div
-                className={
-                  state.agentConnected
-                    ? "acp-ui-error"
-                    : "acp-ui-error acp-ui-error--disconnected"
-                }
-                role="alert"
-              >
-                {!state.agentConnected ? (
-                  <strong className="acp-ui-error__title">ACP disconnected</strong>
-                ) : null}
-                <span className="acp-ui-error__body">{state.errorText}</span>
-              </div>
-            ) : !state.agentConnected && state.sessionConfigLoading ? (
-              <div className="acp-ui-error acp-ui-error--connecting" role="status">
-                <strong className="acp-ui-error__title">Connecting to ACP…</strong>
-              </div>
-            ) : null}
             {permission !== null ? (
               <PermissionDialog
                 toolTitle={permission.toolTitle}
@@ -990,6 +971,17 @@ export function AcpUiApp({
               onCancel={postCancel}
               onKeyDown={onComposerKeyDown}
               onPaste={onComposerPaste}
+              activity={
+                state.errorText !== null && !state.agentConnected
+                  ? "disconnected"
+                  : state.errorText === null && !state.agentConnected && state.sessionConfigLoading
+                    ? "connecting"
+                    : state.thoughtStartedAtMs !== null
+                      ? "thinking"
+                      : null
+              }
+              statusDetail={state.errorText}
+              thoughtStartedAtMs={state.thoughtStartedAtMs ?? undefined}
               pendingImages={pendingImages}
               onRemoveImage={onRemovePendingImage}
               onOpenImage={setViewerImageSrc}

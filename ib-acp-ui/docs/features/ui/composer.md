@@ -3,6 +3,10 @@
 ## User facing
 
 The chat composer is where you draft messages, run slash commands, mention workspace files, and (planned) attach multimodal content.
+The top line shows the workspace path on the left and `/ commands · @ files` on the right.
+Connecting and Thinking sit in the center of that line and pulse while they are active.
+ACP connection errors sit in that same spot.
+A long error stays on one line, and the full text is in the tooltip.
 
 While typing, ACP UI suggests completions without leaving the message box.
 Type `/` to open slash-command suggestions from the connected agent alongside built-in commands such as `/clear`, `/new`, `/rename`, and `/show-thinking`.

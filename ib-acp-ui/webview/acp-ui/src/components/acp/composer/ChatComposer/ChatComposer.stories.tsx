@@ -81,6 +81,29 @@ export const FileMentions: Story = {
   },
 };
 
+export const Connecting: Story = {
+  args: {
+    ...baseProps,
+    promptInFlight: false,
+    activity: "connecting",
+  },
+};
+
+export const ThinkingWithImage: Story = {
+  args: {
+    ...baseProps,
+    promptInFlight: true,
+    activity: "thinking",
+    thoughtStartedAtMs: Date.now() - 4200,
+    pendingImages: [
+      {
+        mimeType: "image/png",
+        data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      },
+    ],
+  },
+};
+
 export const PendingImage: Story = {
   args: {
     ...baseProps,

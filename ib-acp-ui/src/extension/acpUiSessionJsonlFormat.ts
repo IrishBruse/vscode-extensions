@@ -109,6 +109,20 @@ export type AcpUiSessionDocument = AcpUiSessionMetadata & {
     history: string[];
     /** Last on-screen transcript, including UI-only fields such as durations. */
     cache?: AcpUiVisibleTraceItem[];
+    /** Last model and config values, restored when the chat reconnects. */
+    modelConfig?: AcpUiSessionModelConfig;
+};
+
+/** One saved session config value (model, mode, or another agent option). */
+export type AcpUiSessionModelConfigValue = {
+    configId: string;
+    value: string | boolean;
+};
+
+/** Last model configuration used in a chat. */
+export type AcpUiSessionModelConfig = {
+    modelId?: string;
+    options: AcpUiSessionModelConfigValue[];
 };
 
 /** @deprecated Use {@link AcpUiSessionDocument}. */
@@ -178,6 +192,106 @@ export function normalizeUserMessageHistory(entries: unknown): string[] {
     return out;
 }
 
+const derivedConfigPrefix = "_derived:";
+
+/** Drops empty and derived-only config snapshots. */
+export function normalizeSessionModelConfig(value: unknown): AcpUiSessionModelConfig | undefined {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return undefined;
+    }
+    const row = value as Record<string, unknown>;
+    const modelId =
+        typeof row.modelId === "string" && row.modelId.trim().length > 0
+            ? row.modelId.trim()
+            : undefined;
+    const options: AcpUiSessionModelConfigValue[] = [];
+    if (Array.isArray(row.options)) {
+        for (const item of row.options) {
+            if (item === null || typeof item !== "object") {
+                continue;
+            }
+            const entry = item as Record<string, unknown>;
+            if (typeof entry.configId !== "string" || entry.configId.length === 0) {
+                continue;
+            }
+            if (entry.configId.startsWith(derivedConfigPrefix)) {
+                continue;
+            }
+            if (typeof entry.value !== "string" && typeof entry.value !== "boolean") {
+                continue;
+            }
+            options.push({ configId: entry.configId, value: entry.value });
+        }
+    }
+    if (modelId === undefined && options.length === 0) {
+        return undefined;
+    }
+    return {
+        ...(modelId !== undefined ? { modelId } : {}),
+        options,
+    };
+}
+
+type ModelConfigOption = {
+    configId: string;
+    type: "select" | "boolean";
+    category?: string;
+    currentValue: string | boolean;
+    options?: ReadonlyArray<{ value: string }>;
+};
+
+/** Current values from a live config-option list, omitting derived composer controls. */
+export function modelConfigFromSessionOptions(
+    options: readonly ModelConfigOption[],
+): AcpUiSessionModelConfig | undefined {
+    const stored = options.filter((option) => !option.configId.startsWith(derivedConfigPrefix));
+    const model = stored.find(
+        (option) =>
+            option.type === "select" &&
+            option.category === "model" &&
+            typeof option.currentValue === "string",
+    );
+    return normalizeSessionModelConfig({
+        ...(model !== undefined && typeof model.currentValue === "string"
+            ? { modelId: model.currentValue }
+            : {}),
+        options: stored.map((option) => ({
+            configId: option.configId,
+            value: option.currentValue,
+        })),
+    });
+}
+
+/** Overlays a saved model configuration onto advertised options. */
+export function applySavedModelConfig<T extends ModelConfigOption>(
+    options: readonly T[],
+    saved: AcpUiSessionModelConfig,
+): T[] {
+    const byId = new Map(saved.options.map((option) => [option.configId, option.value]));
+    return options.map((option) => {
+        if (
+            option.type === "select" &&
+            option.category === "model" &&
+            saved.modelId !== undefined &&
+            saved.modelId.length > 0
+        ) {
+            return { ...option, currentValue: saved.modelId };
+        }
+        const value = byId.get(option.configId);
+        if (option.type === "boolean" && typeof value === "boolean") {
+            return { ...option, currentValue: value };
+        }
+        if (
+            option.type === "select" &&
+            typeof value === "string" &&
+            (option.options ?? []).some((choice) => choice.value === value)
+        ) {
+            return { ...option, currentValue: value };
+        }
+        return option;
+    });
+}
+
 function documentFromParsedValue(value: unknown): AcpUiSessionDocument | null {
     const metadata = metadataFromParsedValue(value);
     if (metadata === null || value === null || typeof value !== "object") {
@@ -185,10 +299,12 @@ function documentFromParsedValue(value: unknown): AcpUiSessionDocument | null {
     }
     const row = value as Record<string, unknown>;
     const cache = normalizeVisibleTrace(row.cache);
+    const modelConfig = normalizeSessionModelConfig(row.modelConfig);
     return {
         ...metadata,
         history: userMessageHistoryFromRow(row),
         ...(cache.length > 0 ? { cache } : {}),
+        ...(modelConfig !== undefined ? { modelConfig } : {}),
     };
 }
 

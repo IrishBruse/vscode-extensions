@@ -39,11 +39,15 @@ import {
 } from "./acpUiCustomEditorProvider";
 import {
     type AcpUiSessionDocument,
+    applySavedModelConfig,
+    clearSessionModelConfig,
+    modelConfigFromSessionOptions,
     parseSessionFile,
     readSessionCache,
     shouldDeferJsonlHistoryReplay,
     updateSessionHistory,
     writeSessionCache,
+    writeSessionModelConfig,
 } from "./acpUiSessionJsonl";
 import {
     clearAcpUiSessionRuntimeSessionId,
@@ -83,6 +87,8 @@ export class AcpUiSessionController {
     private pendingModelId: string | undefined;
     private pendingConfigOption: { configId: string; value: string | boolean } | undefined;
     private agentLoadInProgress = false;
+    /** When true, config messages from the agent are written into the session file. */
+    private persistModelConfig = false;
     private deferredSessionTitleWrite: string | undefined;
     private readonly disposables: Array<{ dispose(): void }> = [];
 
@@ -164,16 +170,24 @@ export class AcpUiSessionController {
         if (this.agentConfig === undefined) {
             return;
         }
+        const saved = parseSessionFile(this.options.document.getText()).header?.modelConfig;
         const seed = readCachedComposerSeed(this.agentConfig.name);
         if (seed.configOptions !== null) {
             this.post({
                 type: "sessionConfigOptions",
-                options: seed.configOptions,
+                options:
+                    saved !== undefined
+                        ? applySavedModelConfig(seed.configOptions, saved)
+                        : seed.configOptions,
             });
             return;
         }
         if (seed.modelSelection !== null) {
-            this.post({ type: "sessionModels", ...seed.modelSelection });
+            this.post({
+                type: "sessionModels",
+                ...seed.modelSelection,
+                ...(saved?.modelId !== undefined ? { currentModelId: saved.modelId } : {}),
+            });
             return;
         }
         this.post({ type: "sessionConfigOptionsLoading" });
@@ -207,8 +221,10 @@ export class AcpUiSessionController {
         }
         this.agentConfig = next;
         this.disposeBridge();
+        this.persistModelConfig = false;
         this.pendingModelId = undefined;
         this.pendingConfigOption = undefined;
+        await clearSessionModelConfig(this.documentUri);
         const current = getAcpUiSession(this.sessionId);
         const oldUri = current?.uri;
         if (current !== undefined && emptyChatTitlePattern.test(current.title)) {
@@ -253,6 +269,14 @@ export class AcpUiSessionController {
             defaultAgent !== undefined
                 ? readCachedComposerSeed(defaultAgent.name)
                 : { configOptions: null, modelSelection: null };
+        const seededConfigOptions =
+            cachedSeed.configOptions !== null && header.modelConfig !== undefined
+                ? applySavedModelConfig(cachedSeed.configOptions, header.modelConfig)
+                : cachedSeed.configOptions;
+        const seededModelSelection =
+            cachedSeed.modelSelection !== null && header.modelConfig?.modelId !== undefined
+                ? { ...cachedSeed.modelSelection, currentModelId: header.modelConfig.modelId }
+                : cachedSeed.modelSelection;
         const vscodeThemeVariables = await resolveMarkdownThemeVariables();
         const visibleTrace = await readSessionCache(this.documentUri);
         return {
@@ -271,12 +295,10 @@ export class AcpUiSessionController {
             lockSessionAgent: true,
             ...(workspaceFiles !== undefined ? { workspaceFiles } : {}),
             ...(header.history.length > 0 ? { history: header.history } : {}),
-            ...(cachedSeed.configOptions !== null
-                ? { sessionConfigOptionsSeed: cachedSeed.configOptions }
+            ...(seededConfigOptions !== null
+                ? { sessionConfigOptionsSeed: seededConfigOptions }
                 : {}),
-            ...(cachedSeed.modelSelection !== null
-                ? { sessionModels: cachedSeed.modelSelection }
-                : {}),
+            ...(seededModelSelection !== null ? { sessionModels: seededModelSelection } : {}),
             contentWidthRatio: readContentWidthRatioFromSettings(),
         };
     }
@@ -290,6 +312,22 @@ export class AcpUiSessionController {
 
     private post(message: ExtensionToWebviewMessage): void {
         void this.options.webview.postMessage(message);
+        if (!this.persistModelConfig) {
+            return;
+        }
+        if (message.type === "sessionConfigOptions") {
+            const config = modelConfigFromSessionOptions(message.options);
+            if (config !== undefined) {
+                void writeSessionModelConfig(this.documentUri, config);
+            }
+            return;
+        }
+        if (message.type === "sessionModels") {
+            void writeSessionModelConfig(this.documentUri, {
+                modelId: message.currentModelId,
+                options: [],
+            });
+        }
     }
 
     private async flushDeferredSessionTitleWrite(): Promise<void> {
@@ -403,12 +441,15 @@ export class AcpUiSessionController {
                 this.releaseDeadBridge();
             },
         });
-        const preferred = this.pendingModelId;
+        const userModelPick = this.pendingModelId;
         this.pendingModelId = undefined;
         const pendingConfig = this.pendingConfigOption;
         this.pendingConfigOption = undefined;
         const header = parseSessionFile(this.options.document.getText()).header;
+        const savedModelConfig = header?.modelConfig;
+        const preferred = userModelPick ?? savedModelConfig?.modelId;
         const runtimeSessionId = header?.runtimeSessionId?.trim();
+        this.persistModelConfig = savedModelConfig === undefined;
         try {
             await bridge.connect({
                 preferredModelId: preferred,
@@ -424,6 +465,26 @@ export class AcpUiSessionController {
             setAcpUiSessionConnection(this.sessionId, "connected");
             this.post({ type: "agentConnection", connected: true });
             this.options.refreshChatsList?.();
+            if (savedModelConfig !== undefined) {
+                this.persistModelConfig = true;
+                for (const option of savedModelConfig.options) {
+                    if (pendingConfig !== undefined && pendingConfig.configId === option.configId) {
+                        continue;
+                    }
+                    if (
+                        userModelPick !== undefined &&
+                        savedModelConfig.modelId !== undefined &&
+                        option.value === savedModelConfig.modelId
+                    ) {
+                        continue;
+                    }
+                    try {
+                        await bridge.setSessionConfigOption(option.configId, option.value);
+                    } catch {
+                        // A retired option stays in the file until a later successful config update.
+                    }
+                }
+            }
             if (pendingConfig !== undefined) {
                 try {
                     await bridge.setSessionConfigOption(
@@ -521,10 +582,12 @@ export class AcpUiSessionController {
 
         if (parsed.type === "resetSession") {
             this.disposeBridge();
+            this.persistModelConfig = false;
             setAcpUiSessionConnection(this.sessionId, "connecting");
             this.options.refreshChatsList?.();
             this.pendingModelId = undefined;
             this.pendingConfigOption = undefined;
+            await clearSessionModelConfig(this.documentUri);
             await clearAcpUiSessionRuntimeSessionId(this.sessionId);
             this.post({ type: "sessionReset" });
             this.postSessionConfigSeedOrLoading();

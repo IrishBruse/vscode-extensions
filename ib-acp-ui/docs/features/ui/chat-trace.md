@@ -83,7 +83,8 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L45-L67) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
-  [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows workspace-relative paths for files under `init.workspaceRoot`, otherwise `~/…` home shortening.
+  [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
+  Other paths shorten to `~/…`.
   [truncatePathLabel](../../../webview/acp-ui/src/toolCallCompactText.ts) keeps the end of a path and prefixes `...` when the label would pass 50 characters.
   [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.
   The path uses `--vscode-textLink-foreground`.

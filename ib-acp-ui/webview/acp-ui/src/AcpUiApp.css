@@ -17,41 +17,6 @@
   border-radius: var(--acp-ui-radius-md);
 }
 
-.acp-ui-error {
-  flex-shrink: 0;
-  margin-bottom: var(--acp-ui-space-8);
-  padding: var(--acp-ui-space-8) var(--acp-ui-space-12);
-  color: var(--vscode-errorForeground);
-  background-color: color-mix(
-    in srgb,
-    var(--vscode-inputValidation-errorBackground) 90%,
-    transparent
-  );
-  border: var(--acp-ui-stroke-width) solid
-    var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
-  border-radius: var(--acp-ui-radius-sm);
-  font-size: var(--acp-ui-font-size-small);
-  line-height: var(--acp-ui-line-height-body);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.acp-ui-error__title {
-  display: block;
-  margin-bottom: var(--acp-ui-space-4);
-  font-weight: var(--acp-ui-font-weight-semibold);
-}
-
-.acp-ui-error--connecting {
-  color: var(--vscode-foreground);
-  background-color: color-mix(
-    in srgb,
-    var(--vscode-inputValidation-infoBackground) 90%,
-    transparent
-  );
-  border-color: var(--vscode-inputValidation-infoBorder, var(--vscode-focusBorder));
-}
-
 .agent-trace {
   flex: 1;
   min-height: 0;

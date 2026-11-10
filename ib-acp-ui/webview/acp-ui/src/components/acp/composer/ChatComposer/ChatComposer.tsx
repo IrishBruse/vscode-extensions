@@ -6,6 +6,7 @@ import {
   type RefObject,
   useEffect,
   useMemo,
+  useState,
   useRef,
 } from "react";
 import "./ChatComposer.css";
@@ -40,6 +41,7 @@ import { ConfigOptionControls, ComposerConfigLoading } from "../ConfigOptionCont
 import { SessionModeIndicator } from "../SessionModeIndicator/SessionModeIndicator";
 import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 import { promptImageSrc } from "../../../../pastedImages";
+import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
 import type { FollowUpMode } from "./composerFollowUp";
 
 export type ChatComposerProps = {
@@ -79,6 +81,12 @@ export type ChatComposerProps = {
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   /** Paste handler on the textarea; captures image clips as attachments. */
   onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
+  /** Connection or turn status shown in the center of the composer top line. */
+  activity?: "connecting" | "thinking" | "disconnected" | null;
+  /** Extra connection or error text for the center status. */
+  statusDetail?: string | null;
+  /** Epoch ms for a running thought, used by the Thinking label. */
+  thoughtStartedAtMs?: number;
   /** Base64 image attachments pending on the next send. */
   pendingImages: AcpUiPromptImage[];
   onRemoveImage: (index: number) => void;
@@ -105,6 +113,48 @@ function sendFollowUpLabel(
     return "Steer";
   }
   return "Queue";
+}
+
+function flattenStatusDetail(detail: string): string {
+  return detail.replace(/\s+/g, " ").trim();
+}
+
+function useComposerStatusText(
+  activity: "connecting" | "thinking" | "disconnected" | null,
+  thoughtStartedAtMs: number | undefined,
+  statusDetail: string | null,
+): string | null {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (activity !== "thinking" || thoughtStartedAtMs === undefined) {
+      return;
+    }
+    const handle = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 100);
+    return () => {
+      window.clearInterval(handle);
+    };
+  }, [activity, thoughtStartedAtMs]);
+  if (activity === "disconnected") {
+    const detail = statusDetail === null ? "" : flattenStatusDetail(statusDetail);
+    if (detail.length === 0) {
+      return "ACP disconnected";
+    }
+    return detail.toLowerCase().includes("disconnect") ? detail : `ACP disconnected: ${detail}`;
+  }
+  if (activity === "connecting") {
+    return "Connecting to ACP";
+  }
+  if (activity === "thinking" && thoughtStartedAtMs !== undefined) {
+    const seconds = formatThoughtSeconds(Math.max(0, nowMs - thoughtStartedAtMs));
+    return seconds.length > 0 ? `Thinking for ${seconds}` : "Thinking";
+  }
+  if (statusDetail !== null) {
+    const detail = flattenStatusDetail(statusDetail);
+    return detail.length > 0 ? detail : null;
+  }
+  return null;
 }
 
 /**
@@ -135,6 +185,9 @@ export function ChatComposer({
   onCancel,
   onKeyDown,
   onPaste,
+  activity = null,
+  statusDetail = null,
+  thoughtStartedAtMs,
   pendingImages,
   onRemoveImage,
   onOpenImage,
@@ -142,6 +195,7 @@ export function ChatComposer({
   composerInputRef,
 }: ChatComposerProps): ReactElement {
   const textareaDisabled = inputBlocked;
+  const statusText = useComposerStatusText(activity, thoughtStartedAtMs, statusDetail);
   const autocomplete = useMemo(() => {
     const caret = draft.length;
     return buildComposerAutocompleteState({
@@ -393,18 +447,35 @@ export function ChatComposer({
         </div>
       ) : null}
       <div className="composer-top-bar">
-        <div className="composer-activity" role="status" title={workspacePathHint}>
-          {workspacePathHint}
+        <div className="composer-top-bar-side">
+          <div className="composer-activity" title={workspacePathHint}>
+            {workspacePathHint}
+          </div>
+          {tokenUsage !== null ? (
+            <span
+              className="composer-token-usage"
+              title={`Context window: ${tokenUsage.used} of ${tokenUsage.size} tokens`}
+            >
+              {formatTokenUsage(tokenUsage)}
+            </span>
+          ) : null}
         </div>
-        {tokenUsage !== null ? (
-          <span
-            className="composer-token-usage"
-            title={`Context window: ${tokenUsage.used} of ${tokenUsage.size} tokens`}
-          >
-            {formatTokenUsage(tokenUsage)}
-          </span>
-        ) : null}
-        <span className="composer-top-bar-hint">/ commands · @ files</span>
+        <div
+          className={
+            activity === "disconnected" || (statusDetail !== null && activity !== "thinking" && activity !== "connecting")
+              ? "composer-top-bar-status composer-top-bar-status--error"
+              : activity === "connecting" || activity === "thinking"
+                ? "composer-top-bar-status composer-top-bar-status--live"
+                : "composer-top-bar-status"
+          }
+          role="status"
+          title={statusDetail ?? statusText ?? undefined}
+        >
+          {statusText}
+        </div>
+        <div className="composer-top-bar-side composer-top-bar-side--end">
+          <span className="composer-top-bar-hint">/ commands · @ files</span>
+        </div>
       </div>
       <div className="composer-input-wrap">
         <textarea

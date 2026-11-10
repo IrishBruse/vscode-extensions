@@ -1,5 +1,4 @@
 .agent-thought-chunk {
-  --agent-thought-chevron-width: 5px;
   margin: 0 0 var(--acp-ui-space-10);
   padding: 0;
   border: none;
@@ -32,29 +31,13 @@
   border-radius: var(--acp-ui-radius-sm);
 }
 
-.agent-thought-chunk-chevron {
-  position: relative;
-  top: -2px;
-  flex-shrink: 0;
-  width: 0;
-  height: 0;
-  border-top: 3.5px solid transparent;
-  border-bottom: 3.5px solid transparent;
-  border-left: var(--agent-thought-chevron-width) solid currentColor;
-  transform: rotate(0deg);
-}
-
-.agent-thought-chunk--open .agent-thought-chunk-chevron {
-  transform: rotate(90deg);
-}
-
 .agent-thought-chunk-body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   max-height: 3lh;
   margin: 0;
-  padding-left: var(--acp-ui-trace-content-indent);
+  padding: 0;
   overflow: hidden;
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-body);

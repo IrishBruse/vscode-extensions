@@ -6,7 +6,9 @@ import {
     ACP_UI_SESSION_FILE_SUFFIX,
     ACP_UI_SESSION_SCHEMA,
     type AcpUiSessionDocument,
+    type AcpUiSessionModelConfig,
     enqueueSessionFileWrite,
+    normalizeSessionModelConfig,
     isFlatSessionFilePath,
     normalizeUserMessageHistory,
     parseSessionDocument,
@@ -21,9 +23,13 @@ export {
     type AcpUiSessionDocument,
     type AcpUiSessionHeader,
     type AcpUiSessionMetadata,
+    type AcpUiSessionModelConfig,
     enqueueSessionFileWrite,
     isFlatSessionFilePath,
     normalizeUserMessageHistory,
+    applySavedModelConfig,
+    modelConfigFromSessionOptions,
+    normalizeSessionModelConfig,
     parseSessionDocument,
     parseSessionFile,
     parseSessionHeaderBlock,
@@ -36,7 +42,7 @@ export {
 
 /**
  * Client-owned session files (`acpUi/session/1`) store session metadata,
- * composer user message history, and the viewport transcript under `cache`.
+ * composer user message history, the viewport transcript under `cache`, and `modelConfig`.
  */
 const sessionsDirectorySettingKey = "ib-acp-ui.sessionsDirectory";
 const chatsSubdir = "chats";
@@ -96,6 +102,44 @@ export function sessionFileUriForId(
 export async function readSessionCache(sessionFileUri: Uri): Promise<AcpUiVisibleTraceItem[]> {
     const document = await readSessionDocumentAtUri(sessionFileUri);
     return document?.cache ?? [];
+}
+
+export async function writeSessionModelConfig(
+    sessionFileUri: Uri,
+    config: AcpUiSessionModelConfig,
+): Promise<void> {
+    const normalized = normalizeSessionModelConfig(config);
+    if (normalized === undefined) {
+        return;
+    }
+    await mutateSessionDocument(sessionFileUri, (current) => {
+        const merged = normalizeSessionModelConfig({
+            modelId: normalized.modelId ?? current.modelConfig?.modelId,
+            options:
+                normalized.options.length > 0
+                    ? normalized.options
+                    : (current.modelConfig?.options ?? []),
+        });
+        if (merged === undefined) {
+            return current;
+        }
+        return {
+            ...current,
+            modelConfig: merged,
+            updatedAt: Date.now(),
+        };
+    });
+}
+
+export async function clearSessionModelConfig(sessionFileUri: Uri): Promise<void> {
+    await mutateSessionDocument(sessionFileUri, (current) => {
+        if (current.modelConfig === undefined) {
+            return current;
+        }
+        const next: AcpUiSessionDocument = { ...current, updatedAt: Date.now() };
+        delete next.modelConfig;
+        return next;
+    });
 }
 
 export async function writeSessionCache(sessionFileUri: Uri, items: unknown): Promise<void> {

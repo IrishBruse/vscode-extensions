@@ -18,21 +18,36 @@ export function setCompactToolWorkspaceRoot(root: string): void {
   compactToolWorkspaceRoot = root.trim();
 }
 
+function expandCompactHome(path: string): string {
+  if (compactToolPathHome.length === 0) {
+    return path;
+  }
+  const home = compactToolPathHome.replace(/\\/g, "/").replace(/\/+$/, "");
+  if (path === "~") {
+    return home;
+  }
+  if (path.startsWith("~/") || path.startsWith("~\\")) {
+    return `${home}/${path.slice(2).replace(/\\/g, "/")}`;
+  }
+  return path;
+}
+
 function formatCompactPath(path: string): string {
   const trimmed = path.trim();
   if (trimmed.length === 0) {
     return trimmed;
   }
+  const expanded = expandCompactHome(trimmed);
   if (compactToolWorkspaceRoot.length > 0) {
-    const workspaceRelative = pathForPrompt(trimmed, compactToolWorkspaceRoot);
-    if (workspaceRelative !== trimmed) {
+    const workspaceRelative = pathForPrompt(expanded, compactToolWorkspaceRoot);
+    if (workspaceRelative !== expanded) {
       return workspaceRelative;
     }
   }
   if (compactToolPathHome.length === 0) {
     return trimmed;
   }
-  return formatPathWithTilde(trimmed, compactToolPathHome);
+  return formatPathWithTilde(expanded, compactToolPathHome);
 }
 
 /** Visible file-tool path length, including a leading `...` when the path is longer. */

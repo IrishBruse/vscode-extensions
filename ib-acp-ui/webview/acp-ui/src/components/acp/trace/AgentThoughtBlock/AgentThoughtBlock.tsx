@@ -87,7 +87,6 @@ export function AgentThoughtBlock({
           setExpanded((open) => !open);
         }}
       >
-        <span className="agent-thought-chunk-chevron" aria-hidden="true" />
         {durationLabel(liveDurationMs, ticking)}
       </button>
       <div className="agent-thought-chunk-body">

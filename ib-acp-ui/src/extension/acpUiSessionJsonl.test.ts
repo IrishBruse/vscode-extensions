@@ -2,7 +2,10 @@ import { describe, expect, it } from "vite-plus/test";
 import { normalizeVisibleTrace } from "../protocol/visibleTrace";
 import {
     ACP_UI_SESSION_SCHEMA,
+    applySavedModelConfig,
     enqueueSessionFileWrite,
+    modelConfigFromSessionOptions,
+    normalizeSessionModelConfig,
     isFlatSessionFilePath,
     normalizeUserMessageHistory,
     parseSessionDocument,
@@ -131,6 +134,106 @@ describe("serializeSessionDocument", () => {
             cache: '{"type":"user","text":"hi"}\n',
         });
         expect(parseSessionDocument(text)?.cache).toBeUndefined();
+    });
+
+    it("round-trips the last model configuration", () => {
+        const document = {
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            modelConfig: {
+                modelId: "grok-4[effort=high,fast=false]",
+                options: [
+                    { configId: "model", value: "grok-4[effort=high,fast=false]" },
+                    { configId: "mode", value: "agent" },
+                ],
+            },
+        };
+        expect(parseSessionDocument(serializeSessionDocument(document))?.modelConfig).toEqual(
+            document.modelConfig,
+        );
+    });
+
+    it("drops derived composer controls from a saved model configuration", () => {
+        expect(
+            normalizeSessionModelConfig({
+                modelId: "grok-4",
+                options: [
+                    { configId: "_derived:effort", value: "high" },
+                    { configId: "mode", value: "agent" },
+                    { configId: "fast", value: false },
+                ],
+            }),
+        ).toEqual({
+            modelId: "grok-4",
+            options: [
+                { configId: "mode", value: "agent" },
+                { configId: "fast", value: false },
+            ],
+        });
+        expect(
+            modelConfigFromSessionOptions([
+                {
+                    configId: "model",
+                    type: "select",
+                    category: "model",
+                    currentValue: "grok-4[effort=medium]",
+                    options: [{ value: "grok-4[effort=medium]" }],
+                },
+                {
+                    configId: "_derived:effort",
+                    type: "select",
+                    currentValue: "medium",
+                    options: [{ value: "medium" }],
+                },
+                {
+                    configId: "mode",
+                    type: "select",
+                    currentValue: "plan",
+                    options: [{ value: "plan" }],
+                },
+            ]),
+        ).toEqual({
+            modelId: "grok-4[effort=medium]",
+            options: [
+                { configId: "model", value: "grok-4[effort=medium]" },
+                { configId: "mode", value: "plan" },
+            ],
+        });
+    });
+
+    it("restores saved model and option values onto advertised options", () => {
+        const restored = applySavedModelConfig(
+            [
+                {
+                    configId: "model",
+                    type: "select" as const,
+                    category: "model",
+                    currentValue: "grok-4[effort=low]",
+                    options: [{ value: "grok-4[effort=low]" }, { value: "grok-4[effort=high]" }],
+                },
+                {
+                    configId: "mode",
+                    type: "select" as const,
+                    currentValue: "agent",
+                    options: [{ value: "agent" }, { value: "plan" }],
+                },
+            ],
+            {
+                modelId: "grok-4[effort=high]",
+                options: [
+                    { configId: "model", value: "grok-4[effort=low]" },
+                    { configId: "mode", value: "plan" },
+                ],
+            },
+        );
+        expect(restored.map((option) => option.currentValue)).toEqual([
+            "grok-4[effort=high]",
+            "plan",
+        ]);
     });
 
     it("round-trips a session document with user message history", () => {

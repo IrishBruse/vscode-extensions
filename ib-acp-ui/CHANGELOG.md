@@ -5,12 +5,17 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
-- **Add**: When the ACP agent stops or the connection is lost, the chat shows a disconnect banner with the error (including agent stderr) and the Setup sidebar lists the connection status.
+- **Add**: A chat remembers its last model configuration in the `.acp` file and restores it when the chat opens.
+- **Change**: Connecting and Thinking sit in the center of the composer top line and pulse, without a trailing ellipsis.
+- **Add**: The Setup sidebar lists the open chat's ACP connection status and disconnect error.
 - **Fix**: Successful bash tools no longer show a redundant `exit 0` line in the output preview.
+- **Fix**: A tool path under the agent working directory shows as a relative path when the agent writes that directory with `~`.
 - **Change**: Tool-call paths under the workspace folder show as workspace-relative paths.
 - **Change**: The session file cache updates when a turn ends, not on every transcript update.
 - **Change**: Whole-file reads stay on one line.
   Ranged reads can still expand to show the returned text.
+- **Change**: The composer uses the workbench input border.
+- **Change**: Thought block headings no longer show a disclosure triangle.
 - **Change**: The Thinking/Thought heading and preview use the default body font size.
 - **Fix**: Streamed thought chunks no longer pick up an extra space between tokens.
 - **Change**: The sidebar is a setup pane for ACP clients, runtime choices, and the open chat.
