@@ -12,7 +12,7 @@ import {
 } from "./acpUiSessionJsonl";
 
 /**
- * One saved ACP UI session listed in the Chats tree.
+ * One saved ACP UI session.
  */
 export type AcpUiSessionRecord = {
     id: string;
@@ -203,7 +203,7 @@ export function updateAcpUiSessionFileUri(id: string, uri: Uri): void {
 }
 
 /**
- * Returns the session id currently selected in the Chats list, if any.
+ * Returns the session id last marked active, if any.
  */
 export function getActiveAcpUiSessionId(): string | null {
     return activeId;

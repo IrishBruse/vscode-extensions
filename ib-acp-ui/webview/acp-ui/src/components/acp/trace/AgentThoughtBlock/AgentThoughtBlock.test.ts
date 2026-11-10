@@ -6,15 +6,20 @@ describe("AgentThoughtBlock", () => {
     const css = readFileSync(new URL("./AgentThoughtBlock.css", import.meta.url), "utf8");
     const title = css.match(/\.agent-thought-chunk-title\s*\{[^}]*\}/)?.[0] ?? "";
     expect(title).toContain("--acp-ui-font-weight-regular");
+    expect(title).toContain("--acp-ui-font-size-body");
     expect(title).toContain("--vscode-descriptionForeground");
     const body = css.match(/\.agent-thought-chunk-body\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(body).toContain("height: 3lh");
+    expect(body).toContain("max-height: 3lh");
+    expect(body).not.toMatch(/(^|\s)height:\s*3lh/);
     expect(body).toContain("justify-content: flex-end");
     expect(body).toContain("overflow: hidden");
     expect(body).not.toContain("overflow-y: auto");
-    expect(body).toContain("--acp-ui-font-size-small");
+    expect(body).toContain("--acp-ui-font-size-body");
+    expect(body).not.toContain("--acp-ui-font-size-small");
     expect(body).toContain("--vscode-descriptionForeground");
-    expect(css).toMatch(/\.agent-thought-chunk--open \.agent-thought-chunk-body\s*\{[^}]*height:\s*auto/);
+    expect(css).toMatch(
+      /\.agent-thought-chunk--open \.agent-thought-chunk-body\s*\{[^}]*max-height:\s*none/,
+    );
   });
 
   it("starts on the three-line preview and opens to the full text", () => {

@@ -60,8 +60,8 @@ Edit tools with ACP `diff` content get line-level `diffRows` and the trace alway
 Cursor multi-line `toolCallId` values are normalized to the first line so pending and completed updates land on the same row.
 Permission requests that carry edit diffs also update that row before you approve.
 
-[joinThoughtChunks](../../../webview/acp-ui/src/chatReducer.ts#L555-L573) merges consecutive thought chunks.
-Client-measured thought and command durations (and other UI-only fields) are written to the sibling `.jsonl` beside the `.acp` session file.
+[joinThoughtChunks](../../../webview/acp-ui/src/chatReducer.ts) concatenates consecutive thought chunks without inserting spaces.
+Client-measured thought and command durations (and other UI-only fields) are written to the `cache` array in the `.acp` session file.
 After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L307-L335) and [mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L341-L372) copy those durations back onto the authoritative transcript.
 
 ### Trace rendering
@@ -82,8 +82,9 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 - Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L45-L67) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
-  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts#L505-L516) shows a write as a diff and makes other tools with extra text clickable.
-  [truncatePathLabel](../../../webview/acp-ui/src/toolCallCompactText.ts#L25-L30) keeps the end of a path and prefixes `...` when the label would pass 50 characters.
+  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
+  [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows workspace-relative paths for files under `init.workspaceRoot`, otherwise `~/…` home shortening.
+  [truncatePathLabel](../../../webview/acp-ui/src/toolCallCompactText.ts) keeps the end of a path and prefixes `...` when the label would pass 50 characters.
   [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.
@@ -97,7 +98,8 @@ While that cache is on screen and history is loading, transcript updates go to a
 When loading ends, the buffer replaces the visible trace in one step ([sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L767-L791)).
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.
-[visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport and the webview writes them beside the session file.
+[visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport.
+The webview writes them to the session file `cache` when [visibleTraceCacheEpoch](../../../webview/acp-ui/src/chatReducer.ts) bumps at turn end, not on every stream update.
 [SessionHistoryLoader](../../../webview/acp-ui/src/components/acp/trace/SessionHistoryLoader/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
 A zero-height overlay is used at the top of a cached screen when you scroll up during load.
 

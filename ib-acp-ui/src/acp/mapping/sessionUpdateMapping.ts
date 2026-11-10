@@ -297,7 +297,7 @@ function formatRawToolOutput(raw: unknown): string | undefined {
         }
         if (typeof record.stdout === "string" || typeof record.stderr === "string") {
             let combined = "";
-            if (typeof record.exitCode === "number") {
+            if (typeof record.exitCode === "number" && record.exitCode !== 0) {
                 combined += `exit ${record.exitCode}\n`;
             }
             if (typeof record.stdout === "string" && record.stdout.length > 0) {

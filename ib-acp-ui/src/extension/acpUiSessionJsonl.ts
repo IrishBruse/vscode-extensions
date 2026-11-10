@@ -1,12 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { basename, dirname, isAbsolute } from "node:path";
 import { type ExtensionContext, FileType, Range, Uri, WorkspaceEdit, workspace } from "vscode";
-import {
-    type AcpUiVisibleTraceItem,
-    normalizeVisibleTrace,
-    parseVisibleTraceJsonl,
-    serializeVisibleTraceJsonl,
-} from "../protocol/visibleTrace";
+import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
 import {
     ACP_UI_SESSION_FILE_SUFFIX,
     ACP_UI_SESSION_SCHEMA,
@@ -18,7 +13,6 @@ import {
     serializeSessionDocument,
     sessionFileBaseNameFromTitle,
     uniqueSessionFileBaseNameFromTitle,
-    visibleTraceFileNameForSessionFile,
 } from "./acpUiSessionJsonlFormat";
 
 export {
@@ -38,12 +32,11 @@ export {
     sessionFileBaseNameFromTitle,
     shouldDeferJsonlHistoryReplay,
     uniqueSessionFileBaseNameFromTitle,
-    visibleTraceFileNameForSessionFile,
 } from "./acpUiSessionJsonlFormat";
 
 /**
- * Client-owned session files (`acpUi/session/1`) store session metadata and
- * composer user message history only. ACP transcript traffic is not persisted here.
+ * Client-owned session files (`acpUi/session/1`) store session metadata,
+ * composer user message history, and the viewport transcript under `cache`.
  */
 const sessionsDirectorySettingKey = "ib-acp-ui.sessionsDirectory";
 const chatsSubdir = "chats";
@@ -100,73 +93,22 @@ export function sessionFileUriForId(
     );
 }
 
-/** Viewport-cache JSONL that sits beside a session `.acp` file. */
-export function visibleTraceFileUriForSession(sessionFileUri: Uri): Uri {
-    return Uri.joinPath(
-        sessionFileUri,
-        "..",
-        visibleTraceFileNameForSessionFile(basename(sessionFileUri.fsPath)),
-    );
+export async function readSessionCache(sessionFileUri: Uri): Promise<AcpUiVisibleTraceItem[]> {
+    const document = await readSessionDocumentAtUri(sessionFileUri);
+    return document?.cache ?? [];
 }
 
-export async function readVisibleTraceBesideSession(
-    sessionFileUri: Uri,
-): Promise<AcpUiVisibleTraceItem[]> {
-    const uri = visibleTraceFileUriForSession(sessionFileUri);
-    try {
-        const bytes = await workspace.fs.readFile(uri);
-        return parseVisibleTraceJsonl(Buffer.from(bytes).toString("utf8"));
-    } catch {
-        return [];
-    }
-}
-
-export async function writeVisibleTraceBesideSession(
-    sessionFileUri: Uri,
-    items: unknown,
-    meta?: { sessionId: string },
-): Promise<void> {
-    const uri = visibleTraceFileUriForSession(sessionFileUri);
-    await enqueueSessionFileWrite(uri.toString(), async () => {
-        const normalized = normalizeVisibleTrace(items);
+export async function writeSessionCache(sessionFileUri: Uri, items: unknown): Promise<void> {
+    const normalized = normalizeVisibleTrace(items);
+    await mutateSessionDocument(sessionFileUri, (current) => {
+        const next: AcpUiSessionDocument = { ...current };
         if (normalized.length === 0) {
-            try {
-                await workspace.fs.delete(uri);
-            } catch {
-                return;
-            }
-            return;
+            delete next.cache;
+        } else {
+            next.cache = normalized;
         }
-        const sessionId = meta?.sessionId;
-        const payload =
-            sessionId !== undefined && sessionId.length > 0
-                ? serializeVisibleTraceJsonl(normalized, {
-                      sessionId,
-                      sessionFile: basename(sessionFileUri.fsPath),
-                  })
-                : serializeVisibleTraceJsonl(normalized);
-        await workspace.fs.writeFile(uri, Buffer.from(payload, "utf8"));
+        return next;
     });
-}
-
-async function moveVisibleTraceBesideSession(
-    fromSessionUri: Uri,
-    toSessionUri: Uri,
-): Promise<void> {
-    if (fromSessionUri.toString() === toSessionUri.toString()) {
-        return;
-    }
-    const from = visibleTraceFileUriForSession(fromSessionUri);
-    const to = visibleTraceFileUriForSession(toSessionUri);
-    if (from.toString() === to.toString()) {
-        return;
-    }
-    try {
-        await workspace.fs.stat(from);
-    } catch {
-        return;
-    }
-    await workspace.fs.rename(from, to, { overwrite: true });
 }
 
 /** True when the session file sits directly under the chats root (legacy layout). */
@@ -220,7 +162,6 @@ async function ensureSessionFileInFolder(
     const dest = Uri.joinPath(sessionDir, basename(uri.fsPath));
     if (uri.toString() !== dest.toString()) {
         await workspace.fs.rename(uri, dest, { overwrite: false });
-        await moveVisibleTraceBesideSession(uri, dest);
     }
     return dest;
 }
@@ -245,7 +186,6 @@ export async function ensureSessionFileNameMatchesTitle(
         return inFolder;
     }
     await workspace.fs.rename(inFolder, targetUri, { overwrite: false });
-    await moveVisibleTraceBesideSession(inFolder, targetUri);
     return targetUri;
 }
 
@@ -425,11 +365,6 @@ export async function deleteSessionFile(context: ExtensionContext, uri: Uri): Pr
             await workspace.fs.delete(uri, { useTrash: true });
         } catch {
             // File may already be gone.
-        }
-        try {
-            await workspace.fs.delete(visibleTraceFileUriForSession(uri), { useTrash: true });
-        } catch {
-            return;
         }
         return;
     }

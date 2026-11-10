@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactElement, useLayoutEffect, useState } from "react";
+import { type ReactElement, useEffect, useLayoutEffect, useState } from "react";
 import { AgentMarkdown } from "../AgentMarkdown/AgentMarkdown";
 import { AgentThoughtBlock } from "./AgentThoughtBlock";
 
@@ -50,6 +50,44 @@ function CollapsedThought(): ReactElement {
     />
   );
 }
+
+const thinkingLines = [
+  "Looking at the session file.",
+  "The reducer still has this thought open.",
+  "The timer should keep counting.",
+  "The preview stays on the newest lines.",
+  "Opening the heading shows the whole thought.",
+];
+
+function ThinkingThought(): ReactElement {
+  const [startedAtMs] = useState(() => Date.now());
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    if (count >= thinkingLines.length) {
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      setCount((current) => current + 1);
+    }, 900);
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [count]);
+  return (
+    <AgentThoughtBlock
+      text={thinkingLines.slice(0, count).join("\n\n")}
+      startedAtMs={startedAtMs}
+    />
+  );
+}
+
+export const Thinking: Story = {
+  render: () => <ThinkingThought />,
+  args: {
+    text: thinkingLines[0]!,
+    startedAtMs: 0,
+  },
+};
 
 export const Long: Story = {
   render: () => (

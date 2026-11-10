@@ -9,6 +9,7 @@ import {
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
 import type { AcpRpcNdjsonDirection, AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
 import type { AcpUiPromptImage } from "../../protocol/extensionHostMessages";
+import type { AgentProcessExitDetails } from "../session/agentDisconnect";
 
 /** Node `fs` and VS Code `FileSystemError` both use distinct codes for a missing path. */
 function isFileNotFoundError(error: unknown): boolean {
@@ -186,8 +187,10 @@ export type AcpAgentProcessOptions = {
     /** Workspace folder used for spawn `cwd` and `session/new` `cwd` metadata. */
     getWorkspaceRoot: () => string | undefined;
     /** Called when the agent subprocess exits or stdio closes. */
-    onProcessExit?: () => void;
+    onProcessExit?: (details: AgentProcessExitDetails) => void;
 };
+
+const maxAgentStderrTailChars = 500;
 
 /**
  * Manages the lifecycle of a single ACP agent subprocess: spawn, initialize handshake,
@@ -198,6 +201,8 @@ export class AcpAgentProcess {
     private connection: acp.ClientSideConnection | null = null;
     private initResponse: acp.InitializeResponse | null = null;
     private sessionUpdateHandler: SessionUpdateHandler | null = null;
+    private processExited = false;
+    private stderrTail = "";
 
     constructor(private readonly options: AcpAgentProcessOptions) {}
 
@@ -206,7 +211,14 @@ export class AcpAgentProcess {
         this.sessionUpdateHandler = handler;
     }
 
+    /** False after the subprocess exits or is disposed. */
+    isAlive(): boolean {
+        return !this.processExited && this.child !== null;
+    }
+
     async start(): Promise<acp.InitializeResponse> {
+        this.processExited = false;
+        this.stderrTail = "";
         const cwd = this.options.getWorkspaceRoot();
         const env = { ...process.env, ...this.options.config.env };
 
@@ -222,6 +234,7 @@ export class AcpAgentProcess {
 
         this.child.stderr?.on("data", (chunk: Buffer) => {
             const text = chunk.toString();
+            this.appendStderrTail(text);
             console.error(`[ACP Agent ${this.options.config.name}] stderr: ${text}`);
         });
 
@@ -253,8 +266,13 @@ export class AcpAgentProcess {
             console.error(
                 `[ACP Agent ${this.options.config.name}] exited code=${code ?? "null"} signal=${signal ?? "null"}`,
             );
+            this.processExited = true;
             this.connection = null;
-            this.options.onProcessExit?.();
+            this.options.onProcessExit?.({
+                code: code ?? null,
+                signal: signal ?? null,
+                ...(this.stderrTail.trim().length > 0 ? { stderrTail: this.stderrTail } : {}),
+            });
         });
 
         this.child.on("close", (code, signal) => {
@@ -457,12 +475,17 @@ export class AcpAgentProcess {
     }
 
     dispose(): void {
+        this.processExited = true;
         if (this.child) {
             this.child.kill();
             this.child = null;
         }
         this.connection = null;
         this.initResponse = null;
+    }
+
+    private appendStderrTail(chunk: string): void {
+        this.stderrTail = (this.stderrTail + chunk).slice(-maxAgentStderrTailChars);
     }
 
     private async handleReadTextFile(

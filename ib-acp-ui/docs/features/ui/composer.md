@@ -23,7 +23,7 @@ Keyboard shortcuts while the composer is focused:
   The next Enter interrupts the current message and sends now.
 - Shift+Tab cycles session mode when the agent exposes a mode option
 - Ctrl+C / Cmd+C cancels an in-flight prompt when supported
-- Ctrl+T / Cmd+T opens a new chat (when the Chats view or ACP UI editor is focused)
+- Ctrl+T / Cmd+T opens a new chat (when the Setup view or ACP UI editor is focused)
 
 Planned: send images, audio, and structured file references in prompts when the agent advertises multimodal `promptCapabilities`.
 Composer `@` file mentions will become structured ACP `resource` blocks instead of plain path text in the draft.

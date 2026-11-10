@@ -45,6 +45,70 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendAgentThought", text: "hmm", durationMs: 890 }]);
     });
 
+    it("omits exit 0 from shell rawOutput content", () => {
+        const tracking = createToolCallKindTracking();
+        sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call",
+                toolCallId: "bash-1",
+                title: "Terminal",
+                kind: "execute",
+                status: "pending",
+                rawInput: { command: "npm test" },
+            },
+            tracking,
+        );
+        const messages = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call_update",
+                toolCallId: "bash-1",
+                status: "completed",
+                rawOutput: { exitCode: 0, stdout: "PASS\n" },
+            },
+            tracking,
+        );
+        expect(messages).toEqual([
+            {
+                type: "updateToolCall",
+                toolCallId: "bash-1",
+                status: "completed",
+                content: "PASS",
+            },
+        ]);
+    });
+
+    it("keeps a non-zero exit code in shell rawOutput content", () => {
+        const tracking = createToolCallKindTracking();
+        sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call",
+                toolCallId: "bash-2",
+                title: "Terminal",
+                kind: "execute",
+                status: "pending",
+                rawInput: { command: "npm test" },
+            },
+            tracking,
+        );
+        const messages = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call_update",
+                toolCallId: "bash-2",
+                status: "failed",
+                rawOutput: { exitCode: 1, stdout: "", stderr: "FAIL src/foo.test.ts\n" },
+            },
+            tracking,
+        );
+        expect(messages).toEqual([
+            {
+                type: "updateToolCall",
+                toolCallId: "bash-2",
+                status: "failed",
+                content: "exit 1\nFAIL src/foo.test.ts",
+            },
+        ]);
+    });
+
     it("maps tool_call_update duration from _meta", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "tool_call_update",

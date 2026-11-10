@@ -3,7 +3,7 @@
 Chat with [Agent Client Protocol (ACP)](https://github.com/agentclientprotocol) agents from Visual Studio Code.
 
 Open **ACP UI** from the activity bar for a chat surface next to your code.
-The **Chats** view lists sessions.
+The **Setup** view configures clients and reviews the open chat.
 The same UI can open in an editor tab or a side panel.
 
 ![ACP UI conversation panel](docs/Fullscreen.png)
@@ -25,7 +25,7 @@ You do not need a global install for those agents.
 
 1. Install the extension.
 2. Open **ACP UI** from the activity bar.
-3. Run **Browse Agent Registry** from the Chats title menu or the Command Palette.
+3. Run **Browse Agent Registry** from the Setup title menu or the Command Palette.
 4. Install an agent.
 5. Start a chat with **Open ACP UI** or **New ACP UI in Editor**.
 
@@ -48,10 +48,12 @@ Agent plans render as structured plan blocks.
 
 ![ACP UI plan block](docs/Plan.png)
 
-### Chats sidebar
+### Setup sidebar
 
-List sessions under the **ACP UI** activity bar.
-Open, refresh, rename, or delete sessions from the view.
+Configure ACP clients under the **ACP UI** activity bar.
+Add a manual client, install one from the registry, and choose which client new chats use.
+The same pane shows the workspace and a review of the chat open in the editor.
+Previous chats stay in editor tabs and session files.
 
 ### Session config
 
@@ -117,7 +119,7 @@ Fields:
 - **Browse Agent Registry** — install or manage catalog agents
 - **Open ACP UI** — open or focus the chat panel
 - **New ACP UI in Editor** — open chat in an editor tab
-- **Focus ACP UI Chats list** — focus the session list
+- **Focus ACP UI setup** — focus the setup sidebar
 - **Show ACP RPC Log** — open the protocol output channel
 
 The composer also supports slash commands that the active agent advertises.

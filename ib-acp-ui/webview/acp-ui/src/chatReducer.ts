@@ -82,6 +82,8 @@ export type ChatState = {
   toolIndexById: Map<string, number>;
   promptInFlight: boolean;
   errorText: string | null;
+  /** Whether the ACP agent subprocess is connected for this chat. */
+  agentConnected: boolean;
   modelSelection: AcpUiSessionModelSelection | null;
   sessionConfigOptions: AcpUiSessionConfigOption[] | null;
   /** True while waiting for agent model/config options (uncached reconnect). */
@@ -95,6 +97,8 @@ export type ChatState = {
   replayThoughtStartedAtMs: number | null;
   replayToolStartedAtMsById: Map<string, number>;
   historyCommit: number;
+  /** Increments when the on-screen trace should be persisted to the session file cache. */
+  visibleTraceCacheEpoch: number;
   acpAgentSelection: AcpAgentSelectionState | null;
   /** Configured ACP agent (provider) names for the empty-chat provider select. */
   providers: string[];
@@ -212,6 +216,7 @@ export function createInitialChatState(): ChatState {
     toolIndexById: new Map(),
     promptInFlight: false,
     errorText: null,
+    agentConnected: false,
     modelSelection: null,
     sessionConfigOptions: null,
     sessionConfigLoading: true,
@@ -223,6 +228,7 @@ export function createInitialChatState(): ChatState {
     replayThoughtStartedAtMs: null,
     replayToolStartedAtMsById: new Map(),
     historyCommit: 0,
+    visibleTraceCacheEpoch: 0,
     acpAgentSelection: null,
     providers: [],
     recentSessions: [],
@@ -635,39 +641,8 @@ function appendAgentThought(
   };
 }
 
-function isWordChar(char: string): boolean {
-  return /[\p{L}\p{N}_]/u.test(char);
-}
-
-function opensFenceBoundary(text: string): boolean {
-  const fences = text.match(/```/g);
-  return (fences?.length ?? 0) % 2 === 1;
-}
-
-function startsWithPunctuation(text: string): boolean {
-  return /^[,.;:!?]/.test(text);
-}
-
-/**
- * Joins streamed thought chunks with natural spacing outside fenced code blocks.
- */
+/** Joins streamed thought chunks without inserting spaces between them. */
 export function joinThoughtChunks(existing: string, incoming: string): string {
-  if (existing.length === 0 || incoming.length === 0) {
-    return existing + incoming;
-  }
-  if (opensFenceBoundary(existing)) {
-    return existing + incoming;
-  }
-  const existingEndsWithWhitespace = /\s$/.test(existing);
-  const incomingStartsWithWhitespace = /^\s/.test(incoming);
-  if (existingEndsWithWhitespace || incomingStartsWithWhitespace) {
-    return existing + incoming;
-  }
-  const existingLast = existing.at(-1) ?? "";
-  const incomingFirst = incoming[0] ?? "";
-  if (isWordChar(existingLast) && isWordChar(incomingFirst) && !startsWithPunctuation(incoming)) {
-    return `${existing} ${incoming}`;
-  }
   return existing + incoming;
 }
 
@@ -880,6 +855,10 @@ function updateToolCall(
 /**
  * Applies extension protocol messages and local submit actions to chat UI state.
  */
+function bumpVisibleTraceCacheEpoch(state: ChatState): number {
+  return state.visibleTraceCacheEpoch + 1;
+}
+
 function applySessionReset(state: ChatState): ChatState {
   return {
     ...state,
@@ -888,6 +867,7 @@ function applySessionReset(state: ChatState): ChatState {
     toolIndexById: new Map(),
     promptInFlight: false,
     errorText: null,
+    agentConnected: false,
     permissionPrompt: null,
     askQuestionPrompt: null,
     createPlanPrompt: null,
@@ -904,6 +884,7 @@ function applySessionReset(state: ChatState): ChatState {
     composerPicksLocked: false,
     thoughtStartedAtMs: null,
     toolStartedAtMsById: new Map(),
+    visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
   };
 }
 
@@ -1035,7 +1016,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         },
       ],
       promptInFlight: true,
-      errorText: null,
+      errorText: state.agentConnected ? null : state.errorText,
       openStreamIndex: null,
       toolIndexById: new Map(),
       toolStartedAtMsById: new Map(),
@@ -1273,6 +1254,12 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         openStreamIndex: null,
       };
     }
+    case "agentConnection":
+      return {
+        ...state,
+        agentConnected: action.connected,
+        ...(action.connected ? { errorText: null } : {}),
+      };
     case "commandFeedback": {
       const base = stateAfterLeavingOpenThoughtStream(state);
       const trace = [...base.trace, { type: "agent" as const, text: action.message }];
@@ -1282,6 +1269,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         openStreamIndex: trace.length - 1,
         promptInFlight: false,
         errorText: null,
+        visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
     }
     case "turnComplete": {
@@ -1290,6 +1278,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...base,
         openStreamIndex: null,
         promptInFlight: false,
+        visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
     }
     case "error": {
@@ -1298,8 +1287,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         state.viewportCacheActive && state.sessionHistoryLoading
           ? finalizeOpenThoughtDuration(replayShadow(state))
           : null;
+      const disconnected = action.disconnected === true;
+      const trace =
+        disconnected && action.message.trim().length > 0
+          ? [...base.trace, { type: "agent" as const, text: action.message }]
+          : base.trace;
       return {
         ...base,
+        trace,
         ...(replay !== null
           ? {
               replayTrace: replay.trace,
@@ -1309,7 +1304,9 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           : {}),
         openStreamIndex: null,
         errorText: action.message,
+        agentConnected: disconnected ? false : state.agentConnected,
         promptInFlight: false,
+        visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
     }
     default:

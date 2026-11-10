@@ -3,17 +3,33 @@ import type { ToolCallDiffRow } from "../../../src/protocol/extensionHostMessage
 import { markdownFilesystemPathFromText } from "../../../src/platform/fileUriPath";
 import { formatPathWithTilde } from "../../../src/platform/pathDisplay";
 import type { TraceToolItem } from "./chatReducer";
+import { pathForPrompt } from "./droppedFilePaths";
 
 let compactToolPathHome = "";
+let compactToolWorkspaceRoot = "";
 
 /** Called on webview init so absolute paths shorten to `~/...`. */
 export function setCompactToolPathHome(home: string): void {
   compactToolPathHome = home.trim();
 }
 
+/** Called on webview init so paths under the workspace show as workspace-relative paths. */
+export function setCompactToolWorkspaceRoot(root: string): void {
+  compactToolWorkspaceRoot = root.trim();
+}
+
 function formatCompactPath(path: string): string {
   const trimmed = path.trim();
-  if (trimmed.length === 0 || compactToolPathHome.length === 0) {
+  if (trimmed.length === 0) {
+    return trimmed;
+  }
+  if (compactToolWorkspaceRoot.length > 0) {
+    const workspaceRelative = pathForPrompt(trimmed, compactToolWorkspaceRoot);
+    if (workspaceRelative !== trimmed) {
+      return workspaceRelative;
+    }
+  }
+  if (compactToolPathHome.length === 0) {
     return trimmed;
   }
   return formatPathWithTilde(trimmed, compactToolPathHome);
@@ -123,6 +139,11 @@ export function diffLineStats(rows: ToolCallDiffRow[] | undefined): {
 
 function normalizedKind(item: TraceToolItem): string {
   return item.kind?.toLowerCase() ?? "";
+}
+
+/** True when a read tool targets a line or line range instead of the whole file. */
+export function isRangedReadTool(item: TraceToolItem): boolean {
+  return normalizedKind(item) === "read" && readLineRangeSuffix(item) !== null;
 }
 
 function readLineRangeSuffix(item: TraceToolItem): string | null {
@@ -510,6 +531,9 @@ export function toolCallDetailKind(item: TraceToolItem): ToolCallDetailKind {
     return "diff";
   }
   if ((item.content?.trim().length ?? 0) > 0) {
+    if (normalizedKind(item) === "read" && !isRangedReadTool(item)) {
+      return "summary";
+    }
     return "expandable";
   }
   return "summary";
@@ -566,10 +590,9 @@ export function executeOutputContentLines(item: TraceToolItem): string[] {
     return lines;
   }
   const first = lines[0]?.trim() ?? "";
-  if (first === `$ ${cmd}`.trim() || first === cmd.trim()) {
-    return lines.slice(1);
-  }
-  return lines;
+  const withoutEcho =
+    first === `$ ${cmd}`.trim() || first === cmd.trim() ? lines.slice(1) : lines;
+  return withoutEcho.filter((line) => !/^exit\s+0$/i.test(line.trim()));
 }
 
 export function executeOutputPreview(

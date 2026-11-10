@@ -14,6 +14,7 @@ import {
     whenInstalledAgentsReady,
 } from "./acpUiInstalledAgents";
 import { getRegistryCatalog } from "./acpUiRegistryCatalog";
+import { refreshAcpUiSetupView } from "./acpUiSessionsView";
 
 const execFileAsync = promisify(execFile);
 
@@ -119,6 +120,7 @@ async function installRegistryAgent(agent: AcpRegistryAgent): Promise<void> {
                 installedVersion: agent.version,
                 spawn,
             });
+            refreshAcpUiSetupView();
             void window.showInformationMessage(`Installed ${agent.name} (${agent.version}).`);
         },
     );
@@ -175,6 +177,7 @@ async function browseAgentRegistry(): Promise<void> {
     }
     if (action === "Uninstall") {
         await removeInstalledAgent(agent.id);
+        refreshAcpUiSetupView();
         void window.showInformationMessage(`Uninstalled ${agent.name}.`);
         return;
     }
@@ -218,6 +221,7 @@ async function uninstallRegistryAgent(): Promise<void> {
         return;
     }
     await removeInstalledAgent(picked.registryId);
+    refreshAcpUiSetupView();
     void window.showInformationMessage(`Uninstalled ${picked.label}.`);
 }
 

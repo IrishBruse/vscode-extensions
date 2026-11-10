@@ -155,8 +155,9 @@ describe("chatReducer", () => {
     expect(row.text).toContain("Need to validate");
   });
 
-  it("adds one space between adjacent thought words", () => {
-    expect(joinThoughtChunks("hello", "world")).toBe("hello world");
+  it("concatenates streamed thought chunks without inserting extra spaces", () => {
+    expect(joinThoughtChunks("hel", "lo")).toBe("hello");
+    expect(joinThoughtChunks("hello", "world")).toBe("helloworld");
     expect(joinThoughtChunks("hello ", "world")).toBe("hello world");
     expect(joinThoughtChunks("hello", ", world")).toBe("hello, world");
   });
@@ -284,6 +285,24 @@ describe("chatReducer", () => {
       return;
     }
     expect(row.detailVisible).toBe(true);
+  });
+
+  it("bumps visibleTraceCacheEpoch when a turn completes", () => {
+    let state = createInitialChatState();
+    expect(state.visibleTraceCacheEpoch).toBe(0);
+    state = chatReducer(state, { type: "submit", body: "hi" });
+    state = chatReducer(state, { type: "appendAgentText", text: "hello" });
+    expect(state.visibleTraceCacheEpoch).toBe(0);
+    state = chatReducer(state, { type: "turnComplete", stopReason: "end" });
+    expect(state.visibleTraceCacheEpoch).toBe(1);
+  });
+
+  it("does not bump visibleTraceCacheEpoch while a turn is streaming", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "hi" });
+    state = chatReducer(state, { type: "appendAgentText", text: "partial" });
+    state = chatReducer(state, { type: "appendToolCall", toolCallId: "t1", title: "Read", status: "in_progress" });
+    expect(state.visibleTraceCacheEpoch).toBe(0);
   });
 
   it("replays submit and agent text from persisted events", () => {
@@ -536,6 +555,27 @@ describe("chatReducer", () => {
     expect(state.thoughtStartedAtMs).toBe(startedAtMs);
     const thought = state.trace[0];
     expect(thought).toEqual({ type: "thought", text: "Still thinking.", startedAtMs });
+  });
+
+  it("marks the agent disconnected, keeps the error, and logs the message in the trace", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "agentConnection", connected: true });
+    state = chatReducer(state, {
+      type: "error",
+      message: 'ACP agent "Cursor" stopped.\nExit code: 1.',
+      disconnected: true,
+    });
+    expect(state.agentConnected).toBe(false);
+    expect(state.errorText).toBe('ACP agent "Cursor" stopped.\nExit code: 1.');
+    expect(state.trace.at(-1)).toEqual({
+      type: "agent",
+      text: 'ACP agent "Cursor" stopped.\nExit code: 1.',
+    });
+    state = chatReducer(state, { type: "submit", body: "retry" });
+    expect(state.errorText).toBe('ACP agent "Cursor" stopped.\nExit code: 1.');
+    state = chatReducer(state, { type: "agentConnection", connected: true });
+    expect(state.agentConnected).toBe(true);
+    expect(state.errorText).toBeNull();
   });
 
   it("stops a running thought timer on error or disconnect", () => {

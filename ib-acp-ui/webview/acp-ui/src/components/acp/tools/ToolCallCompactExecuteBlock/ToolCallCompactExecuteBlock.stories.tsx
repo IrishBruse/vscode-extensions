@@ -48,9 +48,53 @@ export const Failed: Story = {
     item: {
       ...executeItem,
       status: "failed",
-      content: "$ npm test\nFAIL src/chatReducer.test.ts",
+      content: "exit 1\nFAIL src/chatReducer.test.ts",
+      subtitle: "npm test",
     },
     expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};
+
+export const BashPipe: Story = {
+  args: {
+    item: {
+      ...executeItem,
+      toolCallId: "bash-pipe",
+      subtitle: "rg -n visibleTraceTail ib-acp-ui | head",
+      content:
+        "ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts:12:export function visibleTraceTail",
+      durationMs: 48,
+    },
+    expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};
+
+export const BashChained: Story = {
+  args: {
+    item: {
+      ...executeItem,
+      toolCallId: "bash-chain",
+      subtitle: 'npm run build:webview 2>&1 && echo "ok"',
+      content: "✓ built in 132ms\nok",
+      durationMs: 210,
+    },
+    expandAllToolOutputs: false,
+    onCollapseExpandAll: () => undefined,
+  },
+};
+
+export const BashSuccessWithoutExitZero: Story = {
+  args: {
+    item: {
+      ...executeItem,
+      toolCallId: "bash-success",
+      subtitle: "npm test",
+      content: "PASS src/chatReducer.test.ts\n",
+      durationMs: 3_400,
+    },
+    expandAllToolOutputs: true,
     onCollapseExpandAll: () => undefined,
   },
 };

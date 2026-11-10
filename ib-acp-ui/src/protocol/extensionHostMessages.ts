@@ -115,7 +115,7 @@ export type WebviewToExtensionMessage =
       }
     /** Persists composer Arrow Up / Down user message history for this session. */
     | { type: "saveHistory"; entries: string[] }
-    /** Persists the viewport transcript tail beside the session file. */
+    /** Persists the viewport transcript tail on the session file `cache` key. */
     | { type: "saveVisibleTrace"; items: AcpUiVisibleTraceItem[] }
     /** Open a new chat with the default agent (extension host handles creation). */
     | { type: "openNewChat" }
@@ -145,6 +145,8 @@ export type ExtensionToWebviewMessage =
           sessionId: string;
           title: string;
           workspaceLabel?: string;
+          /** Absolute workspace folder path for workspace-relative compact tool labels. */
+          workspaceRoot?: string;
           /** Absolute user home directory for compact path labels (`~` substitution). */
           homeDir?: string;
           /** Relative workspace file paths used by `@` autocomplete in the composer. */
@@ -288,7 +290,8 @@ export type ExtensionToWebviewMessage =
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }
     | { type: "turnComplete"; stopReason: string }
-    | { type: "error"; message: string }
+    | { type: "error"; message: string; disconnected?: boolean }
+    | { type: "agentConnection"; connected: boolean }
     /** Clears the transcript and tool state; sent before the host reconnects the agent session. */
     | { type: "sessionReset" }
     /** Replays persisted session log lines after `init` (custom editor restore). */

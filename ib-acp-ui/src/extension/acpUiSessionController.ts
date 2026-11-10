@@ -40,10 +40,10 @@ import {
 import {
     type AcpUiSessionDocument,
     parseSessionFile,
-    readVisibleTraceBesideSession,
+    readSessionCache,
     shouldDeferJsonlHistoryReplay,
     updateSessionHistory,
-    writeVisibleTraceBesideSession,
+    writeSessionCache,
 } from "./acpUiSessionJsonl";
 import {
     clearAcpUiSessionRuntimeSessionId,
@@ -57,6 +57,7 @@ import {
     updateAcpUiSessionTitle,
 } from "./acpUiSessionsStore";
 import { getAcpUiExtensionActivation } from "./extensionServices";
+import { setAcpUiSessionConnection, clearAcpUiSessionConnection } from "./acpUiSessionConnection";
 
 const maxWorkspaceFileAutocompleteEntries = 1500;
 const maxRecentSessionsInEmptyState = 8;
@@ -132,6 +133,7 @@ export class AcpUiSessionController {
 
     dispose(): void {
         this.disposeBridge();
+        clearAcpUiSessionConnection(this.sessionId);
         for (const disposable of this.disposables) {
             disposable.dispose();
         }
@@ -252,7 +254,7 @@ export class AcpUiSessionController {
                 ? readCachedComposerSeed(defaultAgent.name)
                 : { configOptions: null, modelSelection: null };
         const vscodeThemeVariables = await resolveMarkdownThemeVariables();
-        const visibleTrace = await readVisibleTraceBesideSession(this.documentUri);
+        const visibleTrace = await readSessionCache(this.documentUri);
         return {
             sessionId: header.id,
             title: header.title,
@@ -260,6 +262,7 @@ export class AcpUiSessionController {
             ...(visibleTrace.length > 0 ? { visibleTrace } : {}),
             ...(Object.keys(vscodeThemeVariables).length > 0 ? { vscodeThemeVariables } : {}),
             workspaceLabel,
+            ...(folder !== undefined ? { workspaceRoot: folder.uri.fsPath } : {}),
             homeDir: resolveUserHomeDir(),
             agentVersionLabel,
             acpAgentName: defaultAgent?.name,
@@ -331,7 +334,10 @@ export class AcpUiSessionController {
 
     private async ensureBridgeConnected(): Promise<AcpSessionBridge | undefined> {
         if (this.bridge !== undefined) {
-            return this.bridge;
+            if (this.bridge.isAgentAlive()) {
+                return this.bridge;
+            }
+            this.disposeBridge();
         }
         if (this.bridgeConnectInFlight !== undefined) {
             const inFlight = this.bridgeConnectInFlight;
@@ -360,14 +366,29 @@ export class AcpUiSessionController {
         }
     }
 
+    private releaseDeadBridge(): void {
+        if (this.bridge !== undefined) {
+            this.bridge.dispose();
+            this.bridge = undefined;
+        }
+        this.bridgeConnectGeneration += 1;
+        this.options.refreshChatsList?.();
+    }
+
     private async connectBridge(generation: number): Promise<AcpSessionBridge | undefined> {
+        setAcpUiSessionConnection(this.sessionId, "connecting");
+        this.options.refreshChatsList?.();
         const config = this.agentConfig ?? getAcpAgentConfigsMerged()[0];
         if (config === undefined) {
+            const message =
+                "No ACP agents configured. Browse the Agent Registry or add a manual ib-acp-ui.agents override.";
+            setAcpUiSessionConnection(this.sessionId, "disconnected", message);
             this.post({
                 type: "error",
-                message:
-                    "No ACP agents configured. Browse the Agent Registry or add a manual ib-acp-ui.agents override.",
+                message,
+                disconnected: true,
             });
+            this.options.refreshChatsList?.();
             return undefined;
         }
         const { rpcNdjsonSink } = getAcpUiExtensionActivation();
@@ -377,6 +398,10 @@ export class AcpUiSessionController {
                 void this.applySessionInfoUpdate(update);
             },
             onResumeSession: () => this.beginAgentHistoryLoad(),
+            onAgentDisconnected: (message) => {
+                setAcpUiSessionConnection(this.sessionId, "disconnected", message);
+                this.releaseDeadBridge();
+            },
         });
         const preferred = this.pendingModelId;
         this.pendingModelId = undefined;
@@ -396,6 +421,9 @@ export class AcpUiSessionController {
                 return undefined;
             }
             this.bridge = bridge;
+            setAcpUiSessionConnection(this.sessionId, "connected");
+            this.post({ type: "agentConnection", connected: true });
+            this.options.refreshChatsList?.();
             if (pendingConfig !== undefined) {
                 try {
                     await bridge.setSessionConfigOption(
@@ -417,14 +445,18 @@ export class AcpUiSessionController {
             this.options.refreshChatsList?.();
             return bridge;
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            window.showErrorMessage(`Failed to connect to agent: ${message}`);
+            const detail = err instanceof Error ? err.message : String(err);
+            const message = `Failed to connect to agent: ${detail}`;
+            setAcpUiSessionConnection(this.sessionId, "disconnected", message);
+            window.showErrorMessage(message);
             this.post({
                 type: "error",
-                message: `Failed to connect to agent: ${message}`,
+                message,
+                disconnected: true,
             });
             bridge.dispose();
             this.bridge = undefined;
+            this.options.refreshChatsList?.();
             return undefined;
         } finally {
             if (this.agentLoadInProgress) {
@@ -489,6 +521,8 @@ export class AcpUiSessionController {
 
         if (parsed.type === "resetSession") {
             this.disposeBridge();
+            setAcpUiSessionConnection(this.sessionId, "connecting");
+            this.options.refreshChatsList?.();
             this.pendingModelId = undefined;
             this.pendingConfigOption = undefined;
             await clearAcpUiSessionRuntimeSessionId(this.sessionId);
@@ -504,24 +538,23 @@ export class AcpUiSessionController {
         }
 
         if (parsed.type === "saveVisibleTrace") {
-            void writeVisibleTraceBesideSession(this.documentUri, parsed.items, {
-                sessionId: this.sessionId,
-            });
+            void writeSessionCache(this.documentUri, parsed.items);
             return;
         }
 
         if (parsed.type === "send") {
             void (async () => {
                 const b = await this.ensureBridgeConnected();
-                if (b !== undefined) {
-                    if (b.isPrompting) {
-                        await b.cancel();
-                    }
-                    try {
-                        await b.prompt(parsed.body, parsed.images);
-                    } finally {
-                        await this.flushDeferredSessionTitleWrite();
-                    }
+                if (b === undefined) {
+                    return;
+                }
+                if (b.isPrompting) {
+                    await b.cancel();
+                }
+                try {
+                    await b.prompt(parsed.body, parsed.images);
+                } finally {
+                    await this.flushDeferredSessionTitleWrite();
                 }
             })();
             return;

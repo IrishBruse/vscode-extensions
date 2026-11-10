@@ -52,11 +52,11 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  height: 3lh;
+  max-height: 3lh;
   margin: 0;
   padding-left: var(--acp-ui-trace-content-indent);
   overflow: hidden;
-  font-size: var(--acp-ui-font-size-small);
+  font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-body);
   color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
 }
@@ -64,6 +64,7 @@
 .agent-thought-chunk--open .agent-thought-chunk-body {
   display: block;
   height: auto;
+  max-height: none;
   overflow: visible;
 }
 

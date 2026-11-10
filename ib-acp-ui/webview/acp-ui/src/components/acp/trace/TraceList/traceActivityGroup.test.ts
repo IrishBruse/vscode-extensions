@@ -26,7 +26,7 @@ describe("trace text color and group padding", () => {
     const quiet = String.raw`color:\s*var\(--vscode-descriptionForeground,\s*var\(--acp-ui-text-secondary\)\)`;
     expect(css).toMatch(new RegExp(String.raw`\.agent-thought-chunk-title\s*\{[^}]*${quiet}`));
     expect(css).toMatch(new RegExp(String.raw`\.agent-thought-chunk-body\s*\{[^}]*${quiet}`));
-    expect(css).toMatch(/\.agent-thought-chunk-body\s*\{[^}]*height:\s*3lh/);
+    expect(css).toMatch(/\.agent-thought-chunk-body\s*\{[^}]*max-height:\s*3lh/);
   });
 
   it("adds padding around a thought and tool-call group", () => {

@@ -5,10 +5,22 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: When the ACP agent stops or the connection is lost, the chat shows a disconnect banner with the error (including agent stderr) and the Setup sidebar lists the connection status.
+- **Fix**: Successful bash tools no longer show a redundant `exit 0` line in the output preview.
+- **Change**: Tool-call paths under the workspace folder show as workspace-relative paths.
+- **Change**: The session file cache updates when a turn ends, not on every transcript update.
+- **Change**: Whole-file reads stay on one line.
+  Ranged reads can still expand to show the returned text.
+- **Change**: The Thinking/Thought heading and preview use the default body font size.
+- **Fix**: Streamed thought chunks no longer pick up an extra space between tokens.
+- **Change**: The sidebar is a setup pane for ACP clients, runtime choices, and the open chat.
+  It no longer lists previous chats.
+- **Change**: The chat panel has no side margin, and its scrollbar matches the wider VS Code scrollbar.
+- **Change**: The saved transcript screen lives in the `.acp` file under `cache`.
 - **Add**: File edit previews show the line number for each row.
 - **Change**: The editor tab keeps the braille spinner during tool calls, and switches the mark for a question, a plan, or a permission prompt.
 - **Fix**: Thought timers stop when the turn errors or the agent disconnects.
-- **Change**: A thought block always shows the latest three lines, and opening it shows the full text.
+- **Change**: A thought block shows up to the latest three lines, and opening it shows the full text.
 - **Change**: A file tool line shows the path and keeps the end when the path is long.
   The path uses the link color, and hover uses the link hover color.
 

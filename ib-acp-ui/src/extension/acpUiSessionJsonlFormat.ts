@@ -1,18 +1,8 @@
 import { dirname } from "node:path";
+import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
 
 export const ACP_UI_SESSION_SCHEMA = "acpUi/session/1" as const;
 export const ACP_UI_SESSION_FILE_SUFFIX = ".acp";
-export const ACP_UI_VISIBLE_TRACE_SUFFIX = ".jsonl";
-
-/**
- * Sibling file name for the viewport trace cache of a session `.acp` file.
- */
-export function visibleTraceFileNameForSessionFile(sessionFileName: string): string {
-    const stem = sessionFileName.endsWith(ACP_UI_SESSION_FILE_SUFFIX)
-        ? sessionFileName.slice(0, -ACP_UI_SESSION_FILE_SUFFIX.length)
-        : sessionFileName;
-    return `${stem}${ACP_UI_VISIBLE_TRACE_SUFFIX}`;
-}
 
 /** True when the session file sits directly under the chats root (legacy layout). */
 export function isFlatSessionFilePath(sessionFilePath: string, sessionsDirPath: string): boolean {
@@ -117,6 +107,8 @@ export type AcpUiSessionMetadata = {
  */
 export type AcpUiSessionDocument = AcpUiSessionMetadata & {
     history: string[];
+    /** Last on-screen transcript, including UI-only fields such as durations. */
+    cache?: AcpUiVisibleTraceItem[];
 };
 
 /** @deprecated Use {@link AcpUiSessionDocument}. */
@@ -186,6 +178,20 @@ export function normalizeUserMessageHistory(entries: unknown): string[] {
     return out;
 }
 
+function documentFromParsedValue(value: unknown): AcpUiSessionDocument | null {
+    const metadata = metadataFromParsedValue(value);
+    if (metadata === null || value === null || typeof value !== "object") {
+        return null;
+    }
+    const row = value as Record<string, unknown>;
+    const cache = normalizeVisibleTrace(row.cache);
+    return {
+        ...metadata,
+        history: userMessageHistoryFromRow(row),
+        ...(cache.length > 0 ? { cache } : {}),
+    };
+}
+
 function userMessageHistoryFromRow(row: Record<string, unknown>): string[] {
     const fromLegacyPrompt = normalizeUserMessageHistory(row.promptHistory);
     if (fromLegacyPrompt.length > 0) {
@@ -221,15 +227,7 @@ export function parseSessionDocument(text: string): AcpUiSessionDocument | null 
     if (parsed === null || typeof parsed !== "object") {
         return null;
     }
-    const row = parsed as Record<string, unknown>;
-    const metadata = metadataFromParsedValue(parsed);
-    if (metadata === null) {
-        return null;
-    }
-    return {
-        ...metadata,
-        history: userMessageHistoryFromRow(row),
-    };
+    return documentFromParsedValue(parsed);
 }
 
 /**
@@ -273,15 +271,7 @@ export function parseSessionHeaderLine(line: string): AcpUiSessionDocument | nul
     } catch {
         return null;
     }
-    const metadata = metadataFromParsedValue(parsed);
-    if (metadata === null) {
-        return null;
-    }
-    const row = parsed as Record<string, unknown>;
-    return {
-        ...metadata,
-        history: userMessageHistoryFromRow(row),
-    };
+    return documentFromParsedValue(parsed);
 }
 
 /**

@@ -158,6 +158,7 @@ export function AcpUiApp({
   const historyCommitSeenRef = useRef(state.historyCommit);
   const suppressStickToBottomRef = useRef(false);
   const lastSavedVisibleTraceRef = useRef("");
+  const savedVisibleTraceCacheEpochRef = useRef(state.visibleTraceCacheEpoch);
   const earlierOverlayRef = useRef(false);
   const [earlierOverlay, setEarlierOverlay] = useState(false);
   const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -268,9 +269,15 @@ export function AcpUiApp({
   }, []);
 
   useEffect(() => {
-    if (postSaveVisibleTrace === undefined || state.sessionHistoryLoading) {
+    if (
+      postSaveVisibleTrace === undefined ||
+      state.sessionHistoryLoading ||
+      state.promptInFlight ||
+      state.visibleTraceCacheEpoch <= savedVisibleTraceCacheEpochRef.current
+    ) {
       return;
     }
+    const epoch = state.visibleTraceCacheEpoch;
     const handle = window.setTimeout(() => {
       const el = traceRef.current;
       const rows: VisibleTraceRow[] = [];
@@ -287,15 +294,23 @@ export function AcpUiApp({
       const items = visibleTraceTail(state.trace, rows, el?.clientHeight ?? 0);
       const serialized = JSON.stringify(items);
       if (serialized === lastSavedVisibleTraceRef.current) {
+        savedVisibleTraceCacheEpochRef.current = epoch;
         return;
       }
       lastSavedVisibleTraceRef.current = serialized;
+      savedVisibleTraceCacheEpochRef.current = epoch;
       postSaveVisibleTrace(items);
     }, 400);
     return () => {
       window.clearTimeout(handle);
     };
-  }, [postSaveVisibleTrace, state.sessionHistoryLoading, state.trace]);
+  }, [
+    postSaveVisibleTrace,
+    state.promptInFlight,
+    state.sessionHistoryLoading,
+    state.trace,
+    state.visibleTraceCacheEpoch,
+  ]);
 
   useEffect(() => {
     const content = traceContentRef.current;
@@ -796,9 +811,6 @@ export function AcpUiApp({
 
   return (
     <Fragment>
-      <div className="acp-ui-error" role="alert" hidden={state.errorText === null}>
-        {state.errorText}
-      </div>
       <div
         className={fileDragActive ? "acp-ui-shell acp-ui-shell--file-drag" : "acp-ui-shell"}
         style={
@@ -859,6 +871,25 @@ export function AcpUiApp({
         </main>
         <div className="acp-ui-composer-stack">
           <div className="acp-ui-content-column">
+            {state.errorText !== null ? (
+              <div
+                className={
+                  state.agentConnected
+                    ? "acp-ui-error"
+                    : "acp-ui-error acp-ui-error--disconnected"
+                }
+                role="alert"
+              >
+                {!state.agentConnected ? (
+                  <strong className="acp-ui-error__title">ACP disconnected</strong>
+                ) : null}
+                <span className="acp-ui-error__body">{state.errorText}</span>
+              </div>
+            ) : !state.agentConnected && state.sessionConfigLoading ? (
+              <div className="acp-ui-error acp-ui-error--connecting" role="status">
+                <strong className="acp-ui-error__title">Connecting to ACP…</strong>
+              </div>
+            ) : null}
             {permission !== null ? (
               <PermissionDialog
                 toolTitle={permission.toolTitle}

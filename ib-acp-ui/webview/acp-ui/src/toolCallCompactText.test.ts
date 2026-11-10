@@ -10,6 +10,7 @@ import {
   executeOutputPreview,
   isCompactGroupableTool,
   setCompactToolPathHome,
+  setCompactToolWorkspaceRoot,
   toolCallDetailKind,
 } from "./toolCallCompactText";
 
@@ -49,7 +50,7 @@ describe("toolCallDetailKind", () => {
     ).toBe("diff");
   });
 
-  it("makes a read with file text clickable for more detail", () => {
+  it("keeps a whole-file read as a summary line even when file text is present", () => {
     expect(
       toolCallDetailKind(
         toolItem({
@@ -57,6 +58,20 @@ describe("toolCallDetailKind", () => {
           kind: "read",
           subtitle: "src/app.ts",
           content: "export const value = 1;\n",
+          detailVisible: true,
+        }),
+      ),
+    ).toBe("summary");
+  });
+
+  it("makes a ranged read with file text clickable for more detail", () => {
+    expect(
+      toolCallDetailKind(
+        toolItem({
+          toolCallId: "read-range",
+          kind: "read",
+          subtitle: "src/app.ts",
+          content: "lines 12-40\nexport const value = 1;\n",
           detailVisible: true,
         }),
       ),
@@ -112,8 +127,29 @@ describe("toolCallCompactText", () => {
     );
   });
 
+  it("clips absolute paths under the workspace root to workspace-relative labels", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("/home/econn/git/vscode-extensions");
+    const item = toolItem({
+      toolCallId: "read-ws",
+      kind: "read",
+      subtitle:
+        "/home/econn/git/vscode-extensions/ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts",
+    });
+    expect(compactToolDetailLine(item)).toBe(
+      "Read ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts",
+    );
+    expect(compactToolDetailParts(item).pathSegment).toMatchObject({
+      label: "ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts",
+      title: "ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts",
+      openPath:
+        "/home/econn/git/vscode-extensions/ib-acp-ui/webview/acp-ui/src/visibleTraceTail.ts",
+    });
+  });
+
   it("shortens absolute paths under home in compact labels", () => {
     setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("");
     const item = toolItem({
       toolCallId: "read-abs",
       kind: "read",
@@ -200,6 +236,19 @@ describe("toolCallCompactText", () => {
       content: "2 match(es), complete",
     });
     expect(compactToolDetailLine(item)).toBe("Grepped 2 matches");
+  });
+
+  it("drops a leading exit 0 line from terminal output", () => {
+    const item = toolItem({
+      toolCallId: "run-exit",
+      kind: "execute",
+      subtitle: "npm test",
+      content: "exit 0\nPASS\n",
+    });
+    expect(executeOutputPreview(item, true)).toMatchObject({
+      previewLines: ["PASS"],
+      totalLineCount: 1,
+    });
   });
 
   it("previews long terminal output with a hidden-line hint and last line", () => {

@@ -78,13 +78,19 @@ async function mountView(): Promise<void> {
   if (init === null) {
     return;
   }
-  const [{ mountChatView }, { createChatStateFromInit, replayChatState }, { setCompactToolPathHome }] =
-    await Promise.all([import("./ui"), import("./chatReducer"), import("./toolCallCompactText")]);
+  const [
+    { mountChatView },
+    { createChatStateFromInit, replayChatState },
+    { setCompactToolPathHome, setCompactToolWorkspaceRoot },
+  ] = await Promise.all([import("./ui"), import("./chatReducer"), import("./toolCallCompactText")]);
   if (view !== null || pendingInit === null) {
     return;
   }
   if (init.homeDir !== undefined && init.homeDir.length > 0) {
     setCompactToolPathHome(init.homeDir);
+  }
+  if (init.workspaceRoot !== undefined && init.workspaceRoot.length > 0) {
+    setCompactToolWorkspaceRoot(init.workspaceRoot);
   }
   const initialChatState =
     pendingHistory !== undefined && pendingHistory.length > 0

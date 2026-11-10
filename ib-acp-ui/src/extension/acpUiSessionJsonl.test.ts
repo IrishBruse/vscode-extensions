@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import {
-    ACP_UI_VISIBLE_TRACE_SCHEMA,
-    parseVisibleTraceDocument,
-    parseVisibleTraceJsonl,
-    serializeVisibleTraceJsonl,
-} from "../protocol/visibleTrace";
+import { normalizeVisibleTrace } from "../protocol/visibleTrace";
 import {
     ACP_UI_SESSION_SCHEMA,
     enqueueSessionFileWrite,
@@ -18,7 +13,6 @@ import {
     sessionFileBaseNameFromTitle,
     shouldDeferJsonlHistoryReplay,
     uniqueSessionFileBaseNameFromTitle,
-    visibleTraceFileNameForSessionFile,
 } from "./acpUiSessionJsonlFormat";
 
 describe("enqueueSessionFileWrite", () => {
@@ -88,6 +82,57 @@ describe("normalizeUserMessageHistory", () => {
 });
 
 describe("serializeSessionDocument", () => {
+    it("stores the viewport trace on the session document under cache", () => {
+        const document = {
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: ["hello"],
+            cache: [
+                { type: "user" as const, text: "hi" },
+                { type: "thought" as const, text: "Planning.", durationMs: 800 },
+            ],
+        };
+        const text = serializeSessionDocument(document);
+        expect(parseSessionDocument(text)).toEqual(document);
+    });
+
+    it("does not keep a jsonl visible-trace version in cache", () => {
+        const text = JSON.stringify({
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            cache: [
+                {
+                    type: "meta",
+                    schema: "acpUi/visibleTrace/1",
+                    sessionId: "id-1",
+                    sessionFile: "Chat.acp",
+                },
+                { type: "user", text: "hi" },
+            ],
+        });
+        expect(parseSessionDocument(text)?.cache).toEqual([{ type: "user", text: "hi" }]);
+    });
+
+    it("does not parse a jsonl string stored under cache", () => {
+        const text = JSON.stringify({
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            cache: '{"type":"user","text":"hi"}\n',
+        });
+        expect(parseSessionDocument(text)?.cache).toBeUndefined();
+    });
+
     it("round-trips a session document with user message history", () => {
         const document = {
             schema: ACP_UI_SESSION_SCHEMA,
@@ -161,15 +206,8 @@ describe("isFlatSessionFilePath", () => {
     });
 });
 
-describe("visibleTraceFileNameForSessionFile", () => {
-    it("uses the session file stem with a jsonl suffix", () => {
-        expect(visibleTraceFileNameForSessionFile("Fix auth flow.acp")).toBe("Fix auth flow.jsonl");
-        expect(visibleTraceFileNameForSessionFile("Chat.acp")).toBe("Chat.jsonl");
-    });
-});
-
-describe("visible trace jsonl", () => {
-    it("round-trips trace items and drops invalid lines", () => {
+describe("session cache items", () => {
+    it("keeps trace items and drops invalid entries", () => {
         const items = [
             { type: "user" as const, text: "hi" },
             {
@@ -178,44 +216,27 @@ describe("visible trace jsonl", () => {
                 durationMs: 1200,
             },
             { type: "agent" as const, text: "Hi – what do you want to work on?" },
+            { type: "meta", schema: "acpUi/visibleTrace/1" },
+            "not an item",
         ];
-        const text = `${serializeVisibleTraceJsonl(items)}not json\n`;
-        expect(parseVisibleTraceJsonl(text)).toEqual(items);
-    });
-
-    it("writes a meta header that references the session document", () => {
-        const items = [
-            { type: "user" as const, text: "hi" },
-            { type: "thought" as const, text: "Planning.", durationMs: 800 },
-        ];
-        const text = serializeVisibleTraceJsonl(items, {
-            sessionId: "57b8da34-3117-4d12-b86d-08c1dc85bc34",
-            sessionFile: "List Folder.acp",
-        });
-        const document = parseVisibleTraceDocument(text);
-        expect(document.meta).toEqual({
-            type: "meta",
-            schema: ACP_UI_VISIBLE_TRACE_SCHEMA,
-            sessionId: "57b8da34-3117-4d12-b86d-08c1dc85bc34",
-            sessionFile: "List Folder.acp",
-        });
-        expect(document.items).toEqual(items);
+        expect(normalizeVisibleTrace(items)).toEqual(items.slice(0, 3));
     });
 
     it("round-trips an in-progress thought start time", () => {
         const items = [
             { type: "thought" as const, text: "Still thinking.", startedAtMs: 1_700_000_000_000 },
         ];
-        expect(parseVisibleTraceJsonl(serializeVisibleTraceJsonl(items))).toEqual(items);
+        expect(normalizeVisibleTrace(items)).toEqual(items);
     });
 
     it("drops non-positive thought durations", () => {
-        const text = [
-            JSON.stringify({ type: "thought", text: "A", durationMs: 0 }),
-            JSON.stringify({ type: "thought", text: "B", durationMs: -3 }),
-            JSON.stringify({ type: "thought", text: "C", durationMs: 40 }),
-        ].join("\n");
-        expect(parseVisibleTraceJsonl(text)).toEqual([
+        expect(
+            normalizeVisibleTrace([
+                { type: "thought", text: "A", durationMs: 0 },
+                { type: "thought", text: "B", durationMs: -3 },
+                { type: "thought", text: "C", durationMs: 40 },
+            ]),
+        ).toEqual([
             { type: "thought", text: "A" },
             { type: "thought", text: "B" },
             { type: "thought", text: "C", durationMs: 40 },
@@ -234,16 +255,19 @@ describe("visible trace jsonl", () => {
                 durationMs: 117,
             },
         ];
-        expect(parseVisibleTraceJsonl(serializeVisibleTraceJsonl(items))).toEqual(items);
-        const text = JSON.stringify({
-            type: "tool",
-            toolCallId: "exec2",
-            title: "Terminal",
-            kind: "execute",
-            status: "completed",
-            durationMs: 0,
-        });
-        expect(parseVisibleTraceJsonl(text)).toEqual([
+        expect(normalizeVisibleTrace(items)).toEqual(items);
+        expect(
+            normalizeVisibleTrace([
+                {
+                    type: "tool",
+                    toolCallId: "exec2",
+                    title: "Terminal",
+                    kind: "execute",
+                    status: "completed",
+                    durationMs: 0,
+                },
+            ]),
+        ).toEqual([
             {
                 type: "tool",
                 toolCallId: "exec2",
@@ -259,7 +283,7 @@ describe("visible trace jsonl", () => {
             type: "user" as const,
             text: `m-${index}`,
         }));
-        const parsed = parseVisibleTraceJsonl(serializeVisibleTraceJsonl(items));
+        const parsed = normalizeVisibleTrace(items);
         expect(parsed).toHaveLength(40);
         expect(parsed[0]).toEqual({ type: "user", text: "m-5" });
         expect(parsed[39]).toEqual({ type: "user", text: "m-44" });

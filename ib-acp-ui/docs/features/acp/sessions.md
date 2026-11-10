@@ -9,16 +9,14 @@ Agent-side context and replayed messages appear in the trace without starting a 
 If resume fails or the agent does not support load, ACP UI falls back to a new agent session.
 Composer prompt history (Arrow-Up recall) is restored from the local `.acp` file when present.
 
-Each chat is backed by a local session file that stores metadata and composer history.
-Closing and reopening the chat restores composer history from disk.
-A sibling `.jsonl` file stores the last screen of the transcript.
+Each chat is backed by a local session file that stores metadata, composer history, and the last screen of the transcript.
+Closing and reopening the chat restores composer history and that screen from disk.
 Reopening shows that screen immediately, instead of a conversation loader.
 You can scroll inside that screen while the agent loads older messages.
 When the older messages arrive, the screen you are looking at stays where it is.
 The live transcript still comes from the agent via `session/load` replay when resume succeeds.
 
-The Chats sidebar lists agent sessions when the active agent supports `session/list`, and falls back to local `.acp` files when it does not.
-Deleting a chat removes the local transcript and notifies the agent when it supports `session/delete` and the chat has a stored runtime session id.
+The sidebar is the setup pane for clients, runtime choices, and the chat open in the editor.
 
 The chat UI will also react to more agent-driven updates such as mode changes, config option updates, title sync, and usage meters.
 User message chunks during `session/load` replay already appear in the trace.
@@ -44,42 +42,29 @@ Protocol: [session setup](../../acp/protocol/v1/session-setup.mdx).
 
 ### Local persistence
 
-ACP UI uses client-owned session files (`acpUi/session/1` schema) for session metadata and composer user-message history.
+ACP UI uses client-owned session files (`acpUi/session/1` schema) for session metadata, composer user-message history, and the viewport transcript.
 
 [acpUiSessionJsonl.ts](../../../src/extension/acpUiSessionJsonl.ts) handles read and write.
-[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L55-L77) honors `ib-acp-ui.sessionsDirectory` when set.
+[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L54-L73) honors `ib-acp-ui.sessionsDirectory` when set.
 See [editor-shell](../ui/editor-shell.md).
 [acpUiSessionController.ts](../../../src/extension/acpUiSessionController.ts) passes composer `history` in the `init` bootstrap payload.
 [deleteSessionFile](../../../src/extension/acpUiSessionJsonl.ts) removes the per-session folder (or a legacy flat file only).
 
-ACP transcript events are not persisted in `.acp` files.
-[visibleTraceFileNameForSessionFile](../../../src/extension/acpUiSessionJsonlFormat.ts#L10-L15) names a `.jsonl` file beside the session file, with the same stem.
-That sibling file is the store for the last on-screen transcript and for UI-only metadata (for example thought and tool `durationMs`).
-[serializeVisibleTraceJsonl](../../../src/protocol/visibleTrace.ts#L222-L243) writes an optional `meta` header that references the session id and `.acp` file name (`acpUi/visibleTrace/1`), then one trace item per line.
-[writeVisibleTraceBesideSession](../../../src/extension/acpUiSessionJsonl.ts#L124-L150) stores that document, capped at the last screen.
-[readVisibleTraceBesideSession](../../../src/extension/acpUiSessionJsonl.ts#L112-L122) sends the items on `init`.
-Renaming or moving the `.acp` file moves the `.jsonl` with it.
-Deleting a flat session file deletes the sibling cache.
-Deleting a session folder removes both.
+The last on-screen transcript, including UI-only fields such as thought and tool `durationMs`, is the `cache` array on the session document.
+[writeSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L101-L112) stores that array, capped at the last screen.
+[readSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L96-L99) sends the items on `init`.
+There is no sibling `.jsonl` file and no `acpUi/visibleTrace` schema.
 When `session/load` succeeds, agent replay is authoritative for the transcript text.
 The webview keeps the cached screen until replay finishes, then swaps the full transcript in without moving the scroll position.
-[mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L307-L335) copies thought durations from the cached `.jsonl` onto the replayed thoughts.
-[mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L341-L372) copies command durations by `toolCallId`.
+[mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L329-L370) copies thought durations from `cache` onto the replayed thoughts.
+[mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L376-L407) copies command durations by `toolCallId`.
 On load failure, the bridge falls back to `session/new` and the cached screen stays if replay produced no items (composer history still comes from `init.history`).
 
-### List and delete
+### Setup sidebar
 
-When the active agent advertises `sessionCapabilities.list`, the Chats sidebar is driven by `session/list` for the workspace cwd.
-[refreshFromAgent](../../../src/extension/acpUiSessionsView.ts#L243-L285) calls [fetchAgentSessionsForWorkspace](../../../src/extension/acpAgentSessionLister.ts#L64-L93).
-That helper probes capabilities after `initialize` and paginates via [listAllSessions](../../../src/acp/infrastructure/acpAgentProcess.ts#L281-L296).
-When list is not advertised, the tree falls back to [listAcpUiSessionsForAgent](../../../src/extension/acpUiSessionsStore.ts#L151-L155).
-
-Deleting a chat calls [notifyAgentSessionDelete](../../../src/extension/acpUiSessionsView.ts#L457-L468).
-That invokes [deleteAgentSession](../../../src/extension/acpAgentSessionLister.ts#L98-L129) when a runtime session id is known.
-[deleteAgentSession](../../../src/extension/acpAgentSessionLister.ts#L98-L129) no-ops unless [supportsDeleteSessions](../../../src/acp/infrastructure/acpAgentProcess.ts#L263-L267) is true.
-Agent RPC failures are logged and local removal still completes.
-
-Protocol: [session list](../../acp/protocol/v1/session-list.mdx), [session delete](../../acp/protocol/v1/session-delete.mdx).
+[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L183-L244) builds Clients, Runtime, and Open chat.
+[refresh](../../../src/extension/acpUiSessionsView.ts#L201-L214) fills that tree from merged clients and the active editor.
+The open-chat rows read the active `.acp` tab through [getActiveAcpSessionUri](../../../src/extension/acpUiPanel.ts#L136-L159).
 
 ### Session updates
 

@@ -164,7 +164,7 @@
             "acpUiContainer": [
                 {
                     "id": "acpUiSessionsView",
-                    "name": "Chats",
+                    "name": "Setup",
                     "type": "tree",
                     "icon": "media/acp-icon.svg"
                 }
@@ -179,8 +179,8 @@
             },
             {
                 "command": "ib-acp-ui.focusAcpUiSessions",
-                "title": "Focus ACP UI Chats list",
-                "shortTitle": "Focus Chats list",
+                "title": "Focus ACP UI setup",
+                "shortTitle": "Focus setup",
                 "category": "IrishBruse ACP"
             },
             {
@@ -206,30 +206,37 @@
             },
             {
                 "command": "ib-acp-ui.refreshAcpUiSessions",
-                "title": "Refresh ACP UI list",
+                "title": "Refresh ACP UI setup",
                 "shortTitle": "Refresh",
                 "icon": "$(refresh)",
                 "category": "IrishBruse ACP"
             },
             {
-                "command": "ib-acp-ui.openAcpUiSession",
-                "title": "Open ACP UI session",
-                "shortTitle": "Open",
-                "icon": "$(comment-discussion)",
+                "command": "ib-acp-ui.addAcpClient",
+                "title": "Add ACP client",
+                "shortTitle": "Add client",
+                "icon": "$(server)",
                 "category": "IrishBruse ACP"
             },
             {
-                "command": "ib-acp-ui.deleteAcpUiSession",
-                "title": "Delete ACP UI",
-                "shortTitle": "Delete",
+                "command": "ib-acp-ui.editAcpClient",
+                "title": "Edit ACP client",
+                "shortTitle": "Edit",
+                "icon": "$(edit)",
+                "category": "IrishBruse ACP"
+            },
+            {
+                "command": "ib-acp-ui.removeAcpClient",
+                "title": "Remove ACP client",
+                "shortTitle": "Remove",
                 "icon": "$(trash)",
                 "category": "IrishBruse ACP"
             },
             {
-                "command": "ib-acp-ui.renameAcpUiSession",
-                "title": "Rename ACP UI",
-                "shortTitle": "Rename",
-                "icon": "$(edit)",
+                "command": "ib-acp-ui.uninstallSetupClient",
+                "title": "Uninstall ACP client",
+                "shortTitle": "Uninstall",
+                "icon": "$(trash)",
                 "category": "IrishBruse ACP"
             },
             {
@@ -292,13 +299,18 @@
             ],
             "view/item/context": [
                 {
-                    "command": "ib-acp-ui.deleteAcpUiSession",
-                    "when": "view == acpUiSessionsView && viewItem == session",
+                    "command": "ib-acp-ui.editAcpClient",
+                    "when": "view == acpUiSessionsView && viewItem == clientSettings",
                     "group": "inline"
                 },
                 {
-                    "command": "ib-acp-ui.renameAcpUiSession",
-                    "when": "view == acpUiSessionsView && viewItem == session",
+                    "command": "ib-acp-ui.removeAcpClient",
+                    "when": "view == acpUiSessionsView && viewItem == clientSettings",
+                    "group": "inline"
+                },
+                {
+                    "command": "ib-acp-ui.uninstallSetupClient",
+                    "when": "view == acpUiSessionsView && viewItem == clientRegistry",
                     "group": "inline"
                 }
             ],
@@ -309,17 +321,17 @@
                     "group": "navigation@1"
                 },
                 {
-                    "command": "ib-acp-ui.selectActiveAgent",
+                    "command": "ib-acp-ui.addAcpClient",
                     "when": "view == acpUiSessionsView",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "ib-acp-ui.refreshAcpUiSessions",
+                    "command": "ib-acp-ui.browseAgentRegistry",
                     "when": "view == acpUiSessionsView",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "ib-acp-ui.browseAgentRegistry",
+                    "command": "ib-acp-ui.refreshAcpUiSessions",
                     "when": "view == acpUiSessionsView",
                     "group": "navigation@4"
                 }
@@ -331,11 +343,6 @@
                 "key": "ctrl+t",
                 "mac": "cmd+t",
                 "when": "activeCustomEditorId == 'ibAcpUi.session' || focusedView == 'acpUiSessionsView'"
-            },
-            {
-                "command": "ib-acp-ui.renameAcpUiSession",
-                "key": "f2",
-                "when": "view == acpUiSessionsView && viewItem == session && listFocus"
             }
         ]
     },

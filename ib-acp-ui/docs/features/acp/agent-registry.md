@@ -5,7 +5,7 @@
 Browse the official ACP agent catalog from the extension and install agents without hand-editing `settings.json`.
 Installed agents appear in the same pickers as manual entries and spawn through the same path.
 
-Use **Browse Agent Registry** from the command palette or the Chats view title menu.
+Use **Browse Agent Registry** from the command palette or the Setup view title menu.
 Refresh the catalog with **Refresh Agent Registry**, or remove an install with **Uninstall Registry Agent**.
 
 Manual `ib-acp-ui.agents` entries remain an advanced override and win on matching display name.

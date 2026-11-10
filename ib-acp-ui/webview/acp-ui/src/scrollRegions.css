@@ -1,26 +1,23 @@
 .agent-trace,
 .composer-input {
-  scrollbar-width: thin;
-  scrollbar-color: var(--vscode-scrollbarSlider-background, #4e566680)
-    var(--vscode-editor-background);
+  scrollbar-color: var(--vscode-scrollbarSlider-background, #4e566680) transparent;
 }
 
 .agent-trace::-webkit-scrollbar,
 .composer-input::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
 }
 
 .agent-trace::-webkit-scrollbar-track,
 .composer-input::-webkit-scrollbar-track {
-  background: var(--vscode-editor-background);
+  background: transparent;
 }
 
 .agent-trace::-webkit-scrollbar-thumb,
 .composer-input::-webkit-scrollbar-thumb {
   background-color: var(--vscode-scrollbarSlider-background, #4e566680);
-  border-radius: var(--acp-ui-radius-full);
-  border: 2px solid var(--vscode-editor-background);
+  border-radius: 7px;
 }
 
 .agent-trace::-webkit-scrollbar-thumb:hover,
@@ -35,5 +32,5 @@
 
 .agent-trace::-webkit-scrollbar-corner,
 .composer-input::-webkit-scrollbar-corner {
-  background: var(--vscode-editor-background);
+  background: transparent;
 }

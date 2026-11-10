@@ -99,8 +99,8 @@ export async function disposeAcpUiEditorForSession(sessionId: string): Promise<v
 }
 
 /**
- * Registers ACP UI commands. Pass {@link refreshChatsList} from {@link AcpUiSessionsViewProvider.activate}
- * so new chats update the sidebar tree.
+ * Registers ACP UI commands. Pass the setup-sidebar refresh from {@link AcpUiSessionsViewProvider.activate}
+ * so a new chat updates the open-chat review.
  */
 export function registerAcpUiPanel(context: ExtensionContext, refreshChatsList: () => void): void {
     refreshChatsListHandler = refreshChatsList;
@@ -132,7 +132,8 @@ function isAcpSessionUri(uri: Uri): boolean {
     return uri.fsPath.endsWith(".acp");
 }
 
-function getActiveAcpFileUri(): Uri | undefined {
+/** Session file for the active editor tab, when that tab is an ACP chat. */
+export function getActiveAcpSessionUri(): Uri | undefined {
     const textEditor = window.activeTextEditor;
     if (textEditor !== undefined && isAcpSessionUri(textEditor.document.uri)) {
         return textEditor.document.uri;
@@ -158,7 +159,7 @@ function getActiveAcpFileUri(): Uri | undefined {
 }
 
 async function openActiveAcpFileInView(): Promise<void> {
-    const uri = getActiveAcpFileUri();
+    const uri = getActiveAcpSessionUri();
     if (uri === undefined) {
         return;
     }
@@ -171,7 +172,7 @@ async function openActiveAcpFileInView(): Promise<void> {
 }
 
 async function openActiveAcpFileInTextEditor(): Promise<void> {
-    const uri = getActiveAcpFileUri();
+    const uri = getActiveAcpSessionUri();
     if (uri === undefined) {
         return;
     }

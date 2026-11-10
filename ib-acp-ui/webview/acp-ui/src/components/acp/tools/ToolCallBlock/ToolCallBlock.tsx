@@ -8,13 +8,17 @@ import {
   windowToolCallDiffRows,
 } from "../../../../../../../src/acp/mapping/toolCallDiffLines";
 import type { TraceToolItem } from "../../../../chatReducer";
+import { isRangedReadTool } from "../../../../toolCallCompactText";
 
 const collapsiblePreviewLineCount = 3;
 
 const collapsibleDiffPreviewRowCount = 6;
 
-function toolKindUsesCollapsiblePreview(kind: string | undefined): boolean {
-  return kind === "read" || kind === "execute";
+function toolKindUsesCollapsiblePreview(item: TraceToolItem): boolean {
+  if (item.kind === "execute") {
+    return true;
+  }
+  return isRangedReadTool(item);
 }
 
 function collapsibleRegionAriaLabel(kind: string | undefined, expanded: boolean): string {
@@ -165,7 +169,7 @@ export function ToolCallBlock({
   const outputCollapsible =
     !hasDiff &&
     showOutput &&
-    toolKindUsesCollapsiblePreview(item.kind) &&
+    toolKindUsesCollapsiblePreview(item) &&
     contentLines.length > collapsiblePreviewLineCount;
   const displayedOutput =
     outputCollapsible && !expandedThis

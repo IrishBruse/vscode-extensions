@@ -34,6 +34,12 @@ import {
     type AcpUiSessionModelSelection,
     sessionModelStateToAcpUiSelection,
 } from "./sessionModels";
+import {
+    type AgentProcessExitDetails,
+    formatAcpConnectionErrorMessage,
+    formatAgentProcessExitMessage,
+    isAcpDisconnectError,
+} from "./agentDisconnect";
 
 /** Callback that forwards an extension-to-webview message to the UI host. */
 export type PostToWebview = (message: ExtensionToWebviewMessage) => void;
@@ -54,6 +60,8 @@ export type AcpSessionBridgeHooks = {
     onResumeSession?: () => void | Promise<void>;
     /** Called when `session/load` fails and the client falls back to `session/new`. */
     onLoadSessionFailed?: () => void | Promise<void>;
+    /** Called when the agent subprocess exits and the bridge is no longer usable. */
+    onAgentDisconnected?: (message: string) => void;
 };
 
 export type AcpSessionConnectOptions = {
@@ -106,9 +114,14 @@ export class AcpSessionBridge {
             rpcNdjsonSink: host.rpcNdjsonSink,
             getWorkspaceRoot: host.getWorkspaceRoot,
             onHostFilesystemRead: (path) => this.handleHostFilesystemRead(path),
-            onProcessExit: () => this.handleAgentProcessExit(),
+            onProcessExit: (details) => this.handleAgentProcessExit(details),
         });
         this.agentProcess.onSessionUpdate((params) => this.handleSessionUpdate(params));
+    }
+
+    /** Whether the underlying ACP agent subprocess is still running. */
+    isAgentAlive(): boolean {
+        return this.agentProcess.isAlive();
     }
 
     private async queuePermissionRequest(
@@ -730,7 +743,11 @@ export class AcpSessionBridge {
         if (!this.acpSessionId) {
             this.postToWebview({
                 type: "error",
-                message: "Agent session not connected.",
+                message: formatAcpConnectionErrorMessage(
+                    this.config.name,
+                    "Agent session not connected.",
+                ),
+                disconnected: true,
             });
             return;
         }
@@ -744,8 +761,13 @@ export class AcpSessionBridge {
                 stopReason: result.stopReason,
             });
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            this.postToWebview({ type: "error", message });
+            const raw = err instanceof Error ? err.message : String(err);
+            const message = formatAcpConnectionErrorMessage(this.config.name, raw);
+            this.postToWebview({
+                type: "error",
+                message,
+                disconnected: isAcpDisconnectError(raw),
+            });
         } finally {
             this.prompting = false;
         }
@@ -836,13 +858,16 @@ export class AcpSessionBridge {
         }
     }
 
-    private handleAgentProcessExit(): void {
+    private handleAgentProcessExit(details: AgentProcessExitDetails): void {
         this.acpSessionId = null;
         this.prompting = false;
+        const message = formatAgentProcessExitMessage(this.config.name, details);
         this.postToWebview({
             type: "error",
-            message: "Agent process exited unexpectedly.",
+            message,
+            disconnected: true,
         });
+        this.hooks?.onAgentDisconnected?.(message);
     }
 
     private handleSessionUpdate(params: acp.SessionNotification): void {

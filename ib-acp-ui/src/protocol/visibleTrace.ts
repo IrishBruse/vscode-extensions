@@ -1,7 +1,5 @@
 export const maxVisibleTraceItems = 40;
 
-export const ACP_UI_VISIBLE_TRACE_SCHEMA = "acpUi/visibleTrace/1" as const;
-
 type ToolCallStatus = "pending" | "in_progress" | "completed" | "failed";
 
 type ToolCallDiffRow = {
@@ -14,14 +12,6 @@ type PlanEntry = {
     content: string;
     status: string;
     priority?: string;
-};
-
-/** First-line document header; references the sibling `.acp` session file. */
-export type AcpUiVisibleTraceMeta = {
-    type: "meta";
-    schema: typeof ACP_UI_VISIBLE_TRACE_SCHEMA;
-    sessionId: string;
-    sessionFile: string;
 };
 
 export type AcpUiVisibleTraceItem =
@@ -46,11 +36,6 @@ export type AcpUiVisibleTraceItem =
           durationMs?: number;
       }
     | { type: "plan"; entries: PlanEntry[] };
-
-export type AcpUiVisibleTraceDocument = {
-    meta: AcpUiVisibleTraceMeta | null;
-    items: AcpUiVisibleTraceItem[];
-};
 
 const toolCallStatuses = new Set<ToolCallStatus>(["pending", "in_progress", "completed", "failed"]);
 
@@ -132,27 +117,6 @@ function parsePlanEntries(value: unknown): PlanEntry[] | undefined {
         });
     }
     return entries.length > 0 ? entries : undefined;
-}
-
-function parseVisibleTraceMeta(value: unknown): AcpUiVisibleTraceMeta | null {
-    if (!isRecord(value) || value.type !== "meta") {
-        return null;
-    }
-    if (value.schema !== ACP_UI_VISIBLE_TRACE_SCHEMA) {
-        return null;
-    }
-    if (typeof value.sessionId !== "string" || value.sessionId.length === 0) {
-        return null;
-    }
-    if (typeof value.sessionFile !== "string" || value.sessionFile.length === 0) {
-        return null;
-    }
-    return {
-        type: "meta",
-        schema: ACP_UI_VISIBLE_TRACE_SCHEMA,
-        sessionId: value.sessionId,
-        sessionFile: value.sessionFile,
-    };
 }
 
 function userImages(value: unknown): { data: string; mimeType: string }[] | undefined {
@@ -271,66 +235,4 @@ export function normalizeVisibleTrace(entries: unknown): AcpUiVisibleTraceItem[]
         return out.slice(out.length - maxVisibleTraceItems);
     }
     return out;
-}
-
-/**
- * One optional meta header line, then one trace item per line.
- * UI-only fields (for example thought and tool `durationMs`) live here; the `.acp` file stays the session document.
- */
-export function serializeVisibleTraceJsonl(
-    items: readonly AcpUiVisibleTraceItem[],
-    meta?: { sessionId: string; sessionFile: string },
-): string {
-    const lines: string[] = [];
-    if (meta !== undefined && meta.sessionId.length > 0 && meta.sessionFile.length > 0) {
-        const header: AcpUiVisibleTraceMeta = {
-            type: "meta",
-            schema: ACP_UI_VISIBLE_TRACE_SCHEMA,
-            sessionId: meta.sessionId,
-            sessionFile: meta.sessionFile,
-        };
-        lines.push(JSON.stringify(header));
-    }
-    for (const item of items) {
-        lines.push(JSON.stringify(item));
-    }
-    if (lines.length === 0) {
-        return "";
-    }
-    return `${lines.join("\n")}\n`;
-}
-
-/**
- * Parses a visible-trace JSONL document, including an optional meta header.
- */
-export function parseVisibleTraceDocument(text: string): AcpUiVisibleTraceDocument {
-    const rows: unknown[] = [];
-    let meta: AcpUiVisibleTraceMeta | null = null;
-    for (const line of text.split(/\r?\n/)) {
-        const trimmed = line.trim();
-        if (trimmed.length === 0) {
-            continue;
-        }
-        try {
-            const parsed: unknown = JSON.parse(trimmed);
-            if (meta === null) {
-                const header = parseVisibleTraceMeta(parsed);
-                if (header !== null) {
-                    meta = header;
-                    continue;
-                }
-            }
-            rows.push(parsed);
-        } catch {
-            continue;
-        }
-    }
-    return { meta, items: normalizeVisibleTrace(rows) };
-}
-
-/**
- * Parses a visible-trace JSONL document.
- */
-export function parseVisibleTraceJsonl(text: string): AcpUiVisibleTraceItem[] {
-    return parseVisibleTraceDocument(text).items;
 }

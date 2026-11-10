@@ -34,12 +34,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--acp-ui-space-12) var(--acp-ui-space-16) var(--acp-ui-space-10);
+  padding: var(--acp-ui-space-12) 0 var(--acp-ui-space-10);
   gap: 0;
-}
-
-.agent-root--narrow {
-  padding-inline: var(--acp-ui-space-4);
 }
 
 .agent-root--narrow .acp-ui-content-column {
