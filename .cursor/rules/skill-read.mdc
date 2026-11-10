@@ -1,0 +1,14 @@
+---
+description: Print the skill folder name when a SKILL.md file is read
+alwaysApply: true
+---
+
+# Skill reads
+
+When you read a `SKILL.md` file, print one line in the reply:
+`Used <folder-name>`
+`<folder-name>` is the directory that contains that file.
+Print the line once for that file, then follow the skill.
+Do not describe the file in place of that line.
+
+Reading `.cursor/skills/implement/SKILL.md` prints `Used implement`.
