@@ -20,8 +20,11 @@ A run of thought blocks and tool calls has extra padding so the group stays sepa
 Each code block has a copy button.
 
 Tool calls appear as one line each while the agent works.
-A file name on that line stays the file name.
-The full path appears in a tooltip after the pointer rests on the name.
+A file path on that line shows the path.
+A long path keeps the end and starts with `...` so the label stays within 50 characters.
+The path text uses the link color.
+Hover uses the link hover color.
+The full path appears in a tooltip after the pointer rests on the path.
 A markdown file path on a tool line opens that file in the editor.
 Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
@@ -79,8 +82,11 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 - Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L45-L67) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
-  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts#L496-L507) shows a write as a diff and makes other tools with extra text clickable.
-  [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows the file name and the full path in a workbench-style tooltip.
+  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts#L505-L516) shows a write as a diff and makes other tools with extra text clickable.
+  [truncatePathLabel](../../../webview/acp-ui/src/toolCallCompactText.ts#L25-L30) keeps the end of a path and prefixes `...` when the label would pass 50 characters.
+  [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.
+  The path uses `--vscode-textLink-foreground`.
+  Hover and focus use `--vscode-textLink-activeForeground`.
   A markdown `file://` path is decoded by [filesystemPathFromFileUri](../../../src/platform/fileUriPath.ts#L6-L28) and opened with the default text editor by [openWorkspacePathTarget](../../../src/platform/openWorkspacePathTarget.ts#L13-L21), including a plan file outside the workspace.
   Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx).
   Command lines show a compact duration when known (`$ ls 117ms`).

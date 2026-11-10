@@ -5,6 +5,9 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A file tool line shows the path and keeps the end when the path is long.
+  The path uses the link color, and hover uses the link hover color.
+
 ## 0.8.0
 
 - **Fix**: The plan approval dialog renders the plan as markdown.

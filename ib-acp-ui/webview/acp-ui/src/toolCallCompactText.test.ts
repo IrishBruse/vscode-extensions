@@ -94,6 +94,24 @@ describe("toolCallCompactText", () => {
     expect(parts.pathSegment?.openTarget).toBeUndefined();
   });
 
+  it("shows a long file path from the end, up to 50 characters", () => {
+    setCompactToolPathHome("/home/econn");
+    const item = toolItem({
+      toolCallId: "read-settings",
+      kind: "read",
+      subtitle: "/home/econn/git/dotfiles/home/.config/Cursor/User/settings.json",
+    });
+    expect(compactToolDetailLine(item)).toBe(
+      "Read ...dotfiles/home/.config/Cursor/User/settings.json",
+    );
+    expect(compactToolDetailParts(item).pathSegment?.label).toBe(
+      "...dotfiles/home/.config/Cursor/User/settings.json",
+    );
+    expect(compactToolDetailParts(item).pathSegment?.title).toBe(
+      "~/git/dotfiles/home/.config/Cursor/User/settings.json",
+    );
+  });
+
   it("shortens absolute paths under home in compact labels", () => {
     setCompactToolPathHome("/home/econn");
     const item = toolItem({
@@ -101,12 +119,12 @@ describe("toolCallCompactText", () => {
       kind: "read",
       subtitle: "/home/econn/git/vscode-acp-ui/AGENTS.md",
     });
-    expect(compactToolDetailLine(item)).toBe("Read AGENTS.md");
+    expect(compactToolDetailLine(item)).toBe("Read ~/git/vscode-acp-ui/AGENTS.md");
     expect(compactToolDetailParts(item)).toMatchObject({
       verb: "Read",
-      detail: "AGENTS.md",
+      detail: "~/git/vscode-acp-ui/AGENTS.md",
       pathSegment: {
-        label: "AGENTS.md",
+        label: "~/git/vscode-acp-ui/AGENTS.md",
         title: "~/git/vscode-acp-ui/AGENTS.md",
         openPath: "/home/econn/git/vscode-acp-ui/AGENTS.md",
       },
@@ -117,7 +135,7 @@ describe("toolCallCompactText", () => {
       title: "Grep",
       subtitle: "/home/econn/git/vscode-acp-ui",
     });
-    expect(compactToolDetailLine(grep)).toBe("Grepped vscode-acp-ui");
+    expect(compactToolDetailLine(grep)).toBe("Grepped ~/git/vscode-acp-ui");
     expect(compactToolDetailParts(grep).pathSegment?.title).toBe("~/git/vscode-acp-ui");
   });
 
@@ -132,8 +150,10 @@ describe("toolCallCompactText", () => {
         { kind: "added", text: "+line2" },
       ],
     });
-    expect(compactToolDetailLine(item)).toBe("Edited chatReducer.test.ts +2");
-    expect(compactToolGroupSummary([item])).toBe("Edited chatReducer.test.ts +2");
+    expect(compactToolDetailLine(item)).toBe("Edited webview/acp-ui/src/chatReducer.test.ts +2");
+    expect(compactToolGroupSummary([item])).toBe(
+      "Edited webview/acp-ui/src/chatReducer.test.ts +2",
+    );
   });
 
   it("formats read tools with optional line ranges", () => {
@@ -144,7 +164,9 @@ describe("toolCallCompactText", () => {
       subtitle: "webview/acp-ui/src/chatReducer.test.ts",
       content: "lines 218-267\nbody",
     });
-    expect(compactToolDetailLine(item)).toBe("Read chatReducer.test.ts lines 218-267");
+    expect(compactToolDetailLine(item)).toBe(
+      "Read webview/acp-ui/src/chatReducer.test.ts lines 218-267",
+    );
   });
 
   it("avoids repeating generic read titles when path is unknown", () => {
@@ -165,7 +187,7 @@ describe("toolCallCompactText", () => {
       content: 'Grepped "createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts',
     });
     expect(compactToolDetailLine(item)).toBe(
-      'Grepped "createChatStateFromInit" in chatReducer.test.ts',
+      'Grepped "createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts',
     );
   });
 
@@ -265,9 +287,9 @@ describe("toolCallCompactText", () => {
     });
     expect(compactToolDetailParts(item)).toEqual({
       verb: "Read",
-      detail: "TraceList.css",
+      detail: "webview/acp-ui/src/components/TraceList.css",
       pathSegment: {
-        label: "TraceList.css",
+        label: "webview/acp-ui/src/components/TraceList.css",
         title: "webview/acp-ui/src/components/TraceList.css",
         openPath: "webview/acp-ui/src/components/TraceList.css",
       },
@@ -294,7 +316,7 @@ describe("toolCallCompactText", () => {
       subtitle: "/home/econn/git/vscode-acp-ui",
     });
     setCompactToolPathHome("/home/econn");
-    expect(compactToolDetailLine(item)).toBe("Grepped vscode-acp-ui");
+    expect(compactToolDetailLine(item)).toBe("Grepped ~/git/vscode-acp-ui");
     expect(compactToolDetailParts(item).pathSegment?.openTarget).toBe("auto");
   });
 

@@ -19,32 +19,41 @@ function formatCompactPath(path: string): string {
   return formatPathWithTilde(trimmed, compactToolPathHome);
 }
 
+/** Visible file-tool path length, including a leading `...` when the path is longer. */
+const compactPathLabelMax = 50;
+
+function truncatePathLabel(path: string): string {
+  if (path.length <= compactPathLabelMax) {
+    return path;
+  }
+  return `...${path.slice(path.length - (compactPathLabelMax - 3))}`;
+}
+
 function shortPathDisplay(rawPath: string): {
-  short: string;
+  label: string;
   full: string;
-  hasDirectory: boolean;
+  link: boolean;
 } {
   const full = formatCompactPath(rawPath);
-  const short = basenameFromPath(full);
-  return { short, full, hasDirectory: full !== short };
+  return { label: truncatePathLabel(full), full, link: full.includes("/") };
 }
 
 function pathSegmentFromRaw(
   rawPath: string,
   options?: { prefix?: string; suffix?: string; openTarget?: "auto" },
 ): Pick<CompactToolDetailParts, "detail" | "pathSegment"> {
-  const { short, full, hasDirectory } = shortPathDisplay(rawPath);
+  const { label, full, link } = shortPathDisplay(rawPath);
   const prefix = options?.prefix ?? "";
   const suffix = options?.suffix ?? "";
-  const detail = `${prefix}${short}${suffix}`;
-  if (!hasDirectory) {
+  const detail = `${prefix}${label}${suffix}`;
+  if (!link) {
     return { detail };
   }
   return {
     detail,
     pathSegment: {
       ...(prefix.length > 0 ? { prefix } : {}),
-      label: short,
+      label,
       title: full,
       openPath: rawPath.trim(),
       ...(options?.openTarget === "auto" ? { openTarget: "auto" } : {}),

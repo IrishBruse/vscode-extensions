@@ -87,7 +87,7 @@
   .tool-call-compact-detail-row
   .tool-call-compact-detail-text
   .tool-call-compact-path-link:focus-visible {
-  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
   text-decoration: none;
 }
 
@@ -127,7 +127,7 @@
 
 .tool-call-compact-detail-text .tool-call-compact-path-link:hover,
 .tool-call-compact-detail-text .tool-call-compact-path-link:focus-visible {
-  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
   text-decoration: none;
 }
 

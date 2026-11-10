@@ -23,6 +23,20 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const LongPath: Story = {
+  args: {
+    items: [
+      {
+        ...readItem,
+        toolCallId: "read-settings",
+        subtitle: "/home/econn/git/dotfiles/home/.config/Cursor/User/settings.json",
+        content: undefined,
+      },
+    ],
+    onOpenWorkspacePath: () => undefined,
+  },
+};
+
 export const Default: Story = {
   args: {
     items: [readItem],
