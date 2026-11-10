@@ -7,6 +7,7 @@ type ToolCallStatus = "pending" | "in_progress" | "completed" | "failed";
 type ToolCallDiffRow = {
     kind: "removed" | "added" | "context";
     text: string;
+    line?: number;
 };
 
 type PlanEntry = {
@@ -104,7 +105,12 @@ function parseDiffRows(value: unknown): ToolCallDiffRow[] | undefined {
         if (typeof row.text !== "string") {
             continue;
         }
-        rows.push({ kind: row.kind, text: row.text });
+        const line = positiveInteger(row.line);
+        rows.push({
+            kind: row.kind,
+            text: row.text,
+            ...(line !== undefined ? { line } : {}),
+        });
     }
     return rows.length > 0 ? rows : undefined;
 }

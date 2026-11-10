@@ -2,7 +2,6 @@ import {
   lazy,
   Suspense,
   type ReactElement,
-  type SyntheticEvent,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -25,8 +24,9 @@ function durationLabel(durationMs: number | undefined, running: boolean): string
 }
 
 /**
- * Renders a compact model-thought chunk with markdown body text.
- * The heading toggles the thought text.
+ * Renders a model-thought chunk.
+ * The body always shows the latest three lines.
+ * The heading opens the full text.
  */
 export function AgentThoughtBlock({
   text,
@@ -58,20 +58,8 @@ export function AgentThoughtBlock({
   }, [ticking]);
   const liveDurationMs =
     ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
-  const [expanded, setExpanded] = useState(true);
-  const bodyRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
   const seenCollapseNonceRef = useRef(collapseNonce);
-
-  useLayoutEffect(() => {
-    if (!expanded) {
-      return;
-    }
-    const body = bodyRef.current;
-    if (body === null) {
-      return;
-    }
-    body.scrollTop = body.scrollHeight;
-  }, [expanded, text]);
 
   useLayoutEffect(() => {
     if (collapseNonce === seenCollapseNonceRef.current) {
@@ -81,30 +69,32 @@ export function AgentThoughtBlock({
     setExpanded(false);
   }, [collapseNonce]);
 
-  const onToggle = (event: SyntheticEvent<HTMLDetailsElement>): void => {
-    setExpanded(event.currentTarget.open);
-  };
+  const rootClass = [
+    "agent-thought-chunk",
+    expanded ? "agent-thought-chunk--open" : "",
+    className ?? "",
+  ]
+    .filter((part) => part.length > 0)
+    .join(" ");
 
   return (
-    <details
-      className={
-        className === undefined || className.length === 0
-          ? "agent-thought-chunk"
-          : `agent-thought-chunk ${className}`
-      }
-      open={expanded}
-      onToggle={onToggle}
-      aria-label="Agent thought"
-    >
-      <summary className="agent-thought-chunk-title">
+    <div className={rootClass} aria-label="Agent thought">
+      <button
+        type="button"
+        className="agent-thought-chunk-title"
+        aria-expanded={expanded}
+        onClick={() => {
+          setExpanded((open) => !open);
+        }}
+      >
         <span className="agent-thought-chunk-chevron" aria-hidden="true" />
         {durationLabel(liveDurationMs, ticking)}
-      </summary>
-      <div className="agent-thought-chunk-body" ref={bodyRef}>
+      </button>
+      <div className="agent-thought-chunk-body">
         <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>
           <AgentMarkdown text={text} />
         </Suspense>
       </div>
-    </details>
+    </div>
   );
 }

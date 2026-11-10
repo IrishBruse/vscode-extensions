@@ -368,15 +368,11 @@ export function AcpUiApp({
       ? init.workspaceLabel
       : "No workspace folder open";
 
-  const activityLabel = useMemo(
-    () => composerActivityLabel(state.promptInFlight, state.trace, state.openStreamIndex),
-    [state.promptInFlight, state.trace, state.openStreamIndex],
-  );
   const tabIndicator = agentTabIndicatorForTurn({
     promptInFlight: state.promptInFlight,
-    activityLabel,
     waitingForUser: state.askQuestionPrompt !== null,
-    waitingForConfirmation: state.permissionPrompt !== null || state.createPlanPrompt !== null,
+    waitingForPlan: state.createPlanPrompt !== null,
+    waitingForConfirmation: state.permissionPrompt !== null,
   });
   useEffect(() => {
     const animate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -987,44 +983,4 @@ function textareaAtFirstLineFirstColumn(selectionStart: number, selectionEnd: nu
     return false;
   }
   return selectionStart === 0;
-}
-
-/**
- * Short status line for the composer while a prompt is in flight (tool kind, generating, or thinking).
- */
-function composerActivityLabel(
-  promptInFlight: boolean,
-  trace: TraceItem[],
-  openStreamIndex: number | null,
-): string | null {
-  if (!promptInFlight) {
-    return null;
-  }
-  for (let i = trace.length - 1; i >= 0; i--) {
-    const item = trace[i];
-    if (item?.type === "tool" && (item.status === "pending" || item.status === "in_progress")) {
-      const k = item.kind?.toLowerCase();
-      if (k === "read") {
-        return "Reading…";
-      }
-      if (k === "edit") {
-        return "Writing…";
-      }
-      if (k === "search") {
-        return "Searching…";
-      }
-      if (k === "execute") {
-        return "Running…";
-      }
-      const title = item.title.trim();
-      return title.length > 0 ? `${title}…` : "Using tools…";
-    }
-  }
-  if (openStreamIndex !== null) {
-    const open = trace[openStreamIndex];
-    if (open?.type === "agent") {
-      return "Generating…";
-    }
-  }
-  return "Thinking…";
 }

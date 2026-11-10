@@ -186,14 +186,14 @@ export function computeToolCallDiffRows(oldText: string, newText: string): ToolC
             break;
         }
         if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
-            rows.unshift({ kind: "context", text: oldLines[i - 1]! });
+            rows.unshift({ kind: "context", text: oldLines[i - 1]!, line: j });
             i -= 1;
             j -= 1;
         } else if (j > 0 && (i === 0 || lcs[i]![j - 1]! >= lcs[i - 1]![j]!)) {
-            rows.unshift({ kind: "added", text: newLines[j - 1]! });
+            rows.unshift({ kind: "added", text: newLines[j - 1]!, line: j });
             j -= 1;
         } else if (i > 0) {
-            rows.unshift({ kind: "removed", text: oldLines[i - 1]! });
+            rows.unshift({ kind: "removed", text: oldLines[i - 1]!, line: i });
             i -= 1;
         }
     }

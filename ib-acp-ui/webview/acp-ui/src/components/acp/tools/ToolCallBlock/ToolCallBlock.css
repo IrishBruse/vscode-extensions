@@ -230,6 +230,18 @@
   min-width: 0;
 }
 
+.tool-call-diff-line-number {
+  flex: 0 0 auto;
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  color: var(
+    --vscode-editorLineNumber-foreground,
+    var(--vscode-descriptionForeground, var(--acp-ui-text-secondary))
+  );
+}
+
 .tool-call-diff-text {
   flex: 1 1 auto;
   min-width: 0;

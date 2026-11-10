@@ -5,6 +5,10 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: File edit previews show the line number for each row.
+- **Change**: The editor tab keeps the braille spinner during tool calls, and switches the mark for a question, a plan, or a permission prompt.
+- **Fix**: Thought timers stop when the turn errors or the agent disconnects.
+- **Change**: A thought block always shows the latest three lines, and opening it shows the full text.
 - **Change**: A file tool line shows the path and keeps the end when the path is long.
   The path uses the link color, and hover uses the link hover color.
 

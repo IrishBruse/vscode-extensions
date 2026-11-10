@@ -83,24 +83,21 @@ export function formatAgentTabTitle(
 
 export function agentTabIndicatorForTurn(turn: {
     promptInFlight: boolean;
-    activityLabel: string | null;
     waitingForUser: boolean;
     waitingForConfirmation: boolean;
+    waitingForPlan?: boolean;
 }): AgentTabIndicator | null {
     if (turn.waitingForUser) {
         return "waiting-for-user";
+    }
+    if (turn.waitingForPlan === true) {
+        return "planning";
     }
     if (turn.waitingForConfirmation) {
         return "waiting-for-confirmation";
     }
     if (!turn.promptInFlight) {
         return null;
-    }
-    if (turn.activityLabel === "Running…") {
-        return "shell-running";
-    }
-    if (turn.activityLabel === "Writing…") {
-        return "reviewing";
     }
     return "generating";
 }

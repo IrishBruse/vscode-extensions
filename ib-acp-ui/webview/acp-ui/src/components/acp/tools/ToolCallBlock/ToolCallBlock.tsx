@@ -307,6 +307,7 @@ export function ToolCallBlock({
                         : "tool-call-diff-line tool-call-diff-line--context"
                   }
                 >
+                  <span className="tool-call-diff-line-number">{row.line ?? ""}</span>
                   <span className="tool-call-diff-text">{row.text}</span>
                 </div>
               ))}
@@ -332,6 +333,7 @@ export function ToolCallBlock({
                         : "tool-call-diff-line tool-call-diff-line--context"
                   }
                 >
+                  <span className="tool-call-diff-line-number">{row.line ?? ""}</span>
                   <span className="tool-call-diff-text">{row.text}</span>
                 </div>
               ))}

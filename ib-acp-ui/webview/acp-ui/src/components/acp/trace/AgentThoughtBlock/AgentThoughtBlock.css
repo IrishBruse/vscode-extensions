@@ -11,32 +11,25 @@
   display: flex;
   align-items: center;
   gap: var(--acp-ui-space-6);
+  width: 100%;
   margin: 0 0 var(--acp-ui-space-6);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-heading);
   font-weight: var(--acp-ui-font-weight-regular);
   color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
+  text-align: left;
   cursor: pointer;
-  list-style: none;
   user-select: none;
-}
-
-.agent-thought-chunk-title::-webkit-details-marker {
-  display: none;
-}
-
-.agent-thought-chunk-title::marker {
-  content: "";
 }
 
 .agent-thought-chunk-title:focus-visible {
   outline: var(--acp-ui-stroke-width) solid var(--acp-ui-focus-border);
   outline-offset: 2px;
   border-radius: var(--acp-ui-radius-sm);
-}
-
-.agent-thought-chunk:not([open]) .agent-thought-chunk-title {
-  margin-bottom: 0;
 }
 
 .agent-thought-chunk-chevron {
@@ -51,17 +44,27 @@
   transform: rotate(0deg);
 }
 
-.agent-thought-chunk[open] .agent-thought-chunk-chevron {
+.agent-thought-chunk--open .agent-thought-chunk-chevron {
   transform: rotate(90deg);
 }
 
 .agent-thought-chunk-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 3lh;
   margin: 0;
   padding-left: var(--acp-ui-trace-content-indent);
-  max-height: 3lh;
-  overflow-y: auto;
+  overflow: hidden;
   font-size: var(--acp-ui-font-size-small);
+  line-height: var(--acp-ui-line-height-body);
   color: var(--vscode-descriptionForeground, var(--acp-ui-text-secondary));
+}
+
+.agent-thought-chunk--open .agent-thought-chunk-body {
+  display: block;
+  height: auto;
+  overflow: visible;
 }
 
 .agent-thought-chunk-body .agent-markdown,
@@ -81,9 +84,8 @@
   font-weight: var(--acp-ui-font-weight-regular);
 }
 
-.agent-thought-chunk-body .agent-markdown :is(p, ul, ol) {
-  margin-top: 0;
-  margin-bottom: 0.2em;
+.agent-thought-chunk-body .agent-markdown :is(p, ul, ol, li) {
+  margin: 0;
 }
 
 .agent-thought-chunk-body .agent-markdown :is(ul, ol) {

@@ -299,21 +299,26 @@ function resolveToolDurationMs(
 }
 
 function finalizeOpenThoughtDuration(state: ChatState): ChatState {
-  const open = state.openStreamIndex;
-  if (open === null || state.thoughtStartedAtMs === null) {
-    return state;
+  const now = Date.now();
+  let changed = false;
+  const trace = state.trace.map((item): TraceItem => {
+    if (
+      item.type !== "thought" ||
+      item.durationMs !== undefined ||
+      item.startedAtMs === undefined
+    ) {
+      return item;
+    }
+    changed = true;
+    const durationMs = now - item.startedAtMs;
+    if (!(durationMs > 0)) {
+      return { type: "thought", text: item.text };
+    }
+    return { type: "thought", text: item.text, durationMs };
+  });
+  if (!changed) {
+    return state.thoughtStartedAtMs === null ? state : { ...state, thoughtStartedAtMs: null };
   }
-  const existing = state.trace[open];
-  if (existing?.type !== "thought" || existing.durationMs !== undefined) {
-    return state;
-  }
-  const startedAtMs = existing.startedAtMs ?? state.thoughtStartedAtMs;
-  const durationMs = Date.now() - startedAtMs;
-  if (!(durationMs > 0)) {
-    return { ...state, thoughtStartedAtMs: null };
-  }
-  const trace = state.trace.slice();
-  trace[open] = { type: "thought", text: existing.text, durationMs };
   return { ...state, trace, thoughtStartedAtMs: null };
 }
 
@@ -1289,8 +1294,19 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
     case "error": {
       const base = finalizeOpenThoughtDuration(state);
+      const replay =
+        state.viewportCacheActive && state.sessionHistoryLoading
+          ? finalizeOpenThoughtDuration(replayShadow(state))
+          : null;
       return {
         ...base,
+        ...(replay !== null
+          ? {
+              replayTrace: replay.trace,
+              replayOpenStreamIndex: null,
+              replayThoughtStartedAtMs: null,
+            }
+          : {}),
         openStreamIndex: null,
         errorText: action.message,
         promptInFlight: false,

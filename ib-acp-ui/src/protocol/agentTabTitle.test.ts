@@ -29,7 +29,6 @@ describe("agent tab title", () => {
         expect(
             agentTabIndicatorForTurn({
                 promptInFlight: true,
-                activityLabel: "Thinking…",
                 waitingForUser: false,
                 waitingForConfirmation: false,
             }),
@@ -37,23 +36,14 @@ describe("agent tab title", () => {
         expect(
             agentTabIndicatorForTurn({
                 promptInFlight: true,
-                activityLabel: "Running…",
                 waitingForUser: false,
                 waitingForConfirmation: false,
+                waitingForPlan: true,
             }),
-        ).toBe("shell-running");
+        ).toBe("planning");
         expect(
             agentTabIndicatorForTurn({
                 promptInFlight: true,
-                activityLabel: "Writing…",
-                waitingForUser: false,
-                waitingForConfirmation: false,
-            }),
-        ).toBe("reviewing");
-        expect(
-            agentTabIndicatorForTurn({
-                promptInFlight: true,
-                activityLabel: "Thinking…",
                 waitingForUser: true,
                 waitingForConfirmation: false,
             }),
@@ -61,7 +51,6 @@ describe("agent tab title", () => {
         expect(
             agentTabIndicatorForTurn({
                 promptInFlight: false,
-                activityLabel: null,
                 waitingForUser: false,
                 waitingForConfirmation: true,
             }),
@@ -69,7 +58,6 @@ describe("agent tab title", () => {
         expect(
             agentTabIndicatorForTurn({
                 promptInFlight: false,
-                activityLabel: null,
                 waitingForUser: false,
                 waitingForConfirmation: false,
             }),

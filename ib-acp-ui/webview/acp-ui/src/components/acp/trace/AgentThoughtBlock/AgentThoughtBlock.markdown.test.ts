@@ -29,6 +29,13 @@ describe("AgentThoughtBlock markdown", () => {
     expect(html).not.toContain("<pre");
   });
 
+  it("shows the body on the three-line preview until it is opened", async () => {
+    const html = await renderThought("Done.");
+    expect(html).toContain("agent-thought-chunk-body");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("agent-thought-chunk--open");
+  });
+
   it("says Thinking while the thought is running and Thought once it finishes", async () => {
     const running = await renderThought("Still going.", { startedAtMs: Date.now() - 5_700 });
     expect(running).toContain("Thinking for");

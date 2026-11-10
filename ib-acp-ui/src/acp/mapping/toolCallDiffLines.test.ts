@@ -13,7 +13,12 @@ describe("computeToolCallDiffRows", () => {
         );
 
         expect(changedAt).toBeGreaterThanOrEqual(0);
-        expect(rows.some((row) => row.kind === "removed" && row.text === "line 40")).toBe(true);
+        expect(rows.find((row) => row.kind === "removed" && row.text === "line 40")?.line).toBe(41);
+        expect(rows.find((row) => row.kind === "added" && row.text === "changed line")?.line).toBe(
+            41,
+        );
+        expect(rows.find((row) => row.kind === "context" && row.text === "line 39")?.line).toBe(40);
+        expect(rows.find((row) => row.kind === "context" && row.text === "line 41")?.line).toBe(42);
         expect(rows.some((row) => row.text === "line 0")).toBe(false);
         expect(rows.some((row) => row.text === "line 79")).toBe(false);
         expect(rows.length).toBeLessThanOrEqual(12);

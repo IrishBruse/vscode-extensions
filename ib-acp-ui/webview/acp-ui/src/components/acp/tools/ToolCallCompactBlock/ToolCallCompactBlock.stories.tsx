@@ -55,9 +55,9 @@ export const Diff: Story = {
         subtitle: "src/extension.ts",
         detailVisible: true,
         diffRows: [
-          { kind: "context", text: "export function activate(): void {" },
-          { kind: "removed", text: '  window.showInformationMessage("ready");' },
-          { kind: "added", text: '  window.showInformationMessage("ACP UI ready");' },
+          { kind: "context", text: "export function activate(): void {", line: 12 },
+          { kind: "removed", text: '  window.showInformationMessage("ready");', line: 13 },
+          { kind: "added", text: '  window.showInformationMessage("ACP UI ready");', line: 13 },
         ],
       },
     ],

@@ -38,6 +38,8 @@ export type ToolCallStatus = "pending" | "in_progress" | "completed" | "failed";
 export type ToolCallDiffRow = {
     kind: "removed" | "added" | "context";
     text: string;
+    /** 1-based file line. Removed rows use the old file. Added and context rows use the new file. */
+    line?: number;
 };
 
 /** Slash commands advertised by the agent via `available_commands_update`. */

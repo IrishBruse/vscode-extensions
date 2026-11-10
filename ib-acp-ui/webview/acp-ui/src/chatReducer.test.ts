@@ -538,6 +538,66 @@ describe("chatReducer", () => {
     expect(thought).toEqual({ type: "thought", text: "Still thinking.", startedAtMs });
   });
 
+  it("stops a running thought timer on error or disconnect", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "hi" });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Thinking…" });
+    vi.advanceTimersByTime(800);
+    state = chatReducer(state, {
+      type: "error",
+      message: "Agent process exited unexpectedly.",
+    });
+    expect(state.promptInFlight).toBe(false);
+    expect(state.thoughtStartedAtMs).toBeNull();
+    expect(state.trace[1]).toEqual({
+      type: "thought",
+      text: "Thinking…",
+      durationMs: 800,
+    });
+
+    const startedAtMs = Date.now() - 2_500;
+    state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      visibleTrace: [{ type: "thought", text: "Still thinking.", startedAtMs }],
+    });
+    state = chatReducer(state, {
+      type: "error",
+      message: "Agent process exited unexpectedly.",
+    });
+    expect(state.thoughtStartedAtMs).toBeNull();
+    expect(state.trace[0]).toEqual({
+      type: "thought",
+      text: "Still thinking.",
+      durationMs: 2_500,
+    });
+
+    state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      sessionHistoryLoading: true,
+      visibleTrace: [{ type: "user", text: "hi" }],
+    });
+    state = chatReducer(state, { type: "appendUserText", text: "hi" });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Thinking…" });
+    vi.advanceTimersByTime(500);
+    state = chatReducer(state, {
+      type: "error",
+      message: "Agent process exited unexpectedly.",
+    });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    expect(state.thoughtStartedAtMs).toBeNull();
+    expect(state.trace[1]).toEqual({
+      type: "thought",
+      text: "Thinking…",
+      durationMs: 500,
+    });
+  });
+
   it("records thought start time on the trace item so it can be saved", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
