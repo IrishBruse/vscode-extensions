@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { describe, expect, it, vi } from "vite-plus/test";
 import { killListeningProcess, labelForListener, listListeningPorts } from "./listListeningPorts";
 
@@ -37,6 +39,7 @@ describe("listListeningPorts", () => {
                 address: "127.0.0.1:5175",
                 pid: 4653,
                 processName: "MainThread",
+                cwd: "/home/econn/git/irishbruse-utilities/src/markdownInline",
                 label: "markdownInline",
             },
         ]);
@@ -63,14 +66,23 @@ describe("listListeningPorts", () => {
         ]);
     });
 
-    it("hides listeners that have no process id", async () => {
+    it("keeps listeners that have no process id", async () => {
         const ports = await listListeningPorts(async () => ({
             stdout: "LISTEN 0 4096 127.0.0.1:631 0.0.0.0:*\n",
             stderr: "",
             status: 0,
         }));
 
-        expect(ports).toEqual([]);
+        expect(ports).toEqual([
+            {
+                port: 631,
+                address: "127.0.0.1:631",
+                pid: undefined,
+                processName: undefined,
+                cwd: undefined,
+                label: "",
+            },
+        ]);
     });
 });
 

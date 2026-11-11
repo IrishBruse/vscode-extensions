@@ -12,7 +12,7 @@ The [GitHub CLI](https://cli.github.com/) (`gh`) must be on your `PATH` for pull
 1. Install the extension.
 2. Open a git repository for **Git Helpers** in the Source Control sidebar.
 3. Open the **Snippet Manager** activity bar to manage snippets.
-4. Open the **Localhost** view to browse local websites.
+4. Open the **Localhost** view to see listening ports.
 
 ## Features
 
@@ -40,11 +40,13 @@ The title bar opens the GitHub repository and refreshes the panel.
 
 ### Localhost
 
-The **Localhost** panel lists local websites that are listening.
+The **Localhost** panel lists every TCP port that is listening on this computer.
 
+- The row shows the page title or folder, the port, the process, and the bind address.
+- The tooltip shows the URL, the process id, and the working directory.
 - Click a row to open it in the browser.
 - Refresh from the title bar.
-- Stop the process on that port with the inline action.
+- Stop the process on that port with the inline action when the port has a process id.
 
 ### Explorer and Source Control actions
 

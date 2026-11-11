@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import http from "http";
 import type { AddressInfo } from "net";
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -8,7 +10,7 @@ import {
     probeIsWebsite,
     probeWebsite,
     responseLooksLikeWebsite,
-    selectWebsites,
+    annotateListeningPorts,
 } from "./websiteProbe";
 
 function port(
@@ -59,8 +61,8 @@ describe("pageTitle", () => {
     });
 });
 
-describe("selectWebsites", () => {
-    it("probes each listener once and uses the page title", async () => {
+describe("annotateListeningPorts", () => {
+    it("probes each listener once and keeps every port", async () => {
         const probe = vi.fn(async (url: string) => ({
             website: url.endsWith(":5175"),
             title: url.endsWith(":5175") ? "Inline Markdown" : undefined,
@@ -71,11 +73,13 @@ describe("selectWebsites", () => {
             port({ port: 6463, pid: 2, label: "Discord" }),
         ];
 
-        await expect(selectWebsites(listeners, cache, probe)).resolves.toEqual([
-            { ...listeners[0], label: "Inline Markdown" },
+        await expect(annotateListeningPorts(listeners, cache, probe)).resolves.toEqual([
+            { ...listeners[0], website: true, title: "Inline Markdown" },
+            { ...listeners[1], website: false, title: undefined },
         ]);
-        await expect(selectWebsites(listeners, cache, probe)).resolves.toEqual([
-            { ...listeners[0], label: "Inline Markdown" },
+        await expect(annotateListeningPorts(listeners, cache, probe)).resolves.toEqual([
+            { ...listeners[0], website: true, title: "Inline Markdown" },
+            { ...listeners[1], website: false, title: undefined },
         ]);
 
         expect(probe).toHaveBeenCalledTimes(2);
@@ -86,17 +90,15 @@ describe("selectWebsites", () => {
         const cache = new Map<string, { website: boolean; title?: string }>();
         const site = port({ port: 5175, pid: 1 });
 
-        await selectWebsites([site], cache, probe);
-        await selectWebsites([], cache, probe);
+        await annotateListeningPorts([site], cache, probe);
+        await annotateListeningPorts([], cache, probe);
 
         expect(cache.size).toBe(0);
-        await selectWebsites([site], cache, probe);
+        await annotateListeningPorts([site], cache, probe);
         expect(probe).toHaveBeenCalledTimes(2);
     });
-});
 
-describe("selectWebsites", () => {
-    it("skips browsers and editor utilities without probing them", async () => {
+    it("keeps browsers and editor utilities without probing them", async () => {
         const probe = vi.fn(async () => ({ website: true, title: "Should not show" }));
         const cache = new Map<string, { website: boolean; title?: string }>();
         const listeners = [
@@ -105,7 +107,9 @@ describe("selectWebsites", () => {
             port({ port: 6011, pid: 5, processName: "code", label: "docs" }),
         ];
 
-        await expect(selectWebsites(listeners, cache, probe)).resolves.toEqual([]);
+        await expect(annotateListeningPorts(listeners, cache, probe)).resolves.toEqual(
+            listeners.map((listener) => ({ ...listener, website: false, title: undefined })),
+        );
         expect(probe).not.toHaveBeenCalled();
         expect(isLocalDevServer("MainThread")).toBe(true);
     });

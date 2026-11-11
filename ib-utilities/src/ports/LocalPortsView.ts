@@ -12,19 +12,22 @@ import {
 } from "vscode";
 import { Commands, Views } from "../constants";
 import { registerCommandIB } from "../lib/vscode/vscode";
+import { formatListeningPort } from "./formatListeningPort";
 import { killListeningProcess, listListeningPorts, type ListeningPort } from "./listListeningPorts";
 import { listeningHttpUrl } from "./listeningHttpUrl";
-import { selectWebsites, type WebsiteHit } from "./websiteProbe";
+import { annotateListeningPorts, type WebsiteHit } from "./websiteProbe";
 
 const POLL_MS = 2000;
 
 class PortTreeItem extends TreeItem {
     constructor(port: ListeningPort) {
-        super(port.label || String(port.port), TreeItemCollapsibleState.None);
-        this.id = `port:${port.port}:${port.pid}`;
-        this.description = String(port.port);
-        this.contextValue = "port";
-        this.tooltip = listeningHttpUrl(port.address, port.port);
+        const text = formatListeningPort(port);
+        super(text.label, TreeItemCollapsibleState.None);
+        this.id = `port:${port.port}:${port.pid ?? "none"}`;
+        this.description = text.description;
+        this.tooltip = text.tooltip;
+        this.contextValue = port.pid !== undefined ? "port" : "port-no-process";
+        this.iconPath = new ThemeIcon(port.website ? "globe" : "plug");
         this.command = {
             title: "Open",
             command: Commands.OpenLocalPort,
@@ -101,7 +104,7 @@ export class LocalPortsViewProvider implements TreeDataProvider<TreeItem> {
             return [new MessageTreeItem(this.loadError, "error")];
         }
         if (this.ports.length === 0) {
-            return [new MessageTreeItem("No websites")];
+            return [new MessageTreeItem("No listening ports")];
         }
         return this.ports.map((port) => new PortTreeItem(port));
     }
@@ -128,11 +131,11 @@ export class LocalPortsViewProvider implements TreeDataProvider<TreeItem> {
         const generation = ++this.generation;
         try {
             const ports = await listListeningPorts();
-            const websites = await selectWebsites(ports, this.websiteCache);
+            const annotated = await annotateListeningPorts(ports, this.websiteCache);
             if (generation !== this.generation) {
                 return;
             }
-            this.ports = websites;
+            this.ports = annotated;
             this.loadError = undefined;
         } catch (error) {
             if (generation !== this.generation) {
@@ -170,7 +173,12 @@ export class LocalPortsViewProvider implements TreeDataProvider<TreeItem> {
     private publish(): void {
         const signature = this.loadError
             ? `error:${this.loadError}`
-            : this.ports.map((port) => `${port.pid}:${port.port}:${port.label}`).join("|");
+            : this.ports
+                  .map(
+                      (port) =>
+                          `${port.pid}:${port.port}:${port.label}:${port.title ?? ""}:${port.processName ?? ""}:${port.address}:${port.website ? 1 : 0}`,
+                  )
+                  .join("|");
         if (signature === this.signature) {
             return;
         }

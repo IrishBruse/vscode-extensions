@@ -5,6 +5,9 @@ import { parseLsofListeners, parseSsListeners, type ParsedListener } from "./par
 
 export type ListeningPort = ParsedListener & {
     label: string;
+    cwd?: string;
+    title?: string;
+    website?: boolean;
 };
 
 type RunCommand = (command: string, args?: readonly string[]) => Promise<Process>;
@@ -49,12 +52,14 @@ export async function listListeningPorts(
     readCwd: (pid: number) => string | undefined = readProcCwd,
 ): Promise<ListeningPort[]> {
     const listeners = await readListeners(run);
-    return listeners
-        .filter((listener) => listener.pid !== undefined)
-        .map((listener) => ({
+    return listeners.map((listener) => {
+        const cwd = listener.pid !== undefined ? readCwd(listener.pid) : undefined;
+        return {
             ...listener,
-            label: labelForListener(listener.processName, readCwd(listener.pid!)),
-        }));
+            cwd,
+            label: labelForListener(listener.processName, cwd),
+        };
+    });
 }
 
 async function readListeners(run: RunCommand): Promise<ParsedListener[]> {

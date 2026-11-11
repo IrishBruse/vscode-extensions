@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: The Localhost panel lists every listening port and shows the process, the address, and the page title.
+
 ## 0.31.0
 
 - **Add**: Terminal paste command again (clipboard image detection for the terminal, including Linux Wayland).

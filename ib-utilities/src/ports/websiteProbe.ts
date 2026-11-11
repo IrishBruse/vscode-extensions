@@ -56,10 +56,10 @@ export function pageTitle(html: string): string | undefined {
 }
 
 export function listenerKey(port: Pick<ListeningPort, "pid" | "port">): string {
-    return `${port.pid}:${port.port}`;
+    return `${port.pid ?? "none"}:${port.port}`;
 }
 
-export async function selectWebsites(
+export async function annotateListeningPorts(
     ports: readonly ListeningPort[],
     cache: Map<string, WebsiteHit>,
     probe: (url: string) => Promise<WebsiteHit> = probeWebsite,
@@ -90,12 +90,12 @@ export async function selectWebsites(
         }),
     );
 
-    return ports.flatMap((port) => {
+    return ports.map((port) => {
         const hit = cache.get(listenerKey(port));
-        if (!hit?.website) {
-            return [];
+        if (!hit) {
+            return port;
         }
-        return [{ ...port, label: hit.title || port.label }];
+        return { ...port, website: hit.website, title: hit.title };
     });
 }
 
