@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { SubagentTraceItem } from "../../../../chatReducer";
+import { SubagentRunTimer } from "./SubagentRunTimer";
 import { subagentStatusLabel } from "./subagentStatus";
 import "./SubagentSessionBlock.css";
 
@@ -28,7 +29,13 @@ export function SubagentSessionBlock({
       aria-label={`Open subagent ${title}, ${status}`}
       onClick={() => onOpen?.(item.sessionId)}
     >
-      <span className="subagent-session-status">{status}</span>
+      <span className="subagent-session-status">
+        {item.state === "running" && item.startedAtMs !== undefined ? (
+          <SubagentRunTimer startedAtMs={item.startedAtMs} />
+        ) : (
+          status
+        )}
+      </span>
       <span className="subagent-session-title">{title}</span>
       {item.description.trim().length > 0 ? (
         <span className="subagent-session-description">{item.description}</span>

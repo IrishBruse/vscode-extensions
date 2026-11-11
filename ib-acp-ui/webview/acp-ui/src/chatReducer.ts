@@ -15,6 +15,7 @@ import {
   canonicalToolCallId,
   resolveToolIndexByCallId,
 } from "../../../src/acp/mapping/canonicalToolCallId";
+import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import type {
     AcpUiPromptImage,
     AcpUiRecentSession,
@@ -48,7 +49,7 @@ export type TraceToolItem = {
   diffRows: ToolCallDiffRow[] | undefined;
   detailVisible: boolean;
   durationMs?: number;
-  /** Epoch ms while a bash tool is still running. */
+  /** Epoch ms while a bash command or subagent is still running. */
   startedAtMs?: number;
   /** Set when a linked subagent stops for a reason other than a normal end. */
   taskStopReason?: string;
@@ -61,6 +62,8 @@ export type SubagentTraceItem = {
   description: string;
   state: SubagentWorkState | null;
   stopReason: string | null;
+  /** Epoch ms while this child is running. */
+  startedAtMs?: number;
 };
 
 export type TraceItem =
@@ -300,10 +303,25 @@ export function runningBashStartedAtMs(trace: readonly TraceItem[]): number | un
   return undefined;
 }
 
+function showsLiveRunClock(
+  kind: string | undefined,
+  title: string,
+  subtitle: string | undefined,
+  content: string | undefined,
+): boolean {
+  if (isBashToolKind(kind)) {
+    return true;
+  }
+  return subagentTaskViewFromTool({ title, subtitle, content }) !== undefined;
+}
+
 function trackToolClock(
   toolStartedAtMsById: Map<string, number>,
   toolCallId: string,
   kind: string | undefined,
+  title: string,
+  subtitle: string | undefined,
+  content: string | undefined,
   status: ToolCallStatus,
   knownStart: number | undefined,
   resolvedDuration: number | undefined,
@@ -316,7 +334,7 @@ function trackToolClock(
     knownStart === undefined
       ? rememberToolStartedAt(toolStartedAtMsById, toolCallId, startedAtMs)
       : toolStartedAtMsById;
-  if (!isBashToolKind(kind)) {
+  if (!showsLiveRunClock(kind, title, subtitle, content)) {
     return { toolStartedAtMsById: next };
   }
   return { toolStartedAtMsById: next, startedAtMs };
@@ -778,6 +796,9 @@ function appendToolCall(
         state.toolStartedAtMsById,
         id,
         mergedKind,
+        title,
+        mergedSubtitle,
+        mergedContent,
         mergedStatus,
         knownStart,
         resolvedDuration,
@@ -816,6 +837,9 @@ function appendToolCall(
     state.toolStartedAtMsById,
     id,
     kind,
+    title,
+    subtitle,
+    content,
     newStatus,
     knownStart,
     resolvedDuration,
@@ -886,6 +910,9 @@ function updateToolCall(
       state.toolStartedAtMsById,
       id,
       inferredKind,
+      item.title,
+      mergedSubtitle,
+      mergedContent,
       status,
       knownStart,
       resolvedDuration,
@@ -927,6 +954,9 @@ function updateToolCall(
     state.toolStartedAtMsById,
     id,
     inferredKind,
+    "",
+    subtitle,
+    mergedContent,
     status,
     knownStart,
     resolvedDuration,
@@ -1119,12 +1149,16 @@ function patchSubagent(
   item: SubagentTraceItem,
   action: Extract<ChatAction, { type: "subagentUpdate" }>,
 ): SubagentTraceItem {
+  const state = action.state === undefined ? item.state : action.state;
+  const running = state === "running";
+  const { startedAtMs: previousStart, ...rest } = item;
   return {
-    ...item,
+    ...rest,
     title: action.title === undefined ? item.title : (action.title ?? ""),
     description: action.description === undefined ? item.description : (action.description ?? ""),
-    state: action.state === undefined ? item.state : action.state,
+    state,
     stopReason: action.stopReason === undefined ? item.stopReason : action.stopReason,
+    ...(running ? { startedAtMs: previousStart ?? Date.now() } : {}),
   };
 }
 
@@ -1136,18 +1170,51 @@ function rememberSubagentTool(
   if (toolCallId === undefined || toolCallId.length === 0 || sessionId.length === 0) {
     return map;
   }
+  const key = canonicalToolCallId(toolCallId);
+  const existing = map.get(key);
+  if (existing === sessionId) {
+    return map;
+  }
+  // Cursor's live session id is `agentId.run`. A later `cursor/task` agentId must not replace it.
+  if (existing !== undefined && existing.startsWith(`${sessionId}.`)) {
+    return map;
+  }
   const next = new Map(map);
-  next.set(canonicalToolCallId(toolCallId), sessionId);
+  next.set(key, sessionId);
   return next;
+}
+
+function sessionIdsReferToSameChild(stored: string, incoming: string): boolean {
+  return (
+    stored === incoming || incoming.startsWith(`${stored}.`) || stored.startsWith(`${incoming}.`)
+  );
 }
 
 function sessionHasToolLink(map: Map<string, string>, sessionId: string): boolean {
   for (const id of map.values()) {
-    if (id === sessionId) {
+    if (sessionIdsReferToSameChild(id, sessionId)) {
       return true;
     }
   }
   return false;
+}
+
+/** Child transcript for a task, including Cursor's `agentId.run` session id. */
+export function activityTraceForTool(state: ChatState, toolCallId: string): readonly TraceItem[] {
+  const sessionId = state.subagentSessionByToolId.get(canonicalToolCallId(toolCallId));
+  if (sessionId === undefined) {
+    return [];
+  }
+  const exact = state.subagentActivity.get(sessionId);
+  if (exact !== undefined) {
+    return exact.trace;
+  }
+  for (const [id, bucket] of state.subagentActivity) {
+    if (sessionIdsReferToSameChild(sessionId, id)) {
+      return bucket.trace;
+    }
+  }
+  return [];
 }
 
 type LinkedToolPatch = {
@@ -1204,11 +1271,13 @@ function applyLinkedToolStatus(
       : patch.clearStopReason
         ? undefined
         : current.taskStopReason;
+  const running = patch.status === "pending" || patch.status === "in_progress";
   const next = trace.slice();
   next[idx] = {
     ...current,
     status: patch.status,
     taskStopReason,
+    ...(running ? { startedAtMs: current.startedAtMs ?? Date.now() } : { startedAtMs: undefined }),
     ...(patch.clearDuration ? { durationMs: undefined } : {}),
   };
   return next;
@@ -1377,7 +1446,10 @@ function applySubagentActivity(
     state.trace.some((item) => item.type === "subagent" && item.sessionId === sessionId);
   const trace = hasCard
     ? state.trace
-    : [...state.trace, { ...blankSubagent(sessionId), state: "running" as const }];
+    : [
+        ...state.trace,
+        { ...blankSubagent(sessionId), state: "running" as const, startedAtMs: Date.now() },
+      ];
   return {
     ...state,
     trace,

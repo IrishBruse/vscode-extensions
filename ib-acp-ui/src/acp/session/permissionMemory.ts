@@ -68,6 +68,29 @@ export function stickyPermissionOutcome(
     return undefined;
 }
 
+/**
+ * Waiting requests that the new grant already answers.
+ * The request the user just clicked is excluded.
+ */
+export function outcomesForMatchingGrants(
+    grants: readonly PermissionGrant[],
+    pending: ReadonlyMap<string, acp.RequestPermissionRequest>,
+    exceptRequestId: string,
+): Array<{ requestId: string; outcome: acp.RequestPermissionResponse }> {
+    const matches: Array<{ requestId: string; outcome: acp.RequestPermissionResponse }> = [];
+    for (const [requestId, request] of pending) {
+        if (requestId === exceptRequestId) {
+            continue;
+        }
+        const outcome = stickyPermissionOutcome(grants, request);
+        if (outcome === undefined) {
+            continue;
+        }
+        matches.push({ requestId, outcome });
+    }
+    return matches;
+}
+
 /** Replaces any earlier grant for the same scope. */
 export function upsertPermissionGrant(
     grants: readonly PermissionGrant[],

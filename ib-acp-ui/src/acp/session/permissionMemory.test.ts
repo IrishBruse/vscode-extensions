@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
     type PermissionGrant,
     grantForSelectedOption,
+    outcomesForMatchingGrants,
     stickyPermissionOutcome,
 } from "./permissionMemory";
 
@@ -39,6 +40,19 @@ describe("sticky permission", () => {
     it("asks again after Allow once", () => {
         const first = permissionRequest("execute", "`git status`");
         expect(grantForSelectedOption(first, "allow-once")).toBeUndefined();
+    });
+
+    it("answers other waiting requests of that tool kind", () => {
+        const grants: PermissionGrant[] = [{ scopeKey: "kind:edit", decision: "allow" }];
+        const pending = new Map<string, acp.RequestPermissionRequest>([
+            ["perm-10", permissionRequest("edit", "Delete `left.png`")],
+            ["perm-11", permissionRequest("edit", "Delete `right.png`")],
+            ["perm-13", permissionRequest("edit", "Delete `lower.png`")],
+            ["perm-14", permissionRequest("execute", "`rm tmp`")],
+        ]);
+        expect(
+            outcomesForMatchingGrants(grants, pending, "perm-13").map((match) => match.requestId),
+        ).toEqual(["perm-10", "perm-11"]);
     });
 
     it("asks again for a different tool kind", () => {

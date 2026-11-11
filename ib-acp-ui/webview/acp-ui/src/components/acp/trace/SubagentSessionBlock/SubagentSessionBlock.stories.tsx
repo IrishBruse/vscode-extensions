@@ -18,12 +18,15 @@ const childTrace: TraceItem[] = [{ type: "agent", text: "Looking through the aut
 
 function OpenableSubagent(): ReactElement {
   const [open, setOpen] = useState(false);
+  const [startedAtMs] = useState(() => Date.now());
+  const liveItem = { ...item, startedAtMs };
   if (open) {
     return (
       <SubagentFocus
-        title={item.title}
-        status={subagentStatusLabel(item.state, item.stopReason)}
-        description={item.description}
+        title={liveItem.title}
+        status={subagentStatusLabel(liveItem.state, liveItem.stopReason)}
+        startedAtMs={startedAtMs}
+        description={liveItem.description}
         items={childTrace}
         showThoughts
         expandAllToolOutputs={false}
@@ -38,7 +41,7 @@ function OpenableSubagent(): ReactElement {
   }
   return (
     <SubagentSessionBlock
-      item={item}
+      item={liveItem}
       onOpen={() => {
         setOpen(true);
       }}
@@ -55,8 +58,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+function RunningCard(): ReactElement {
+  const [startedAtMs] = useState(() => Date.now());
+  return <SubagentSessionBlock item={{ ...item, startedAtMs }} />;
+}
+
 export const Running: Story = {
   args: { item },
+  render: () => <RunningCard />,
 };
 
 export const OpenAndBack: Story = {

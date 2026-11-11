@@ -1,6 +1,7 @@
 import type { ReactElement, RefObject } from "react";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import type { TraceItem } from "../../../../chatReducer";
+import { SubagentRunTimer } from "../SubagentSessionBlock/SubagentRunTimer";
 import { TraceList } from "../TraceList/TraceList";
 import "./SubagentFocus.css";
 
@@ -10,6 +11,7 @@ import "./SubagentFocus.css";
 export function SubagentFocus({
   title,
   status,
+  startedAtMs,
   description,
   items,
   showThoughts,
@@ -27,8 +29,9 @@ export function SubagentFocus({
 }: {
   title: string;
   status: string;
+  startedAtMs?: number;
   description: string;
-  items: TraceItem[];
+  items: readonly TraceItem[];
   showThoughts: boolean;
   expandAllToolOutputs: boolean;
   followBottom: boolean;
@@ -48,7 +51,9 @@ export function SubagentFocus({
         <button type="button" className="subagent-focus-back" onClick={onBack}>
           Back
         </button>
-        <span className="subagent-focus-status">{status}</span>
+        <span className="subagent-focus-status">
+          {startedAtMs !== undefined ? <SubagentRunTimer startedAtMs={startedAtMs} /> : status}
+        </span>
         <span className="subagent-focus-title">{title}</span>
       </div>
       {description.trim().length > 0 ? <p className="subagent-focus-description">{description}</p> : null}

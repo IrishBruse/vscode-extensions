@@ -4,10 +4,11 @@
 
 Subagent tasks show as cards with the status, the short description, the subagent type, and the prompt.
 A background subagent stays Running until it finishes.
+A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
 Unknown work, and a lost connection, show as Unknown.
 Its messages and tool calls show on the card.
 `cursor/task` `agentId` attaches that child session to the task.
-Open a card to read the full activity, then use Back to return to the parent chat.
+Open a card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 `cursor/ask_question` and basic `cursor/create_plan` dialogs already work.
 
 Planned: richer UI for the remaining Cursor extension methods.
@@ -32,7 +33,7 @@ A background result (`isBackground` or status `disconnected`) stays in progress.
 [applySubagentUpdate](../../../webview/acp-ui/src/chatReducer.ts#L1274-L1315) places a nested child inside its parent.
 [markLiveSubagentsUnknown](../../../webview/acp-ui/src/chatReducer.ts#L1318-L1347) clears a confirmed running state after a disconnect.
 [postSessionOrChild](../../../src/acp/session/acpSessionBridge.ts#L169-L180) keeps a child permission's tool row on that child.
-[TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L12-L40) opens that card.
+[TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L15-L92) opens that card and renders the child's live transcript.
 
 Gaps: `phases` on create_plan, dedicated UI for `update_todos`, inline `generate_image`, and agent `toolCallId` correlation in bridge request ids.
 

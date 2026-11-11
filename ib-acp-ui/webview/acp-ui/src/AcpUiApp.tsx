@@ -19,6 +19,7 @@ import type {
 } from "../../../src/protocol/extensionHostMessages";
 import { anchoredScrollTop } from "./anchoredScroll";
 import {
+  activityTraceForTool,
   type ChatAction,
   chatReducer,
   createChatStateFromInit,
@@ -138,6 +139,13 @@ export function AcpUiApp({
   const [openAgent, setOpenAgent] = useState<
     { kind: "session"; sessionId: string } | { kind: "task"; toolCallId: string } | null
   >(null);
+  const openAgentKey =
+    openAgent === null
+      ? ""
+      : openAgent.kind === "task"
+        ? `task:${openAgent.toolCallId}`
+        : `session:${openAgent.sessionId}`;
+  const openAgentSeenRef = useRef(openAgentKey);
   const appendDroppedPathsRef = useRef<(paths: string[]) => void>(() => {});
 
   const scrollTraceToBottomIfPinned = useCallback((): void => {
@@ -197,7 +205,12 @@ export function AcpUiApp({
     }
     const swapped = state.historyCommit !== historyCommitSeenRef.current;
     historyCommitSeenRef.current = state.historyCommit;
-    if (swapped) {
+    const opened = openAgentKey !== openAgentSeenRef.current;
+    openAgentSeenRef.current = openAgentKey;
+    if (opened) {
+      stickToBottomRef.current = true;
+      el.scrollTop = el.scrollHeight;
+    } else if (swapped) {
       const previous = scrollSnapshotRef.current;
       if (stickToBottomRef.current) {
         el.scrollTop = el.scrollHeight;
@@ -214,7 +227,7 @@ export function AcpUiApp({
       scrollTraceToBottomIfPinned();
     }
     scrollSnapshotRef.current = { scrollHeight: el.scrollHeight, scrollTop: el.scrollTop };
-  }, [state.trace, state.historyCommit, scrollTraceToBottomIfPinned]);
+  }, [state.trace, state.subagentActivity, state.historyCommit, openAgentKey, scrollTraceToBottomIfPinned]);
 
   useLayoutEffect(() => {
     const root = document.getElementById("root");
@@ -427,11 +440,11 @@ export function AcpUiApp({
       ? state.trace.find((item) => item.type === "tool" && item.toolCallId === openAgent.toolCallId)
       : undefined;
   const taskActivityByToolId = new Map<string, readonly TraceItem[]>();
-  for (const [toolId, sessionId] of state.subagentSessionByToolId) {
-    taskActivityByToolId.set(toolId, state.subagentActivity.get(sessionId)?.trace ?? []);
+  for (const toolId of state.subagentSessionByToolId.keys()) {
+    taskActivityByToolId.set(toolId, activityTraceForTool(state, toolId));
   }
   const openTaskActivity =
-    openTask?.type === "tool" ? taskActivityByToolId.get(openTask.toolCallId) : undefined;
+    openTask?.type === "tool" ? activityTraceForTool(state, openTask.toolCallId) : undefined;
 
   return (
     <Fragment>
@@ -481,6 +494,7 @@ export function AcpUiApp({
               <SubagentFocus
                 title={openSession.title.trim().length > 0 ? openSession.title : "Subagent"}
                 status={subagentStatusLabel(openSession.state, openSession.stopReason)}
+                startedAtMs={openSession.state === "running" ? openSession.startedAtMs : undefined}
                 description={openSession.description}
                 items={state.subagentActivity.get(openSession.sessionId)?.trace ?? []}
                 showThoughts={showThinkingBlocks}
@@ -506,9 +520,24 @@ export function AcpUiApp({
               <TaskFocus
                 item={openTask}
                 activity={openTaskActivity}
+                showThoughts={showThinkingBlocks}
+                expandAllToolOutputs={expandAllToolOutputs}
+                followBottom={stickToBottomRef.current}
+                historyCommit={state.historyCommit}
+                traceScrollRef={traceRef}
                 onBack={() => {
                   setOpenAgent(null);
                 }}
+                onCollapseExpandAll={onCollapseExpandAll}
+                onOpenWorkspacePath={postOpenWorkspacePath}
+                onOpenImage={setViewerImageSrc}
+                onOpenSubagent={(sessionId) => {
+                  setOpenAgent({ kind: "session", sessionId });
+                }}
+                onOpenTask={(toolCallId) => {
+                  setOpenAgent({ kind: "task", toolCallId });
+                }}
+                taskActivityByToolId={taskActivityByToolId}
               />
             ) : (
               <TraceList

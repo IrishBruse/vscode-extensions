@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState, type ReactElement } from "react";
 import type { TraceToolItem } from "../../../../chatReducer";
 import { SubagentTaskBlock } from "./SubagentTaskBlock";
 
@@ -40,12 +41,24 @@ export const Completed: Story = {
   },
 };
 
+function RunningTask(): ReactElement {
+  const [startedAtMs] = useState(() => Date.now());
+  return (
+    <SubagentTaskBlock
+      item={{ ...completedItem, status: "in_progress", durationMs: undefined, startedAtMs }}
+      expandAllToolOutputs={false}
+      onCollapseExpandAll={() => undefined}
+    />
+  );
+}
+
 export const Running: Story = {
   args: {
-    item: { ...completedItem, status: "in_progress", durationMs: undefined },
+    item: completedItem,
     expandAllToolOutputs: false,
     onCollapseExpandAll: () => undefined,
   },
+  render: () => <RunningTask />,
 };
 
 export const Expanded: Story = {

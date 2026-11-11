@@ -5,6 +5,9 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Allow always also approves other waiting requests of that same tool kind.
+- **Add**: A running subagent card shows a live timer in the same form as Thinking.
+- **Fix**: Opening a subagent shows its live messages and tool calls.
 - **Fix**: A child session shows its messages, its work state, and a nested child on that child.
 - **Change**: A quote keeps the surrounding background and uses only the blue side bar.
 - **Fix**: A running subagent stays Running and shows its own messages and tool calls.

@@ -3,6 +3,7 @@ import { subagentTaskViewFromTool } from "../../../../../../../src/acp/mapping/t
 import type { ToolCallStatus } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import type { TraceItem, TraceToolItem } from "../../../../chatReducer";
+import { SubagentRunTimer } from "../../trace/SubagentSessionBlock/SubagentRunTimer";
 import { taskStatusLabel } from "../../trace/SubagentSessionBlock/subagentStatus";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./SubagentTaskBlock.css";
@@ -97,7 +98,10 @@ export function SubagentTaskBlock({
     collapsible && !expanded
       ? promptLines.slice(0, promptPreviewLineCount).join("\n")
       : view.prompt;
-  const running = item.status === "pending" || item.status === "in_progress";
+  const running =
+    (item.status === "pending" || item.status === "in_progress") &&
+    item.taskStopReason !== "unknown" &&
+    item.taskStopReason !== "requires_action";
   const durationLabel =
     running || view.durationMs === undefined ? "" : formatCompactDurationMs(view.durationMs);
   const activityLines = subagentActivityPreview(activity ?? [], activityPreviewLineCount);
@@ -119,7 +123,11 @@ export function SubagentTaskBlock({
         <TaskStatusGlyph status={item.status} />
         <span className="subagent-task-label">Task</span>
         <span className="subagent-task-status">
-          {taskStatusLabel(item.status, item.taskStopReason)}
+          {running && item.startedAtMs !== undefined ? (
+            <SubagentRunTimer startedAtMs={item.startedAtMs} />
+          ) : (
+            taskStatusLabel(item.status, item.taskStopReason)
+          )}
         </span>
         <span className="subagent-task-description">{view.description}</span>
         <button

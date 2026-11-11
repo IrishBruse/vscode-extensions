@@ -44,6 +44,7 @@ export type AcpUiVisibleTraceItem =
           description: string;
           state: "running" | "idle" | "requires_action" | "unknown" | null;
           stopReason: string | null;
+          startedAtMs?: number;
       };
 
 const toolCallStatuses = new Set<ToolCallStatus>(["pending", "in_progress", "completed", "failed"]);
@@ -199,6 +200,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             state === "unknown"
                 ? state
                 : null;
+        const startedAtMs = positiveDurationMs(value.startedAtMs);
         return {
             type: "subagent",
             sessionId: value.sessionId,
@@ -209,6 +211,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             description: typeof value.description === "string" ? value.description : "",
             state: work,
             stopReason: typeof value.stopReason === "string" ? value.stopReason : null,
+            ...(work === "running" && startedAtMs !== undefined ? { startedAtMs } : {}),
         };
     }
     if (value.type === "plan") {

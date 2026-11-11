@@ -45,6 +45,7 @@ import {
 import {
     type PermissionGrant,
     grantForSelectedOption,
+    outcomesForMatchingGrants,
     stickyPermissionOutcome,
     upsertPermissionGrant,
 } from "./permissionMemory";
@@ -194,6 +195,7 @@ export class AcpSessionBridge {
         this.pendingPermissionRequests.delete(message.requestId);
         if ("cancelled" in message && message.cancelled === true) {
             resolve({ outcome: { outcome: "cancelled" } });
+            this.showNextPendingPermission();
             return;
         }
         if ("selectedOptionId" in message) {
@@ -202,6 +204,7 @@ export class AcpSessionBridge {
                 if (grant !== undefined) {
                     this.permissionGrants = upsertPermissionGrant(this.permissionGrants, grant);
                     this.hooks?.onPermissionGrantsChanged?.(this.permissionGrants);
+                    this.resolveGrantedPendingRequests(message.requestId);
                 }
             }
             resolve({
@@ -210,9 +213,38 @@ export class AcpSessionBridge {
                     optionId: message.selectedOptionId,
                 },
             });
+            this.showNextPendingPermission();
             return;
         }
         resolve({ outcome: { outcome: "cancelled" } });
+        this.showNextPendingPermission();
+    }
+
+    /** Allow always and Reject always also answer requests that are already waiting. */
+    private resolveGrantedPendingRequests(exceptRequestId: string): void {
+        const matches = outcomesForMatchingGrants(
+            this.permissionGrants,
+            this.pendingPermissionRequests,
+            exceptRequestId,
+        );
+        for (const match of matches) {
+            const resolve = this.permissionWaiters.get(match.requestId);
+            this.permissionWaiters.delete(match.requestId);
+            this.pendingPermissionRequests.delete(match.requestId);
+            resolve?.(match.outcome);
+        }
+    }
+
+    /** The dialog shows one request. After it is answered, show the next different one. */
+    private showNextPendingPermission(): void {
+        const next = this.pendingPermissionRequests.entries().next();
+        if (next.done) {
+            return;
+        }
+        const [requestId, params] = next.value;
+        for (const msg of extensionMessagesForPermissionRequest(requestId, params)) {
+            this.postSessionOrChild(params.sessionId, msg);
+        }
     }
 
     handleCursorAskQuestionResponse(

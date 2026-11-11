@@ -7,6 +7,7 @@ The dialog names the tool (for example a shell command or file write) and lists 
 Pick an option to continue, or dismiss to cancel.
 Allow always is remembered for that tool kind for this chat.
 A later request of the same kind is approved without asking again.
+Requests that are already waiting for that kind are approved too.
 Allow once still asks every time.
 Resetting the chat or switching clients clears the remembered choice.
 For file edits, the Write File row in the chat trace shows a small inline diff preview when the agent included the change in the permission request.
@@ -18,10 +19,11 @@ While a permission prompt is open, the composer is blocked so you cannot send an
 ### ACP callback
 
 [AcpAgentProcess](../../../src/acp/infrastructure/acpAgentProcess.ts#L303-L304) registers `requestPermission` on the SDK client connection.
-[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L140-L160) assigns a request id, posts webview messages, and waits on a promise.
+[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L147-L166) assigns a request id, posts webview messages, and waits on a promise.
 
-[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts) resolves the waiter when the webview replies.
-[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
+[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L186-L221) resolves the waiter when the webview replies.
+[resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L224-L236) applies Allow always or Reject always to other requests that are already waiting.
+[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L52-L69) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
 The grants are `permissionGrants` on the session document.
 Dispose cancels all pending waiters.
 

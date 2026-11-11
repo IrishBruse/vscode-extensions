@@ -922,6 +922,84 @@ describe("chatReducer", () => {
     });
   });
 
+  it("starts a live clock when a subagent task begins", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "call-task-1",
+      title: "Task: Explore",
+      kind: "other",
+      status: "in_progress",
+      subtitle: "explore",
+      content: "Find the bug",
+    });
+    const task = state.trace[0];
+    expect(task).toMatchObject({ type: "tool", startedAtMs: Date.now() });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      title: "Explore",
+      state: "running",
+    });
+    expect(state.trace.find((item) => item.type === "subagent")).toMatchObject({
+      startedAtMs: Date.now(),
+    });
+    vi.useRealTimers();
+  });
+
+  it("keeps live child updates on the task after cursor/task reports the agent id", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "call-task-1",
+      title: "Task: Explore",
+      kind: "other",
+      status: "in_progress",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child.1",
+      toolCallId: "call-task-1",
+      title: "Explore",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "cursorTask",
+      toolCallId: "call-task-1",
+      description: "Explore",
+      prompt: "Find the bug",
+      subagentType: "explore",
+      agentId: "child",
+      durationMs: 40,
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child.1",
+      event: { type: "appendAgentText", text: "Reading auth.ts" },
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child.1",
+      event: {
+        type: "appendToolCall",
+        toolCallId: "call-read-1",
+        title: "Read auth.ts",
+        kind: "read",
+        status: "in_progress",
+      },
+    });
+    expect(state.trace.some((item) => item.type === "subagent")).toBe(false);
+    const childTrace = state.subagentActivity.get("child.1")?.trace ?? [];
+    expect(childTrace[0]).toMatchObject({ type: "agent", text: "Reading auth.ts" });
+    expect(childTrace[1]).toMatchObject({
+      type: "tool",
+      toolCallId: "call-read-1",
+      status: "in_progress",
+    });
+  });
+
   it("stops showing a linked task as running when its work state is unknown", () => {
     let state = createInitialChatState();
     state = chatReducer(state, {

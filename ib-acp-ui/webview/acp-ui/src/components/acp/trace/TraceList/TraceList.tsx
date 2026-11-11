@@ -52,7 +52,7 @@ type TraceRenderSegment =
   | { kind: "toolCompactSingle"; tool: TraceToolItem; index: number }
   | { kind: "toolExecute"; tool: TraceToolItem; index: number };
 
-function partitionTraceSegments(items: TraceItem[], showThoughts: boolean): TraceRenderSegment[] {
+function partitionTraceSegments(items: readonly TraceItem[], showThoughts: boolean): TraceRenderSegment[] {
   const segments: TraceRenderSegment[] = [];
   for (let index = 0; index < items.length; index++) {
     const item = items[index]!;
@@ -309,7 +309,7 @@ export const TraceList = memo(function TraceList({
   onOpenTask,
   taskActivityByToolId,
 }: {
-  items: TraceItem[];
+  items: readonly TraceItem[];
   showThoughts: boolean;
   expandAllToolOutputs: boolean;
   /** True when the transcript is following the latest text. */

@@ -42,8 +42,9 @@ Each item has a mark for pending, in progress, complete, or cancelled.
 
 A subagent task shows as its own card.
 The card shows the status, the short description, the subagent type, and the prompt.
+A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
 A nested child shows inside the child that owns it.
-Open the card to read that subagent, then use Back to return to the parent chat.
+Open the card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, Cancelled, or Unknown.
 A long prompt starts collapsed.
 
@@ -95,7 +96,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 - TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
 - Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) shows status and an Open control.
   [SubagentSessionBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentSessionBlock/SubagentSessionBlock.tsx#L10-L38) shows an ACP child session on the parent chat.
-  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L10-L68) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L12-L40) show that subagent, and Back returns to the parent.
+  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L76) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L15-L92) show that subagent, and Back returns to the parent.
   [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1255-L1291) keeps child session updates on that child.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L77) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
