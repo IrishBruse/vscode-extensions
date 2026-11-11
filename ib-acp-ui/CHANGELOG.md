@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Context usage shows as `13.3k/256.0k`, with space before the command hint.
+- **Change**: The composer and editor tab use the chat title stored in the `.acp` file.
 - **Add**: A running bash command shows a live timer in the same form as Thinking.
 - **Change**: Bash output sits in its own block, and a long result opens from Show output.
 - **Change**: A read of `SKILL.md` shows as `Used` plus the skill folder name.

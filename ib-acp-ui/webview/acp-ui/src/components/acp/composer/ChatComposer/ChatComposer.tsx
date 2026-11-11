@@ -47,6 +47,8 @@ import type { FollowUpMode } from "./composerFollowUp";
 export type ChatComposerProps = {
   /** Workspace path shown in the composer status slot. */
   workspacePathHint: string;
+  /** Chat title stored in the `.acp` file. Shown in place of the workspace path when set. */
+  sessionTitle?: string;
   modelSelection: AcpUiSessionModelSelection | null;
   sessionConfigOptions: AcpUiSessionConfigOption[] | null;
   sessionConfigLoading: boolean;
@@ -166,16 +168,8 @@ function useComposerStatusText(
   return null;
 }
 
-function ContextUsageMeter({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
+function ContextUsageLabel({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
   const windowSize = usage?.size ?? null;
-  const hasWindow = usage !== null && windowSize !== null && windowSize > 0;
-  const percent = hasWindow ? Math.min(100, Math.round((usage.used / windowSize) * 100)) : 0;
-  const tone =
-    hasWindow && percent >= 95
-      ? "composer-context--full"
-      : hasWindow && percent >= 85
-        ? "composer-context--high"
-        : "";
   const label = usage === null ? "—" : formatTokenUsage(usage);
   const title =
     usage === null
@@ -184,20 +178,9 @@ function ContextUsageMeter({ usage }: { usage: AcpUiTokenUsage | null }): ReactE
         ? `${usage.used} tokens reported. Context window size was not reported.`
         : `${usage.used} of ${windowSize} context tokens`;
   return (
-    <div
-      className={["composer-context", tone].filter((part) => part.length > 0).join(" ")}
-      role="meter"
-      aria-label="Context usage"
-      aria-valuemin={0}
-      {...(hasWindow ? { "aria-valuemax": windowSize, "aria-valuenow": usage.used } : {})}
-      aria-valuetext={label}
-      title={title}
-    >
-      <span className="composer-context-label">{label}</span>
-      <span className="composer-context-track" aria-hidden="true">
-        <span className="composer-context-fill" style={{ width: `${percent}%` }} />
-      </span>
-    </div>
+    <span className="composer-context" aria-label="Context usage" title={title}>
+      {label}
+    </span>
   );
 }
 
@@ -226,6 +209,7 @@ function ComposerStatusText({
  */
 export function ChatComposer({
   workspacePathHint,
+  sessionTitle = "",
   modelSelection,
   sessionConfigOptions,
   sessionConfigLoading,
@@ -513,7 +497,7 @@ export function ChatComposer({
       <div className="composer-top-bar">
         <div className="composer-top-bar-side">
           <div className="composer-activity" title={workspacePathHint}>
-            {workspacePathHint}
+            {sessionTitle.trim().length > 0 ? sessionTitle.trim() : workspacePathHint}
           </div>
         </div>
         <div
@@ -540,7 +524,7 @@ export function ChatComposer({
           />
         </div>
         <div className="composer-top-bar-side composer-top-bar-side--end">
-          <ContextUsageMeter usage={tokenUsage} />
+          <ContextUsageLabel usage={tokenUsage} />
           <span className="composer-top-bar-hint">/ commands · @ files</span>
         </div>
       </div>

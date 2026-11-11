@@ -92,6 +92,7 @@ export class AcpUiSessionController {
     /** When true, config messages from the agent are written into the session file. */
     private persistModelConfig = false;
     private deferredSessionTitleWrite: string | undefined;
+    private lastPostedSessionTitle: string | undefined;
     private readonly disposables: Array<{ dispose(): void }> = [];
 
     constructor(private readonly options: SessionControllerOptions) {
@@ -100,6 +101,7 @@ export class AcpUiSessionController {
             throw new Error("Session file is missing a valid header.");
         }
         this.sessionId = parsed.header.id;
+        this.lastPostedSessionTitle = parsed.header.title;
         const configs = getAcpAgentConfigsMerged();
         const named = parsed.header.agentName;
         this.agentConfig =
@@ -114,6 +116,18 @@ export class AcpUiSessionController {
         this.disposables.push(
             this.options.webview.onDidReceiveMessage((message: unknown) => {
                 void this.handleWebviewMessage(message);
+            }),
+        );
+        this.disposables.push(
+            workspace.onDidChangeTextDocument((event) => {
+                if (event.document.uri.toString() !== this.documentUri.toString()) {
+                    return;
+                }
+                const title = parseSessionFile(event.document.getText()).header?.title;
+                if (title === undefined) {
+                    return;
+                }
+                this.publishSessionTitle(title);
             }),
         );
         this.disposables.push(
@@ -237,7 +251,7 @@ export class AcpUiSessionController {
                 const renamedRecord = getAcpUiSession(this.sessionId);
                 if (renamedRecord !== undefined && oldUri !== undefined) {
                     moveAcpUiCustomEditorUri(oldUri, renamedRecord.uri);
-                    setAcpUiCustomEditorTabTitle(renamedRecord.uri, nextTitle);
+                    this.publishSessionTitle(nextTitle);
                 }
             }
         }
@@ -333,6 +347,20 @@ export class AcpUiSessionController {
         }
     }
 
+    /** Keeps the editor tab and composer on the title stored in the `.acp` file. */
+    private publishSessionTitle(title: string): void {
+        const nextTitle = title.trim();
+        if (nextTitle.length === 0) {
+            return;
+        }
+        setAcpUiCustomEditorTabTitle(this.documentUri, nextTitle);
+        if (nextTitle === this.lastPostedSessionTitle) {
+            return;
+        }
+        this.lastPostedSessionTitle = nextTitle;
+        this.post({ type: "sessionTitle", title: nextTitle });
+    }
+
     private async flushDeferredSessionTitleWrite(): Promise<void> {
         const title = this.deferredSessionTitleWrite;
         if (title === undefined) {
@@ -352,14 +380,14 @@ export class AcpUiSessionController {
             const updated = setAcpUiSessionTitleInMemory(this.sessionId, nextTitle);
             if (updated) {
                 this.deferredSessionTitleWrite = nextTitle;
-                setAcpUiCustomEditorTabTitle(this.documentUri, nextTitle);
+                this.publishSessionTitle(nextTitle);
                 this.options.refreshChatsList?.();
             }
             return;
         }
         const updated = await updateAcpUiSessionTitle(this.sessionId, nextTitle);
         if (updated) {
-            setAcpUiCustomEditorTabTitle(this.documentUri, nextTitle);
+            this.publishSessionTitle(nextTitle);
             this.options.refreshChatsList?.();
         }
     }
@@ -655,7 +683,7 @@ export class AcpUiSessionController {
                 const record = getAcpUiSession(this.sessionId);
                 if (record !== undefined && oldUri !== undefined) {
                     moveAcpUiCustomEditorUri(oldUri, record.uri);
-                    setAcpUiCustomEditorTabTitle(record.uri, nextTitle);
+                    this.publishSessionTitle(nextTitle);
                 }
                 this.options.refreshChatsList?.();
             }

@@ -7,20 +7,15 @@ export type AcpUiTokenUsage = {
 
 function formatTokenCount(count: number): string {
   if (count >= 1_000) {
-    const thousands = count / 1_000;
-    const rounded = thousands >= 100 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
-    return `${rounded}k`;
+    return `${(count / 1_000).toFixed(1)}k`;
   }
   return String(count);
 }
 
-/**
- * Formats context window usage like `12.3k/200k (6%)`.
- */
+/** Formats context window usage like `13.3k/256.0k`. */
 export function formatTokenUsage(usage: AcpUiTokenUsage): string {
   if (usage.size === null) {
     return formatTokenCount(usage.used);
   }
-  const percent = usage.size > 0 ? Math.round((usage.used / usage.size) * 100) : 0;
-  return `${formatTokenCount(usage.used)}/${formatTokenCount(usage.size)} (${percent}%)`;
+  return `${formatTokenCount(usage.used)}/${formatTokenCount(usage.size)}`;
 }

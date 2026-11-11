@@ -289,6 +289,8 @@ export type ExtensionToWebviewMessage =
      * Context window usage.
      * `size` is the window in tokens. Omit it when only a token count is known.
      */
+    /** Chat title stored in the `.acp` file. The composer and editor tab use this value. */
+    | { type: "sessionTitle"; title: string }
     | { type: "tokenUsage"; used: number; size?: number }
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }

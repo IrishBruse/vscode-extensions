@@ -803,7 +803,10 @@ describe("chatReducer", () => {
       providers: ["Cursor", "OpenCode"],
       recentSessions: [{ id: "s2", title: "Old chat", updatedAt: 5 }],
     });
+    expect(state.sessionTitle).toBe("New Cursor chat");
     expect(state.providers).toEqual(["Cursor", "OpenCode"]);
+    state = chatReducer(state, { type: "sessionTitle", title: "Fix login" });
+    expect(state.sessionTitle).toBe("Fix login");
     expect(state.recentSessions).toEqual([{ id: "s2", title: "Old chat", updatedAt: 5 }]);
     state = chatReducer(state, {
       type: "recentSessions",

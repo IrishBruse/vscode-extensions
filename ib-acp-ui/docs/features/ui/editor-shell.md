@@ -9,6 +9,7 @@ Create a chat from the Setup view **+**, from the `.acp` editor tab **New Chat**
 `Ctrl+T` / `Cmd+T` opens a new chat when the Setup view or an ACP UI editor tab is focused.
 
 Each chat opens as an editor tab with the ACP UI webview.
+The tab name is the chat title stored in that `.acp` file.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
 
 The Setup sidebar configures ACP clients, shows runtime choices that live outside VS Code settings, and reviews the chat open in the editor.
@@ -30,6 +31,7 @@ The manifest starts the extension with `onStartupFinished` in [package.json](../
 [AcpUiCustomEditorProvider.resolveCustomTextEditor](../../../src/extension/acpUiCustomEditorProvider.ts#L70-L80) hosts the webview and creates an [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts#L66) per document.
 
 [getAcpUiWebviewHtml](../../../src/extension/acpUiWebviewShell.ts#L11-L43) paints the connecting state in HTML and loads `main.js` as a module.
+[publishSessionTitle](../../../src/extension/acpUiSessionController.ts#L351-L362) reads the title from the `.acp` header and applies it to the editor tab and the composer.
 The chat UI and the markdown renderer load as later chunks from `media/acp-ui/chunks/`.
 
 ### Setup tree view

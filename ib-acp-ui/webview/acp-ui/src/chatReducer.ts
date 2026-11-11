@@ -106,6 +106,8 @@ export type ChatState = {
   providers: string[];
   /** Recent chats for the current agent, newest first (empty-chat recents). */
   recentSessions: AcpUiRecentSession[];
+  /** Chat title from the `.acp` file. */
+  sessionTitle: string;
   slashCommands: AcpUiSlashCommand[];
   permissionPrompt: PermissionPromptState | null;
   askQuestionPrompt: AskQuestionPromptState | null;
@@ -234,6 +236,7 @@ export function createInitialChatState(): ChatState {
     acpAgentSelection: null,
     providers: [],
     recentSessions: [],
+    sessionTitle: "",
     slashCommands: [],
     permissionPrompt: null,
     askQuestionPrompt: null,
@@ -546,6 +549,7 @@ export function createChatStateFromInit(payload: InitPayload): ChatState {
     acpAgentSelection: buildAcpAgentSelectionFromInit(payload),
     providers: payload.providers ?? [],
     recentSessions: payload.recentSessions ?? [],
+    sessionTitle: payload.title.trim(),
     lockSessionAgent: payload.lockSessionAgent === true,
     composerPicksLocked: false,
     hideComposerModelControls: payload.hideComposerModelControls === true,
@@ -1217,6 +1221,13 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return applySessionConfigOptionsLoading(state);
     case "recentSessions":
       return { ...state, recentSessions: action.sessions };
+    case "sessionTitle": {
+      const title = action.title.trim();
+      if (title.length === 0 || title === state.sessionTitle) {
+        return state;
+      }
+      return { ...state, sessionTitle: title };
+    }
     case "sessionHistoryLoading":
       if (action.loading) {
         return { ...state, sessionHistoryLoading: true };

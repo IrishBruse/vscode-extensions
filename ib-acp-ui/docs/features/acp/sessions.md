@@ -79,7 +79,7 @@ The open-chat rows read the active `.acp` tab through [getActiveAcpSessionUri](.
 `config_option_update` maps to `sessionConfigOptions` and syncs bridge cache via [syncConfigOptionsFromAgent](../../../src/acp/session/acpSessionBridge.ts).
 
 Still no-op in the default branch: `current_mode_update`.
-`usage_update` feeds the composer context meter.
+`usage_update` feeds the composer context usage label.
 `session_info_update` updates the session title via a bridge hook, not the trace.
 
 Task: [session-update-handlers](../../tasks/session-update-handlers.md).

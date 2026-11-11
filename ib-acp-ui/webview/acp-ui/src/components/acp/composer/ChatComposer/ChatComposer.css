@@ -37,6 +37,7 @@
 
 .composer-top-bar-side--end {
   justify-content: flex-end;
+  gap: var(--acp-ui-space-20);
 }
 
 .composer-top-bar-status {
@@ -79,44 +80,11 @@
 }
 
 .composer-context {
-  display: flex;
-  align-items: center;
-  gap: var(--acp-ui-space-6);
   flex-shrink: 0;
-  min-width: 0;
-}
-
-.composer-context-label {
   font-size: var(--acp-ui-font-size-label);
   font-family: var(--acp-ui-font-mono);
   color: var(--acp-ui-text-secondary);
   white-space: nowrap;
-}
-
-.composer-context-track {
-  width: 3.25rem;
-  height: 0.35rem;
-  border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--vscode-progressBar-background, var(--acp-ui-text-secondary)) 28%,
-    transparent
-  );
-  overflow: hidden;
-}
-
-.composer-context-fill {
-  display: block;
-  height: 100%;
-  background: var(--vscode-progressBar-background, var(--acp-ui-text-link));
-}
-
-.composer-context--high .composer-context-fill {
-  background: var(--vscode-editorWarning-foreground);
-}
-
-.composer-context--full .composer-context-fill {
-  background: var(--vscode-errorForeground);
 }
 
 .composer-top-bar-hint {

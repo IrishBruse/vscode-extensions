@@ -25,12 +25,14 @@ describe("ChatComposer", () => {
     expect(status).not.toContain("text-overflow");
   });
 
-  it("shows a context usage meter", () => {
+  it("shows context usage as text with space before the command hint", () => {
     const tsx = readFileSync(new URL("./ChatComposer.tsx", import.meta.url), "utf8");
     const css = readFileSync(new URL("./ChatComposer.css", import.meta.url), "utf8");
-    expect(tsx).toContain('role="meter"');
     expect(tsx).toContain('aria-label="Context usage"');
-    expect(css).toContain(".composer-context-fill");
+    expect(tsx).not.toContain('role="meter"');
+    expect(css).not.toContain(".composer-context-fill");
+    const endSide = css.match(/\.composer-top-bar-side--end\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(endSide).toContain("--acp-ui-space-20");
   });
 
   it("paints the composer frame with the input border", () => {

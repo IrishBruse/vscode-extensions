@@ -563,6 +563,7 @@ export function AcpUiApp({
               }
               statusDetail={state.errorText}
               thoughtStartedAtMs={state.thoughtStartedAtMs}
+              sessionTitle={state.sessionTitle}
               trace={state.trace}
               tokenUsage={state.tokenUsage}
               dispatch={dispatch}
