@@ -39,6 +39,18 @@
   word-break: break-word;
 }
 
+.subagent-task-activity {
+  margin-top: var(--acp-ui-space-6);
+  padding-left: 1.05rem;
+  color: var(--acp-ui-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.subagent-task-activity-line + .subagent-task-activity-line {
+  margin-top: 2px;
+}
+
 .subagent-task-meta {
   margin-top: 1px;
   padding-left: 1.05rem;

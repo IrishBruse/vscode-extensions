@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { canonicalToolCallId } from "./canonicalToolCallId";
 import {
     createToolCallKindTracking,
+    cursorSubagentUpdateMessage,
     extensionMessagesForPermissionRequest,
     messagesForSessionNotification,
     searchStatsSubtitleFromRawOutput,
@@ -287,6 +288,23 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(dumped).not.toContain('"_toolName"');
         expect(dumped).not.toContain('"description"');
         expect(dumped).not.toContain("isBackground");
+        const background = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call_update",
+                toolCallId: "call-task-1",
+                status: "disconnected" as "completed",
+                rawOutput: { durationMs: 866, isBackground: true },
+            },
+            tracking,
+        );
+        expect(background).toEqual([
+            {
+                type: "updateToolCall",
+                toolCallId: "call-task-1",
+                status: "in_progress",
+                subtitle: "generalPurpose",
+            },
+        ]);
     });
 
     it("forwards permission toolCall diff content as updateToolCall", () => {
@@ -319,6 +337,43 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(update.subtitle).toBe("docs/test.md");
         expect(update.diffRows).toBeDefined();
         expect(update.diffRows!.length).toBeGreaterThan(0);
+    });
+});
+
+describe("cursorSubagentUpdateMessage", () => {
+    it("keeps a spawned background subagent running and links its tool", () => {
+        expect(
+            cursorSubagentUpdateMessage({
+                sessionUpdate: "subagent_spawned",
+                subagentSessionId: "child-1",
+                name: "Verify sky banding",
+                task: "Capture the screenshot",
+                _meta: { cursor: { toolCallId: "call-task-1", agentId: "child-1" } },
+            } as never),
+        ).toEqual({
+            type: "subagentUpdate",
+            sessionId: "child-1",
+            title: "Verify sky banding",
+            description: "Capture the screenshot",
+            state: "running",
+            stopReason: null,
+            toolCallId: "call-task-1",
+        });
+        expect(
+            cursorSubagentUpdateMessage({
+                sessionUpdate: "subagent_state_update",
+                subagentSessionId: "child-1",
+                state: "disconnected",
+                _meta: { cursor: { toolCallId: "call-task-1", agentId: "child-1" } },
+            } as never),
+        ).toMatchObject({ state: "running", stopReason: null });
+        expect(
+            cursorSubagentUpdateMessage({
+                sessionUpdate: "subagent_state_update",
+                subagentSessionId: "child-1",
+                state: "completed",
+            } as never),
+        ).toMatchObject({ state: "idle", stopReason: "end_turn" });
     });
 });
 
@@ -369,6 +424,94 @@ describe("messagesForSessionNotification", () => {
                 event: { type: "appendAgentText", text: "Found it" },
             },
         ]);
+    });
+
+    it("keeps a session message on the child that received it", () => {
+        expect(
+            messagesForSessionNotification(
+                {
+                    sessionId: "child",
+                    update: {
+                        sessionUpdate: "session_message",
+                        messageId: "msg-1",
+                        senderSessionId: "parent",
+                        content: [{ type: "text", text: "Find the bug" }],
+                    },
+                },
+                "parent",
+                createToolCallKindTracking(),
+            ),
+        ).toEqual([
+            {
+                type: "subagentActivity",
+                sessionId: "child",
+                event: { type: "appendAgentText", text: "Find the bug" },
+            },
+        ]);
+    });
+
+    it("applies a child state_update to that child", () => {
+        expect(
+            messagesForSessionNotification(
+                {
+                    sessionId: "child",
+                    update: {
+                        sessionUpdate: "state_update",
+                        state: "unknown",
+                    },
+                } as never,
+                "parent",
+                createToolCallKindTracking(),
+            ),
+        ).toEqual([
+            {
+                type: "subagentUpdate",
+                sessionId: "child",
+                state: "unknown",
+                stopReason: null,
+            },
+        ]);
+    });
+
+    it("nests a grandchild under the child that announced it", () => {
+        expect(
+            messagesForSessionNotification(
+                {
+                    sessionId: "child",
+                    update: {
+                        sessionUpdate: "subagent_update",
+                        sessionId: "grandchild",
+                        title: "Nested",
+                        state: { state: "running" },
+                    },
+                },
+                "parent",
+                createToolCallKindTracking(),
+            ),
+        ).toEqual([
+            {
+                type: "subagentUpdate",
+                sessionId: "grandchild",
+                title: "Nested",
+                state: "running",
+                stopReason: null,
+                parentSessionId: "child",
+            },
+        ]);
+    });
+
+    it("links a tool call to a session content block", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "tool_call_update",
+            toolCallId: "call-wait-1",
+            status: "in_progress",
+            content: [{ type: "session", sessionId: "child-1" }],
+        } as never);
+        expect(messages).toContainEqual({
+            type: "subagentUpdate",
+            sessionId: "child-1",
+            toolCallId: "call-wait-1",
+        });
     });
 });
 

@@ -50,6 +50,8 @@ export type TraceToolItem = {
   durationMs?: number;
   /** Epoch ms while a bash tool is still running. */
   startedAtMs?: number;
+  /** Set when a linked subagent stops for a reason other than a normal end. */
+  taskStopReason?: string;
 };
 
 export type SubagentTraceItem = {
@@ -120,6 +122,8 @@ export type ChatState = {
   visibleTraceCacheEpoch: number;
   /** Live transcript for each child subagent, keyed by child session id. */
   subagentActivity: Map<string, SubagentActivity>;
+  /** Child session id for a Cursor task tool, keyed by tool call id. */
+  subagentSessionByToolId: Map<string, string>;
   acpAgentSelection: AcpAgentSelectionState | null;
   /** Configured ACP agent (provider) names for the empty-chat provider select. */
   providers: string[];
@@ -253,6 +257,7 @@ export function createInitialChatState(): ChatState {
     historyCommit: 0,
     visibleTraceCacheEpoch: 0,
     subagentActivity: new Map(),
+    subagentSessionByToolId: new Map(),
     acpAgentSelection: null,
     providers: [],
     recentSessions: [],
@@ -986,6 +991,7 @@ function applySessionReset(state: ChatState): ChatState {
     tokenUsage: null,
     toolStartedAtMsById: new Map(),
     subagentActivity: new Map(),
+    subagentSessionByToolId: new Map(),
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
   };
 }
@@ -1047,10 +1053,7 @@ function upsertCursorTask(
   const idx = resolveToolIndexByCallId(base.toolIndexById, action.toolCallId);
   const existing = idx !== undefined ? base.trace[idx] : undefined;
   if (existing?.type === "tool" && idx !== undefined) {
-    const status =
-      existing.status === "failed" || existing.status === "completed"
-        ? existing.status
-        : "completed";
+    const running = existing.status === "pending" || existing.status === "in_progress";
     const content = prompt.length > 0 ? prompt : existing.content;
     const trace = base.trace.slice();
     trace[idx] = {
@@ -1061,10 +1064,19 @@ function upsertCursorTask(
       detailVisible:
         (content !== undefined && content.trim().length > 0) ||
         (existing.diffRows !== undefined && existing.diffRows.length > 0),
-      status,
-      ...(action.durationMs !== undefined ? { durationMs: action.durationMs } : {}),
+      status: existing.status,
+      ...(running || action.durationMs === undefined ? {} : { durationMs: action.durationMs }),
     };
-    return { ...base, trace, openStreamIndex: null };
+    return {
+      ...base,
+      trace,
+      openStreamIndex: null,
+      subagentSessionByToolId: rememberSubagentTool(
+        base.subagentSessionByToolId,
+        action.toolCallId,
+        action.agentId ?? "",
+      ),
+    };
   }
   const id = canonicalToolCallId(action.toolCallId);
   const trace = [
@@ -1075,7 +1087,7 @@ function upsertCursorTask(
       title,
       kind: "other",
       subtitle,
-      status: "completed" as const,
+      status: action.durationMs === undefined ? ("in_progress" as const) : ("completed" as const),
       content: prompt.length > 0 ? prompt : undefined,
       diffRows: undefined,
       detailVisible: prompt.length > 0,
@@ -1084,7 +1096,12 @@ function upsertCursorTask(
   ];
   const toolIndexById = new Map(base.toolIndexById);
   rememberToolIndex(toolIndexById, id, trace.length - 1);
-  return { ...base, trace, toolIndexById, openStreamIndex: null };
+  const subagentSessionByToolId = rememberSubagentTool(
+    base.subagentSessionByToolId,
+    action.toolCallId,
+    action.agentId ?? "",
+  );
+  return { ...base, trace, toolIndexById, subagentSessionByToolId, openStreamIndex: null };
 }
 
 function blankSubagent(sessionId: string): SubagentTraceItem {
@@ -1111,21 +1128,216 @@ function patchSubagent(
   };
 }
 
+function rememberSubagentTool(
+  map: Map<string, string>,
+  toolCallId: string | undefined,
+  sessionId: string,
+): Map<string, string> {
+  if (toolCallId === undefined || toolCallId.length === 0 || sessionId.length === 0) {
+    return map;
+  }
+  const next = new Map(map);
+  next.set(canonicalToolCallId(toolCallId), sessionId);
+  return next;
+}
+
+function sessionHasToolLink(map: Map<string, string>, sessionId: string): boolean {
+  for (const id of map.values()) {
+    if (id === sessionId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+type LinkedToolPatch = {
+  status: ToolCallStatus;
+  taskStopReason?: string;
+  clearDuration: boolean;
+  clearStopReason?: boolean;
+};
+
+function linkedToolStatus(
+  action: Extract<ChatAction, { type: "subagentUpdate" }>,
+): LinkedToolPatch | undefined {
+  if (action.state === undefined) {
+    return undefined;
+  }
+  if (action.state === null || action.state === "unknown") {
+    return { status: "in_progress", taskStopReason: "unknown", clearDuration: false };
+  }
+  if (action.state === "requires_action") {
+    return { status: "in_progress", taskStopReason: "requires_action", clearDuration: true };
+  }
+  if (action.state === "running") {
+    return { status: "in_progress", clearDuration: true, clearStopReason: true };
+  }
+  if (action.state === "idle" && action.stopReason === "error") {
+    return { status: "failed", taskStopReason: "error", clearDuration: false };
+  }
+  if (action.state === "idle" && action.stopReason === "cancelled") {
+    return { status: "completed", taskStopReason: "cancelled", clearDuration: false };
+  }
+  if (action.state === "idle") {
+    return { status: "completed", clearDuration: false, clearStopReason: true };
+  }
+  return undefined;
+}
+
+function applyLinkedToolStatus(
+  trace: TraceItem[],
+  toolIndexById: Map<string, number>,
+  toolCallId: string,
+  patch: LinkedToolPatch,
+): TraceItem[] {
+  const idx = resolveToolIndexByCallId(toolIndexById, toolCallId);
+  if (idx === undefined) {
+    return trace;
+  }
+  const current = trace[idx];
+  if (current?.type !== "tool") {
+    return trace;
+  }
+  const taskStopReason =
+    patch.taskStopReason !== undefined
+      ? patch.taskStopReason
+      : patch.clearStopReason
+        ? undefined
+        : current.taskStopReason;
+  const next = trace.slice();
+  next[idx] = {
+    ...current,
+    status: patch.status,
+    taskStopReason,
+    ...(patch.clearDuration ? { durationMs: undefined } : {}),
+  };
+  return next;
+}
+
+function subagentUpdateHasDisplay(
+  action: Extract<ChatAction, { type: "subagentUpdate" }>,
+): boolean {
+  return (
+    action.title !== undefined ||
+    action.description !== undefined ||
+    action.state !== undefined ||
+    action.stopReason !== undefined
+  );
+}
+
+function placeSubagent(
+  trace: TraceItem[],
+  toolIndexById: Map<string, number>,
+  action: Extract<ChatAction, { type: "subagentUpdate" }>,
+): TraceItem[] {
+  const linked =
+    action.toolCallId !== undefined &&
+    action.toolCallId.length > 0 &&
+    subagentUpdateHasDisplay(action);
+  if (linked) {
+    let next = trace.filter(
+      (item) => !(item.type === "subagent" && item.sessionId === action.sessionId),
+    );
+    const patch = linkedToolStatus(action);
+    if (patch !== undefined && action.toolCallId !== undefined) {
+      next = applyLinkedToolStatus(next, toolIndexById, action.toolCallId, patch);
+    }
+    return next;
+  }
+  const next = trace.slice();
+  const index = next.findIndex(
+    (item) => item.type === "subagent" && item.sessionId === action.sessionId,
+  );
+  if (index >= 0) {
+    const current = next[index];
+    if (current?.type === "subagent") {
+      next[index] = patchSubagent(current, action);
+    }
+    return next;
+  }
+  next.push(patchSubagent(blankSubagent(action.sessionId), action));
+  return next;
+}
+
+function parentSessionIsKnown(state: ChatState, parentSessionId: string): boolean {
+  if (state.subagentActivity.has(parentSessionId)) {
+    return true;
+  }
+  if (sessionHasToolLink(state.subagentSessionByToolId, parentSessionId)) {
+    return true;
+  }
+  return state.trace.some(
+    (item) => item.type === "subagent" && item.sessionId === parentSessionId,
+  );
+}
+
 function applySubagentUpdate(
   state: ChatState,
   action: Extract<ChatAction, { type: "subagentUpdate" }>,
 ): ChatState {
-  const index = state.trace.findIndex(
-    (item) => item.type === "subagent" && item.sessionId === action.sessionId,
+  const subagentSessionByToolId = rememberSubagentTool(
+    state.subagentSessionByToolId,
+    action.toolCallId,
+    action.sessionId,
   );
-  const trace = state.trace.slice();
-  if (index >= 0) {
-    const current = trace[index];
-    if (current?.type === "subagent") {
-      trace[index] = patchSubagent(current, action);
+  if (!subagentUpdateHasDisplay(action)) {
+    return { ...state, subagentSessionByToolId };
+  }
+  const parentSessionId = action.parentSessionId;
+  if (
+    parentSessionId !== undefined &&
+    parentSessionId.length > 0 &&
+    parentSessionIsKnown(state, parentSessionId)
+  ) {
+    const current = state.subagentActivity.get(parentSessionId) ?? {
+      trace: [],
+      toolIndexById: new Map<string, number>(),
+      openStreamIndex: null,
+    };
+    const subagentActivity = new Map(state.subagentActivity);
+    subagentActivity.set(parentSessionId, {
+      ...current,
+      trace: placeSubagent(current.trace, current.toolIndexById, action),
+    });
+    return {
+      ...state,
+      subagentActivity,
+      subagentSessionByToolId,
+      visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
+    };
+  }
+  return {
+    ...state,
+    trace: placeSubagent(state.trace, state.toolIndexById, action),
+    subagentSessionByToolId,
+    visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
+  };
+}
+
+/** A lost ACP connection is not a confirmed running child. */
+function markLiveSubagentsUnknown(state: ChatState): ChatState {
+  let changed = false;
+  const trace = state.trace.map((item) => {
+    if (
+      item.type === "subagent" &&
+      (item.state === "running" || item.state === "requires_action")
+    ) {
+      changed = true;
+      return { ...item, state: "unknown" as const, stopReason: null };
     }
-  } else {
-    trace.push(patchSubagent(blankSubagent(action.sessionId), action));
+    if (
+      item.type === "tool" &&
+      (item.status === "pending" || item.status === "in_progress") &&
+      item.taskStopReason !== "unknown" &&
+      state.subagentSessionByToolId.has(canonicalToolCallId(item.toolCallId))
+    ) {
+      changed = true;
+      return { ...item, taskStopReason: "unknown" };
+    }
+    return item;
+  });
+  if (!changed) {
+    return state;
   }
   return {
     ...state,
@@ -1159,9 +1371,10 @@ function applySubagentActivity(
     toolIndexById: shadow.toolIndexById,
     openStreamIndex: shadow.openStreamIndex,
   });
-  const hasCard = state.trace.some(
-    (item) => item.type === "subagent" && item.sessionId === sessionId,
-  );
+  const linked = sessionHasToolLink(state.subagentSessionByToolId, sessionId);
+  const hasCard =
+    linked ||
+    state.trace.some((item) => item.type === "subagent" && item.sessionId === sessionId);
   const trace = hasCard
     ? state.trace
     : [...state.trace, { ...blankSubagent(sessionId), state: "running" as const }];
@@ -1480,12 +1693,13 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           ? finalizeOpenThoughtDuration(replayShadow(state))
           : null;
       const disconnected = action.disconnected === true;
+      const withUnknown = disconnected ? markLiveSubagentsUnknown(base) : base;
       const trace =
         disconnected && action.message.trim().length > 0
-          ? [...base.trace, { type: "agent" as const, text: action.message }]
-          : base.trace;
+          ? [...withUnknown.trace, { type: "agent" as const, text: action.message }]
+          : withUnknown.trace;
       return {
-        ...base,
+        ...withUnknown,
         trace,
         ...(replay !== null
           ? {

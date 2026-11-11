@@ -71,8 +71,6 @@ class SetupTreeItem extends TreeItem {
             this.iconPath = new ThemeIcon("server");
         } else if (node.id === "action:add-client") {
             this.iconPath = new ThemeIcon("add");
-        } else if (node.id === "action:browse-registry") {
-            this.iconPath = new ThemeIcon("cloud-download");
         }
         if (node.commandId !== undefined) {
             this.command = {

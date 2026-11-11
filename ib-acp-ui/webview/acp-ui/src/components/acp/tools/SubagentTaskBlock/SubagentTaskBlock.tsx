@@ -2,12 +2,39 @@ import { type ReactElement, useEffect, useRef, useState } from "react";
 import { subagentTaskViewFromTool } from "../../../../../../../src/acp/mapping/taskToolPresentation";
 import type { ToolCallStatus } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
-import type { TraceToolItem } from "../../../../chatReducer";
+import type { TraceItem, TraceToolItem } from "../../../../chatReducer";
 import { taskStatusLabel } from "../../trace/SubagentSessionBlock/subagentStatus";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./SubagentTaskBlock.css";
 
 const promptPreviewLineCount = 4;
+const activityPreviewLineCount = 8;
+
+function activityLine(item: TraceItem): string | undefined {
+  if (item.type === "agent" || item.type === "thought") {
+    const text = item.text.replace(/\s+/g, " ").trim();
+    if (text.length === 0) {
+      return undefined;
+    }
+    return text.length > 160 ? `${text.slice(0, 157)}...` : text;
+  }
+  if (item.type === "tool") {
+    const title = item.title.trim();
+    return title.length > 0 ? title : undefined;
+  }
+  return undefined;
+}
+
+export function subagentActivityPreview(items: readonly TraceItem[], limit?: number): string[] {
+  const lines: string[] = [];
+  for (const item of items) {
+    const line = activityLine(item);
+    if (line !== undefined) {
+      lines.push(line);
+    }
+  }
+  return limit === undefined ? lines : lines.slice(-limit);
+}
 
 function TaskStatusGlyph({ status }: { status: ToolCallStatus }): ReactElement {
   if (status === "in_progress" || status === "pending") {
@@ -41,12 +68,14 @@ export function SubagentTaskBlock({
   expandAllToolOutputs,
   onCollapseExpandAll,
   onOpen,
+  activity,
   className,
 }: {
   item: TraceToolItem;
   expandAllToolOutputs: boolean;
   onCollapseExpandAll?: () => void;
   onOpen?: (toolCallId: string) => void;
+  activity?: readonly TraceItem[];
   className?: string;
 }): ReactElement | null {
   const view = subagentTaskViewFromTool(item);
@@ -68,8 +97,10 @@ export function SubagentTaskBlock({
     collapsible && !expanded
       ? promptLines.slice(0, promptPreviewLineCount).join("\n")
       : view.prompt;
+  const running = item.status === "pending" || item.status === "in_progress";
   const durationLabel =
-    view.durationMs !== undefined ? formatCompactDurationMs(view.durationMs) : "";
+    running || view.durationMs === undefined ? "" : formatCompactDurationMs(view.durationMs);
+  const activityLines = subagentActivityPreview(activity ?? [], activityPreviewLineCount);
   const meta = [view.subagentType, durationLabel].filter((part) => part.length > 0).join(" · ");
 
   return (
@@ -82,12 +113,14 @@ export function SubagentTaskBlock({
       data-tool-id={item.toolCallId}
       data-status={item.status}
       role="status"
-      aria-label={`Subagent task: ${view.description}, ${taskStatusLabel(item.status)}`}
+      aria-label={`Subagent task: ${view.description}, ${taskStatusLabel(item.status, item.taskStopReason)}`}
     >
       <div className="subagent-task-line">
         <TaskStatusGlyph status={item.status} />
         <span className="subagent-task-label">Task</span>
-        <span className="subagent-task-status">{taskStatusLabel(item.status)}</span>
+        <span className="subagent-task-status">
+          {taskStatusLabel(item.status, item.taskStopReason)}
+        </span>
         <span className="subagent-task-description">{view.description}</span>
         <button
           type="button"
@@ -98,6 +131,15 @@ export function SubagentTaskBlock({
         </button>
       </div>
       {meta.length > 0 ? <div className="subagent-task-meta">{meta}</div> : null}
+      {activityLines.length > 0 ? (
+        <div className="subagent-task-activity">
+          {activityLines.map((line, index) => (
+            <div key={`${index}:${line}`} className="subagent-task-activity-line">
+              {line}
+            </div>
+          ))}
+        </div>
+      ) : null}
       {shownPrompt.trim().length > 0 ? (
         <pre className="subagent-task-prompt">{shownPrompt}</pre>
       ) : null}

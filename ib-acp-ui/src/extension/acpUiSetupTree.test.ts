@@ -43,8 +43,10 @@ describe("buildAcpUiSetupTree", () => {
             },
         });
 
-        expect(tree.map((node) => node.label)).toEqual(["Clients", "Runtime", "Open chat"]);
         const labels = flatten(tree).map((node) => node.label);
+        expect(
+            labels.filter((label) => ["Clients", "Runtime", "Open chat"].includes(label)),
+        ).toEqual(["Clients", "Runtime", "Open chat"]);
         expect(labels).not.toContain("Go Project Architect");
         expect(labels).not.toContain("CLI Skill Extension");
         expect(
@@ -55,27 +57,35 @@ describe("buildAcpUiSetupTree", () => {
             ),
         ).toBe(true);
 
-        expect(tree[0]?.children.map((node) => node.label)).toEqual([
-            "Local",
-            "Cursor",
-            "Add client…",
-            "Browse registry…",
-        ]);
-        expect(tree[0]?.children[0]).toMatchObject({
+        expect(labels).not.toContain("Browse registry…");
+        expect(tree.every((node) => node.children.length === 0 && node.collapsible === false)).toBe(
+            true,
+        );
+        const local = tree.find((node) => node.label === "Local");
+        const cursorNode = tree.find((node) => node.label === "Cursor");
+        expect(local).toMatchObject({
             contextValue: "clientSettings",
             description: "my-agent --acp",
         });
-        expect(tree[0]?.children[1]).toMatchObject({
+        expect(cursorNode).toMatchObject({
             contextValue: "clientRegistry",
             description: "active · cursor-agent acp",
             registryId: "cursor",
         });
 
-        expect(tree[1]?.children.map((node) => [node.label, node.description])).toEqual([
+        expect(
+            tree
+                .filter((node) => node.id.startsWith("runtime:"))
+                .map((node) => [node.label, node.description]),
+        ).toEqual([
             ["New chats use", "Cursor"],
             ["Workspace", "/work/app"],
         ]);
-        expect(tree[2]?.children.map((node) => [node.label, node.description])).toEqual([
+        expect(
+            tree
+                .filter((node) => node.id.startsWith("chat:") && node.id !== "chat:empty")
+                .map((node) => [node.label, node.description]),
+        ).toEqual([
             ["Title", "CLI Skill Extension"],
             ["Client", "Cursor"],
             ["File", "/work/app/chats/local-1/cli.acp"],
@@ -88,16 +98,20 @@ describe("buildAcpUiSetupTree", () => {
 
     it("shows an empty open chat when none is open", () => {
         const tree = buildAcpUiSetupTree({ clients: [] });
-        expect(tree[0]?.children.map((node) => node.label)).toEqual([
+        expect(tree.map((node) => node.label)).toEqual([
+            "Clients",
             "No clients yet",
             "Add client…",
-            "Browse registry…",
+            "Runtime",
+            "New chats use",
+            "Workspace",
+            "Open chat",
+            "No chat open",
         ]);
-        expect(tree[1]?.children.map((node) => [node.label, node.description])).toEqual([
-            ["New chats use", "None"],
-            ["Workspace", "No folder open"],
-        ]);
-        expect(tree[2]?.children.map((node) => node.label)).toEqual(["No chat open"]);
+        expect(tree.find((node) => node.id === "runtime:active-client")?.description).toBe("None");
+        expect(tree.find((node) => node.id === "runtime:workspace")?.description).toBe(
+            "No folder open",
+        );
     });
 });
 

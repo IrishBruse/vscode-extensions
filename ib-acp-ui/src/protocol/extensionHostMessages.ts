@@ -273,6 +273,13 @@ export type ExtensionToWebviewMessage =
           description?: string | null;
           state?: SubagentWorkState | null;
           stopReason?: string | null;
+          /** Cursor task row this child session belongs to. */
+          toolCallId?: string;
+          /**
+           * Immediate parent when this child is nested under another child.
+           * Omitted when the parent is the open chat.
+           */
+          parentSessionId?: string;
       }
     | {
           type: "subagentActivity";

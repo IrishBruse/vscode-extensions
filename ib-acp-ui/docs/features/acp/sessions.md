@@ -68,7 +68,7 @@ On load failure, the bridge falls back to `session/new` and the cached screen st
 
 ### Setup sidebar
 
-[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L183-L244) builds Clients, Runtime, and Open chat.
+[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L211-L260) builds Clients, Runtime, and Open chat on one level.
 [refresh](../../../src/extension/acpUiSessionsView.ts#L201-L214) fills that tree from merged clients and the active editor.
 The open-chat rows read the active `.acp` tab through [getActiveAcpSessionUri](../../../src/extension/acpUiPanel.ts#L136-L159).
 

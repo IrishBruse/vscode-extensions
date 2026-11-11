@@ -426,6 +426,12 @@ export function AcpUiApp({
     openAgent?.kind === "task"
       ? state.trace.find((item) => item.type === "tool" && item.toolCallId === openAgent.toolCallId)
       : undefined;
+  const taskActivityByToolId = new Map<string, readonly TraceItem[]>();
+  for (const [toolId, sessionId] of state.subagentSessionByToolId) {
+    taskActivityByToolId.set(toolId, state.subagentActivity.get(sessionId)?.trace ?? []);
+  }
+  const openTaskActivity =
+    openTask?.type === "tool" ? taskActivityByToolId.get(openTask.toolCallId) : undefined;
 
   return (
     <Fragment>
@@ -494,10 +500,12 @@ export function AcpUiApp({
                 onOpenTask={(toolCallId) => {
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
+                taskActivityByToolId={taskActivityByToolId}
               />
             ) : openTask?.type === "tool" ? (
               <TaskFocus
                 item={openTask}
+                activity={openTaskActivity}
                 onBack={() => {
                   setOpenAgent(null);
                 }}
@@ -519,6 +527,7 @@ export function AcpUiApp({
                 onOpenTask={(toolCallId) => {
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
+                taskActivityByToolId={taskActivityByToolId}
               />
             )}
           </div>

@@ -24,11 +24,20 @@ export function subagentStatusLabel(
 }
 
 /** Status text for a Cursor task card. */
-export function taskStatusLabel(status: ToolCallStatus): string {
+export function taskStatusLabel(status: ToolCallStatus, stopReason?: string): string {
+  if (stopReason === "unknown") {
+    return "Unknown";
+  }
+  if (stopReason === "requires_action") {
+    return "Needs action";
+  }
   if (status === "pending" || status === "in_progress") {
     return "Running";
   }
-  if (status === "failed") {
+  if (stopReason === "cancelled") {
+    return "Cancelled";
+  }
+  if (status === "failed" || stopReason === "error") {
     return "Failed";
   }
   return "Done";

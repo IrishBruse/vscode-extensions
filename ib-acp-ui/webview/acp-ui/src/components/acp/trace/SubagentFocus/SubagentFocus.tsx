@@ -23,6 +23,7 @@ export function SubagentFocus({
   onOpenImage,
   onOpenSubagent,
   onOpenTask,
+  taskActivityByToolId,
 }: {
   title: string;
   status: string;
@@ -39,6 +40,7 @@ export function SubagentFocus({
   onOpenImage?: (src: string) => void;
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
+  taskActivityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
 }): ReactElement {
   return (
     <section className="subagent-focus" aria-label={title}>
@@ -62,6 +64,7 @@ export function SubagentFocus({
         onOpenImage={onOpenImage}
         onOpenSubagent={onOpenSubagent}
         onOpenTask={onOpenTask}
+        taskActivityByToolId={taskActivityByToolId}
       />
     </section>
   );

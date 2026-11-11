@@ -9,6 +9,9 @@ If protocol version negotiation fails, the chat shows a clear error with guidanc
 
 The most visible capability result today is the Cursor model and thinking-level toolbar in the composer when you use the Cursor ACP agent.
 The client also advertises subagent support, so an agent can report child sessions.
+Child messages, tool calls, and work-state updates arrive on that same connection.
+A nested child stays inside the child that owns it.
+A lost connection shows a child that was running as Unknown.
 Other capability flags (terminals, terminal auth, boolean config options, elicitation) are planned.
 See [session-config](../ui/session-config.md) for the shipped model toolbar.
 

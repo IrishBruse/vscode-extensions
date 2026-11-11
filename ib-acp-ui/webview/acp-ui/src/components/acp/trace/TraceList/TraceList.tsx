@@ -115,6 +115,7 @@ type TraceSegmentViewProps = {
   onOpenImage?: (src: string) => void;
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
+  taskActivity?: readonly TraceItem[];
 };
 
 function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegmentViewProps): boolean {
@@ -129,7 +130,8 @@ function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegme
     prev.onOpenWorkspacePath !== next.onOpenWorkspacePath ||
     prev.onOpenImage !== next.onOpenImage ||
     prev.onOpenSubagent !== next.onOpenSubagent ||
-    prev.onOpenTask !== next.onOpenTask
+    prev.onOpenTask !== next.onOpenTask ||
+    prev.taskActivity !== next.taskActivity
   ) {
     return false;
   }
@@ -157,6 +159,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
   onOpenImage,
   onOpenSubagent,
   onOpenTask,
+  taskActivity,
 }: TraceSegmentViewProps): ReactElement | null {
   if (segment.kind === "toolExecute") {
     return traceRow(
@@ -255,6 +258,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
           expandAllToolOutputs={expandAllToolOutputs}
           onCollapseExpandAll={onCollapseExpandAll}
           onOpen={onOpenTask}
+          activity={taskActivity}
         />
       ) : (
         <ToolCallCompactBlock
@@ -303,6 +307,7 @@ export const TraceList = memo(function TraceList({
   onOpenImage,
   onOpenSubagent,
   onOpenTask,
+  taskActivityByToolId,
 }: {
   items: TraceItem[];
   showThoughts: boolean;
@@ -317,6 +322,7 @@ export const TraceList = memo(function TraceList({
   onOpenImage?: (src: string) => void;
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
+  taskActivityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
 }): ReactElement {
   const thoughtIndexesRef = useRef<number[] | null>(null);
   const seenHistoryCommitRef = useRef(historyCommit);
@@ -416,6 +422,11 @@ export const TraceList = memo(function TraceList({
         onOpenImage={onOpenImage}
         onOpenSubagent={onOpenSubagent}
         onOpenTask={onOpenTask}
+        taskActivity={
+          segment.kind === "single" && segment.item.type === "tool"
+            ? taskActivityByToolId?.get(segment.item.toolCallId)
+            : undefined
+        }
       />
     );
   };

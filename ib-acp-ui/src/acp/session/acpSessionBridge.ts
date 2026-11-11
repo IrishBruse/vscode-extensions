@@ -12,6 +12,7 @@ import { canonicalToolCallId } from "../mapping/canonicalToolCallId";
 import {
     createToolCallKindTracking,
     extensionMessagesForPermissionRequest,
+    isSubagentActivityMessage,
     messagesForSessionNotification,
     type ToolCallKindTracking,
 } from "../mapping/sessionUpdateMapping";
@@ -149,7 +150,7 @@ export class AcpSessionBridge {
         if (remembered !== undefined) {
             for (const msg of extensionMessagesForPermissionRequest("perm-remembered", params)) {
                 if (msg.type !== "permissionRequest") {
-                    this.postToWebview(msg);
+                    this.postSessionOrChild(params.sessionId, msg);
                 }
             }
             return remembered;
@@ -159,9 +160,23 @@ export class AcpSessionBridge {
             this.permissionWaiters.set(requestId, resolve);
             this.pendingPermissionRequests.set(requestId, params);
             for (const msg of extensionMessagesForPermissionRequest(requestId, params)) {
-                this.postToWebview(msg);
+                this.postSessionOrChild(params.sessionId, msg);
             }
         });
+    }
+
+    /** Keeps a child permission's tool row on that child. The dialog stays on the parent chat. */
+    private postSessionOrChild(sessionId: string, message: ExtensionToWebviewMessage): void {
+        const child =
+            this.acpSessionId !== null &&
+            sessionId !== this.acpSessionId &&
+            message.type !== "permissionRequest" &&
+            isSubagentActivityMessage(message);
+        if (child) {
+            this.postToWebview({ type: "subagentActivity", sessionId, event: message });
+            return;
+        }
+        this.postToWebview(message);
     }
 
     /**

@@ -12,6 +12,7 @@ import { normalizeSlashCommand } from "../slashCommandMetadata";
 import { canonicalToolCallId } from "./canonicalToolCallId";
 import {
     taskDurationMsFromRawOutput,
+    taskOutputIsBackground,
     taskToolFieldsFromRaw,
     type TaskToolFields,
 } from "./taskToolPresentation";
@@ -831,7 +832,7 @@ export function sessionUpdateToWebviewMessages(
                     : toolCallSubtitleFromToolCall(update);
             const durationMs = durationMsFromUpdatePayload(update);
             const prompt = task !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
-            return [
+            return withSessionLinks(toolCallId, update.content, [
                 {
                     type: "appendToolCall",
                     toolCallId,
@@ -842,7 +843,7 @@ export function sessionUpdateToWebviewMessages(
                     ...(prompt.length > 0 ? { content: prompt } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
                 },
-            ];
+            ]);
         }
         case "tool_call_update": {
             const toolCallId = canonicalToolCallId(update.toolCallId);
@@ -861,23 +862,36 @@ export function sessionUpdateToWebviewMessages(
                 if (kindFromUpdate !== undefined) {
                     toolKindTracking?.kindByToolId.set(toolCallId, kindFromUpdate);
                 }
-                const durationMs =
-                    durationMsFromUpdatePayload(update) ??
-                    taskDurationMsFromRawOutput(update.rawOutput);
+                const background =
+                    taskOutputIsBackground(update.rawOutput) ||
+                    String(update.status ?? "") === "disconnected";
+                const durationMs = background
+                    ? undefined
+                    : (durationMsFromUpdatePayload(update) ??
+                      taskDurationMsFromRawOutput(update.rawOutput));
                 const subtitle = task.subagentType.length > 0 ? task.subagentType : undefined;
                 const prompt =
                     incomingTask !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
-                return [
+                const reported = update.status;
+                const status = background
+                    ? "in_progress"
+                    : reported === "pending" ||
+                        reported === "in_progress" ||
+                        reported === "completed" ||
+                        reported === "failed"
+                      ? reported
+                      : "completed";
+                return withSessionLinks(toolCallId, update.content, [
                     {
                         type: "updateToolCall",
                         toolCallId,
-                        status: update.status ?? "completed",
+                        status,
                         ...(kindFromUpdate !== undefined ? { kind: kindFromUpdate } : {}),
                         ...(prompt.length > 0 ? { content: prompt } : {}),
                         ...(subtitle !== undefined ? { subtitle } : {}),
                         ...(durationMs !== undefined ? { durationMs } : {}),
                     },
-                ];
+                ]);
             }
             const parts = toolCallUpdateToDisplayParts(update);
             const pendingKind = toolKindTracking?.kindByToolId.get(toolCallId);
@@ -892,7 +906,7 @@ export function sessionUpdateToWebviewMessages(
                 toolKindTracking?.kindByToolId.set(toolCallId, kindFromUpdate);
             }
             const durationMs = durationMsFromUpdatePayload(update);
-            return [
+            return withSessionLinks(toolCallId, update.content, [
                 {
                     type: "updateToolCall",
                     toolCallId,
@@ -905,7 +919,7 @@ export function sessionUpdateToWebviewMessages(
                     ...(subtitleHint !== undefined ? { subtitle: subtitleHint } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
                 },
-            ];
+            ]);
         }
         case "available_commands_update": {
             const raw = update as unknown as { availableCommands?: unknown };
@@ -978,9 +992,70 @@ export function sessionUpdateToWebviewMessages(
             return [{ type: "tokenUsage", used: update.used, size: update.size }];
         case "subagent_update":
             return [subagentUpdateMessage(update)];
+        case "session_message":
+        case "session_message_chunk":
+            return sessionMessageTexts(update).map((text) => ({ type: "appendAgentText", text }));
         default:
             return [];
     }
+}
+
+function textFromContentBlock(block: acp.ContentBlock): string | undefined {
+    if (block.type === "text" && block.text.length > 0) {
+        return block.text;
+    }
+    return undefined;
+}
+
+type SessionMessageUpdate =
+    | (acp.SessionMessage & { sessionUpdate: "session_message" })
+    | (acp.SessionMessageChunk & { sessionUpdate: "session_message_chunk" });
+
+/** Text from a session-directed message. Chunks append. A whole message replaces by sending its text once. */
+function sessionMessageTexts(update: SessionMessageUpdate): string[] {
+    if (update.sessionUpdate === "session_message_chunk") {
+        const text = textFromContentBlock(update.content);
+        return text !== undefined ? [text] : [];
+    }
+    if (update.content === undefined || update.content === null || update.content.length === 0) {
+        return [];
+    }
+    return update.content
+        .map((block) => textFromContentBlock(block))
+        .filter((text): text is string => text !== undefined);
+}
+
+function sessionIdsInToolContent(content: unknown): string[] {
+    if (!Array.isArray(content)) {
+        return [];
+    }
+    const ids: string[] = [];
+    for (const piece of content) {
+        if (piece === null || typeof piece !== "object" || Array.isArray(piece)) {
+            continue;
+        }
+        if (!("type" in piece) || piece.type !== "session" || !("sessionId" in piece)) {
+            continue;
+        }
+        if (typeof piece.sessionId === "string" && piece.sessionId.length > 0) {
+            ids.push(piece.sessionId);
+        }
+    }
+    return ids;
+}
+
+/** Links a tool call to each `{ type: "session" }` content block without changing that child's status. */
+function withSessionLinks(
+    toolCallId: string,
+    content: unknown,
+    messages: ExtensionToWebviewMessage[],
+): ExtensionToWebviewMessage[] {
+    const links = sessionIdsInToolContent(content).map((sessionId): ExtensionToWebviewMessage => ({
+        type: "subagentUpdate",
+        sessionId,
+        toolCallId,
+    }));
+    return links.length > 0 ? [...messages, ...links] : messages;
 }
 
 const subagentActivityTypes = new Set<SubagentActivityEvent["type"]>([
@@ -1037,26 +1112,179 @@ export function subagentUpdateMessage(update: acp.SubagentUpdate): ExtensionToWe
     };
 }
 
+function cursorMetaToolCallId(update: object): string | undefined {
+    const meta = "_meta" in update ? update._meta : undefined;
+    if (meta === null || typeof meta !== "object" || Array.isArray(meta)) {
+        return undefined;
+    }
+    const cursor = "cursor" in meta ? meta.cursor : undefined;
+    if (cursor === null || typeof cursor !== "object" || Array.isArray(cursor)) {
+        return undefined;
+    }
+    const toolCallId = "toolCallId" in cursor ? cursor.toolCallId : undefined;
+    return typeof toolCallId === "string" && toolCallId.length > 0 ? toolCallId : undefined;
+}
+
+/**
+ * Cursor sends child sessions as `subagent_spawned` and `subagent_state_update`.
+ * `disconnected` means the subagent is still running in the background.
+ */
+export function cursorSubagentUpdateMessage(
+    update: acp.SessionUpdate,
+): ExtensionToWebviewMessage | undefined {
+    const raw = update as acp.SessionUpdate & {
+        subagentSessionId?: unknown;
+        name?: unknown;
+        task?: unknown;
+        state?: unknown;
+    };
+    const kind = String(raw.sessionUpdate);
+    if (kind !== "subagent_spawned" && kind !== "subagent_state_update") {
+        return undefined;
+    }
+    if (typeof raw.subagentSessionId !== "string" || raw.subagentSessionId.length === 0) {
+        return undefined;
+    }
+    const toolCallId = cursorMetaToolCallId(raw);
+    const link = toolCallId !== undefined ? { toolCallId } : {};
+    if (kind === "subagent_spawned") {
+        const name =
+            typeof raw.name === "string" && raw.name.trim().length > 0 ? raw.name : "Subagent";
+        return {
+            type: "subagentUpdate",
+            sessionId: raw.subagentSessionId,
+            title: name,
+            description: typeof raw.task === "string" ? raw.task : "",
+            state: "running",
+            stopReason: null,
+            ...link,
+        };
+    }
+    const stateName = typeof raw.state === "string" ? raw.state : "";
+    if (stateName === "completed") {
+        return {
+            type: "subagentUpdate",
+            sessionId: raw.subagentSessionId,
+            state: "idle",
+            stopReason: "end_turn",
+            ...link,
+        };
+    }
+    if (stateName === "failed" || stateName === "error") {
+        return {
+            type: "subagentUpdate",
+            sessionId: raw.subagentSessionId,
+            state: "idle",
+            stopReason: "error",
+            ...link,
+        };
+    }
+    if (stateName === "cancelled") {
+        return {
+            type: "subagentUpdate",
+            sessionId: raw.subagentSessionId,
+            state: "idle",
+            stopReason: "cancelled",
+            ...link,
+        };
+    }
+    if (stateName === "disconnected" || stateName === "running" || stateName === "background") {
+        return {
+            type: "subagentUpdate",
+            sessionId: raw.subagentSessionId,
+            state: "running",
+            stopReason: null,
+            ...link,
+        };
+    }
+    return {
+        type: "subagentUpdate",
+        sessionId: raw.subagentSessionId,
+        state: "unknown",
+        ...link,
+    };
+}
+
 /**
  * Routes a session notification to the parent transcript or a child subagent.
  * The outer `sessionId` is the parent for `subagent_update` and the child for later child events.
  */
+function nestUnderOuterSession(
+    message: ExtensionToWebviewMessage,
+    outerSessionId: string,
+    rootSessionId: string | null,
+): ExtensionToWebviewMessage {
+    if (message.type !== "subagentUpdate" || rootSessionId === null) {
+        return message;
+    }
+    if (outerSessionId === rootSessionId || outerSessionId === message.sessionId) {
+        return message;
+    }
+    return { ...message, parentSessionId: outerSessionId };
+}
+
+/**
+ * A v2 child reports foreground work on its own `state_update`.
+ * The open chat's `state_update` is not a subagent.
+ */
+function childStateUpdateMessage(
+    update: acp.SessionUpdate,
+    childSessionId: string,
+): ExtensionToWebviewMessage | undefined {
+    const raw = update as acp.SessionUpdate & { state?: unknown; stopReason?: unknown };
+    if (String(raw.sessionUpdate) !== "state_update" || typeof raw.state !== "string") {
+        return undefined;
+    }
+    const name = raw.state;
+    const state: SubagentWorkState =
+        name === "running" || name === "idle" || name === "requires_action" || name === "unknown"
+            ? name
+            : "unknown";
+    const stopReason =
+        state === "idle" && typeof raw.stopReason === "string" ? raw.stopReason : null;
+    return {
+        type: "subagentUpdate",
+        sessionId: childSessionId,
+        state,
+        stopReason,
+    };
+}
+
 export function messagesForSessionNotification(
     params: acp.SessionNotification,
     parentSessionId: string | null,
     tracking: ToolCallKindTracking,
 ): ExtensionToWebviewMessage[] {
+    const cursorChild = cursorSubagentUpdateMessage(params.update);
+    if (cursorChild !== undefined) {
+        return [nestUnderOuterSession(cursorChild, params.sessionId, parentSessionId)];
+    }
     if (params.update.sessionUpdate === "subagent_update") {
-        return [subagentUpdateMessage(params.update)];
+        return [
+            nestUnderOuterSession(
+                subagentUpdateMessage(params.update),
+                params.sessionId,
+                parentSessionId,
+            ),
+        ];
+    }
+    if (parentSessionId !== null && params.sessionId !== parentSessionId) {
+        const childState = childStateUpdateMessage(params.update, params.sessionId);
+        if (childState !== undefined) {
+            return [childState];
+        }
     }
     const messages = sessionUpdateToWebviewMessages(params.update, tracking);
     if (parentSessionId !== null && params.sessionId !== parentSessionId) {
         const childId = params.sessionId;
-        return messages.flatMap((message) =>
-            isSubagentActivityMessage(message)
+        return messages.flatMap((message) => {
+            if (message.type === "subagentUpdate") {
+                return [nestUnderOuterSession(message, childId, parentSessionId)];
+            }
+            return isSubagentActivityMessage(message)
                 ? [{ type: "subagentActivity" as const, sessionId: childId, event: message }]
-                : [],
-        );
+                : [];
+        });
     }
     return messages;
 }

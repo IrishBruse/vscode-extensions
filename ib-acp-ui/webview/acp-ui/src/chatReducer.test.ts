@@ -865,4 +865,155 @@ describe("chatReducer", () => {
       { type: "agent", text: "Looking" },
     ]);
   });
+
+  it("shows a background task as running and keeps its activity on that task", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "call-task-1",
+      title: "Task: Verify sky banding",
+      kind: "other",
+      status: "pending",
+      subtitle: "generalPurpose",
+      content: "Capture the screenshot",
+    });
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "call-task-1",
+      status: "in_progress",
+    });
+    state = chatReducer(state, {
+      type: "cursorTask",
+      toolCallId: "call-task-1",
+      description: "Verify sky banding",
+      prompt: "Capture the screenshot",
+      subagentType: "generalPurpose",
+      durationMs: 866,
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      toolCallId: "call-task-1",
+      title: "Verify sky banding",
+      description: "Capture the screenshot",
+      state: "running",
+      stopReason: null,
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child-1",
+      event: { type: "appendAgentText", text: "The sky still shows bands." },
+    });
+    const task = state.trace.find((item) => item.type === "tool");
+    expect(task).toMatchObject({ status: "in_progress", durationMs: undefined });
+    expect(state.trace.some((item) => item.type === "subagent")).toBe(false);
+    expect(state.subagentActivity.get("child-1")?.trace).toEqual([
+      { type: "agent", text: "The sky still shows bands." },
+    ]);
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      toolCallId: "call-task-1",
+      state: "idle",
+      stopReason: "end_turn",
+    });
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      status: "completed",
+    });
+  });
+
+  it("stops showing a linked task as running when its work state is unknown", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "call-task-1",
+      title: "Task: Explore",
+      kind: "other",
+      status: "in_progress",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      toolCallId: "call-task-1",
+      state: "unknown",
+    });
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      status: "in_progress",
+      taskStopReason: "unknown",
+    });
+  });
+
+  it("links a task to the Cursor agent id and keeps a session link from removing the roster", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      title: "Explore",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "cursorTask",
+      toolCallId: "call-task-1",
+      description: "Explore",
+      prompt: "Find the bug",
+      subagentType: "explore",
+      agentId: "child-1",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      toolCallId: "call-task-1",
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child-1",
+      event: { type: "appendAgentText", text: "Found it" },
+    });
+    expect(state.trace.some((item) => item.type === "subagent")).toBe(true);
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(1);
+    expect(state.subagentActivity.get("child-1")?.trace).toEqual([
+      { type: "agent", text: "Found it" },
+    ]);
+  });
+
+  it("places a nested child inside its parent", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child",
+      title: "Parent worker",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "grandchild",
+      title: "Nested",
+      state: "running",
+      parentSessionId: "child",
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(1);
+    expect(state.subagentActivity.get("child")?.trace[0]).toMatchObject({
+      type: "subagent",
+      sessionId: "grandchild",
+      title: "Nested",
+    });
+  });
+
+  it("marks a running child unknown after the agent disconnects", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      title: "Explore",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "error",
+      message: "Agent exited",
+      disconnected: true,
+    });
+    expect(state.trace.find((item) => item.type === "subagent")).toMatchObject({
+      state: "unknown",
+    });
+  });
 });

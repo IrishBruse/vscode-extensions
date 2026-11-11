@@ -5,11 +5,15 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: A child session shows its messages, its work state, and a nested child on that child.
+- **Change**: A quote keeps the surrounding background and uses only the blue side bar.
+- **Fix**: A running subagent stays Running and shows its own messages and tool calls.
+- **Remove**: The Setup sidebar no longer includes the agent registry.
+- **Change**: Setup sidebar rows sit on one level, with no nested indent.
 - **Add**: You can open a subagent, read its status, and return to the parent chat.
 - **Change**: An agent plan shows as a TODO list, and each item uses a mark for its state.
 - **Fix**: The composer shows the workspace path while the chat title is still New Cursor chat.
 - **Change**: Each chat is a `<uuid>.acp` file, and the chat title stays in that file.
-- **Change**: Quotes and command output use the markdown preview bar, with the theme quote background, a 5px border, and inner padding.
 - **Change**: Context usage shows as `13.3k/256.0k`, with space before the command hint.
 - **Change**: The composer and editor tab use the chat title stored in the `.acp` file.
 - **Add**: A running bash command shows a live timer in the same form as Thinking.

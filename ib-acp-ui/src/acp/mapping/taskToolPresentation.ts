@@ -63,6 +63,22 @@ export function taskToolFieldsFromRaw(raw: unknown): TaskToolFields | undefined 
     };
 }
 
+/** True when Cursor handed the task to a subagent that is still running. */
+export function taskOutputIsBackground(raw: unknown): boolean {
+    if (typeof raw === "string") {
+        const trimmed = raw.trim();
+        if (!trimmed.startsWith("{")) {
+            return false;
+        }
+        try {
+            return taskOutputIsBackground(JSON.parse(trimmed) as unknown);
+        } catch {
+            return false;
+        }
+    }
+    return isRecord(raw) && raw.isBackground === true;
+}
+
 /** Duration on a completed Cursor task `rawOutput` (`{ durationMs, isBackground }`). */
 export function taskDurationMsFromRawOutput(raw: unknown): number | undefined {
     if (typeof raw === "string") {

@@ -14,6 +14,7 @@ The tab name is the chat title stored in that file.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
 
 The Setup sidebar configures ACP clients, shows runtime choices that live outside VS Code settings, and reviews the chat open in the editor.
+Those rows sit on one level.
 
 Configure where session files are stored with `ib-acp-ui.sessionsDirectory`.
 Empty uses extension global storage.
@@ -38,7 +39,7 @@ The chat UI and the markdown renderer load as later chunks from `media/acp-ui/ch
 ### Setup tree view
 
 [AcpUiSessionsViewProvider](../../../src/extension/acpUiSessionsView.ts#L136-L199) implements the tree data provider for `acpUiSessionsView`.
-[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L183-L244) builds the Clients, Runtime, and Open chat sections.
+[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L211-L260) builds the Clients, Runtime, and Open chat rows on one level.
 
 ### Commands and keybindings
 

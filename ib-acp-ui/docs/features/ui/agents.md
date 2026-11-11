@@ -9,7 +9,7 @@ Manual settings override registry installs when the display name matches.
 There are no built-in default agents; install from the registry on first use.
 
 The **Setup** sidebar configures ACP clients and reviews the open chat.
-Add a manual client there, or install one with **Browse registry**.
+Add a manual client there.
 Click a client to use it for new chats.
 That choice is stored in extension state, outside `settings.json`.
 On an open `.acp` editor tab, the title bar shows a **New Chat** split control (`+ ▾`): the plus creates with the active client, and the chevron offers **New Chat with Agent…**.
@@ -34,7 +34,7 @@ The composer does not switch agents.
 [setActiveAgentName](../../../src/extension/acpUiActiveAgent.ts) persists the sidebar picker choice.
 
 [pickAcpAgentConfig](../../../src/extension/acpUiAgentPicker.ts) shows a quick pick over the merged list, with a **Browse Agent Registry** entry.
-[AcpUiSessionsViewProvider](../../../src/extension/acpUiSessionsView.ts#L136-L199) renders the setup sidebar from [buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L183-L244).
+[AcpUiSessionsViewProvider](../../../src/extension/acpUiSessionsView.ts#L136-L199) renders the setup sidebar from [buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L211-L260).
 [selectClientByName](../../../src/extension/acpUiSessionsView.ts#L251-L259) sets that client when a row is clicked.
 [selectActiveAgent](../../../src/extension/acpUiSessionsView.ts#L261-L284) updates it from the runtime row.
 `.acp` tabs contribute new-chat commands to `editor/title` (`navigation` group with `alt`) so VS Code renders the `+ ▾` split button.

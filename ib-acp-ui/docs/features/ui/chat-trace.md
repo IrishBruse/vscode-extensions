@@ -13,7 +13,7 @@ When a new thought block appears, the previous thought block closes.
 It stays open if you have scrolled up and that block is on screen.
 
 Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
-A quote uses the markdown preview bar: theme quote background, a 5px border, and padding inside the bar.
+A quote keeps the surrounding background and uses a 5px blue bar on the left.
 An image on your message shows as a small thumbnail.
 Click the thumbnail to view the image larger.
 Transcript text uses the normal foreground color.
@@ -33,7 +33,7 @@ A write always shows its diff under the line.
 A long diff shows a short window around the edits.
 A bash command stays on the `$` line.
 While that command runs, the line shows `Running for 3.8s` and the clock keeps counting.
-Its output sits in a quote bar under that line.
+Its output uses that same blue bar under the line.
 A short result shows in that block.
 A long result stays closed until you click Show output.
 
@@ -42,8 +42,9 @@ Each item has a mark for pending, in progress, complete, or cancelled.
 
 A subagent task shows as its own card.
 The card shows the status, the short description, the subagent type, and the prompt.
+A nested child shows inside the child that owns it.
 Open the card to read that subagent, then use Back to return to the parent chat.
-A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, or Cancelled.
+A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, Cancelled, or Unknown.
 A long prompt starts collapsed.
 
 While a session loads from the agent, a saved last screen is shown when one exists.
@@ -82,7 +83,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 - User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
-  [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses the markdown preview quote bar.
+  [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.
 - Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L31-L110) is a disclosure.
   The heading stays open until it is clicked.
   It says Thinking while the thought is running and Thought once it finishes, with the elapsed time when known.
@@ -95,7 +96,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 - Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) shows status and an Open control.
   [SubagentSessionBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentSessionBlock/SubagentSessionBlock.tsx#L10-L38) shows an ACP child session on the parent chat.
   [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L10-L68) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L12-L40) show that subagent, and Back returns to the parent.
-  [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1044-L1062) keeps child session updates on that child.
+  [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1255-L1291) keeps child session updates on that child.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L77) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
@@ -113,7 +114,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L15-L28) counts while the command runs.
   [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) feeds the same clock to the composer.
   [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L647-L676) keeps a long result closed.
-  Show output opens that result in the quote bar from [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L54-L66).
+  Show output opens that result behind the same blue bar from [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L54-L66).
   Command lines show a compact duration when known (`$ ls 117ms`).
   Summaries come from [toolCallCompactText.ts](../../../webview/acp-ui/src/toolCallCompactText.ts).
 

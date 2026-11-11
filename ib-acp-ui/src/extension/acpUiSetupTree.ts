@@ -2,7 +2,6 @@ import type { AcpAgentSpawnConfig } from "../acp/domain/agentSpawnConfig";
 import type { AcpUiSessionConnectionStatus } from "./acpUiSessionConnection";
 
 export const cmdAddAcpClient = "ib-acp-ui.addAcpClient";
-export const cmdBrowseAgentRegistry = "ib-acp-ui.browseAgentRegistry";
 export const cmdSelectActiveAgent = "ib-acp-ui.selectActiveAgent";
 
 /** One ACP client shown in the setup sidebar. */
@@ -70,19 +69,14 @@ function fact(id: string, label: string, description: string, tooltip: string): 
     };
 }
 
-function section(
-    id: string,
-    label: string,
-    tooltip: string,
-    children: AcpUiSetupNode[],
-): AcpUiSetupNode {
+function section(id: string, label: string, tooltip: string): AcpUiSetupNode {
     return {
         id,
         label,
         tooltip,
-        collapsible: true,
+        collapsible: false,
         contextValue: "section",
-        children,
+        children: [],
     };
 }
 
@@ -217,62 +211,43 @@ function openChatNodes(openChat: AcpUiSetupOpenChat | undefined): AcpUiSetupNode
 export function buildAcpUiSetupTree(model: AcpUiSetupModel): AcpUiSetupNode[] {
     const clientChildren: AcpUiSetupNode[] =
         model.clients.length === 0
-            ? [
-                  fact(
-                      "clients:empty",
-                      "No clients yet",
-                      "",
-                      "Add a manual client or install one from the registry",
-                  ),
-              ]
+            ? [fact("clients:empty", "No clients yet", "", "Add a manual client")]
             : model.clients.map(clientNode);
-    clientChildren.push(
+    clientChildren.push({
+        id: "action:add-client",
+        label: "Add client…",
+        tooltip: "Add a manual ACP client to settings",
+        collapsible: false,
+        contextValue: "action",
+        commandId: cmdAddAcpClient,
+        children: [],
+    });
+
+    const runtimeChildren: AcpUiSetupNode[] = [
         {
-            id: "action:add-client",
-            label: "Add client…",
-            tooltip: "Add a manual ACP client to settings",
+            id: "runtime:active-client",
+            label: "New chats use",
+            description: model.activeClientName ?? "None",
+            tooltip: "Active client for new chats. Stored in extension state, not settings.json.",
             collapsible: false,
-            contextValue: "action",
-            commandId: cmdAddAcpClient,
+            contextValue: "fact",
+            commandId: cmdSelectActiveAgent,
             children: [],
         },
-        {
-            id: "action:browse-registry",
-            label: "Browse registry…",
-            tooltip: "Install an ACP client from the registry",
-            collapsible: false,
-            contextValue: "action",
-            commandId: cmdBrowseAgentRegistry,
-            children: [],
-        },
-    );
+        fact(
+            "runtime:workspace",
+            "Workspace",
+            model.workspacePath ?? "No folder open",
+            "Folder used as the agent working directory",
+        ),
+    ];
 
     return [
-        section("section:clients", "Clients", "ACP clients used to start chats", clientChildren),
-        section("section:runtime", "Runtime", "Choices stored outside VS Code settings", [
-            {
-                id: "runtime:active-client",
-                label: "New chats use",
-                description: model.activeClientName ?? "None",
-                tooltip:
-                    "Active client for new chats. Stored in extension state, not settings.json.",
-                collapsible: false,
-                contextValue: "fact",
-                commandId: cmdSelectActiveAgent,
-                children: [],
-            },
-            fact(
-                "runtime:workspace",
-                "Workspace",
-                model.workspacePath ?? "No folder open",
-                "Folder used as the agent working directory",
-            ),
-        ]),
-        section(
-            "section:open-chat",
-            "Open chat",
-            "Review the chat in the active editor",
-            openChatNodes(model.openChat),
-        ),
+        section("section:clients", "Clients", "ACP clients used to start chats"),
+        ...clientChildren,
+        section("section:runtime", "Runtime", "Choices stored outside VS Code settings"),
+        ...runtimeChildren,
+        section("section:open-chat", "Open chat", "Review the chat in the active editor"),
+        ...openChatNodes(model.openChat),
     ];
 }

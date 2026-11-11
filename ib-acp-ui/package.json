@@ -326,14 +326,9 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "ib-acp-ui.browseAgentRegistry",
-                    "when": "view == acpUiSessionsView",
-                    "group": "navigation@3"
-                },
-                {
                     "command": "ib-acp-ui.refreshAcpUiSessions",
                     "when": "view == acpUiSessionsView",
-                    "group": "navigation@4"
+                    "group": "navigation@3"
                 }
             ]
         },
