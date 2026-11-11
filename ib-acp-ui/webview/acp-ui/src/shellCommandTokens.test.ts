@@ -3,7 +3,7 @@ import {
   tokenizeShellCommand,
   type ShellHighlightKind,
   type ShellHighlightToken,
-} from "./shellCommandHighlight";
+} from "./shellCommandTokens";
 
 function kinds(tokens: ShellHighlightToken[]): ShellHighlightKind[] {
   return tokens.map((token) => token.kind);

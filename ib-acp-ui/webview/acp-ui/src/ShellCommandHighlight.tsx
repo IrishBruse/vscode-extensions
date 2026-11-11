@@ -1,6 +1,6 @@
 import { type ReactElement, useMemo } from "react";
 import "./ShellCommandHighlight.css";
-import { tokenizeShellCommand } from "./shellCommandHighlight";
+import { tokenizeShellCommand } from "./shellCommandTokens";
 
 /**
  * Renders a shell command with fish-style token colors (VS Code terminal ANSI tokens).
