@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { prerenderToNodeStream } from "react-dom/static";
 import { describe, expect, it } from "vite-plus/test";
@@ -70,5 +71,14 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).toContain('aria-label="Command output"');
     expect(html).toContain("line 1");
     expect(html).toContain("line 8");
+  });
+
+  it("paints command output with the quote bar", () => {
+    const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
+    const rule = css.match(/\.tool-call-compact-execute-output\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).toContain("padding: 0 16px 0 10px");
+    expect(rule).toContain("border-left: 5px solid");
+    expect(rule).toContain("--vscode-textBlockQuote-background");
+    expect(rule).toContain("--vscode-textBlockQuote-border");
   });
 });

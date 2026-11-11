@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Quotes and command output use the markdown preview bar, with the theme quote background, a 5px border, and inner padding.
 - **Change**: Context usage shows as `13.3k/256.0k`, with space before the command hint.
 - **Change**: The composer and editor tab use the chat title stored in the `.acp` file.
 - **Add**: A running bash command shows a live timer in the same form as Thinking.

@@ -13,6 +13,7 @@ When a new thought block appears, the previous thought block closes.
 It stays open if you have scrolled up and that block is on screen.
 
 Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
+A quote uses the markdown preview bar: theme quote background, a 5px border, and padding inside the bar.
 An image on your message shows as a small thumbnail.
 Click the thumbnail to view the image larger.
 Transcript text uses the normal foreground color.
@@ -32,7 +33,7 @@ A write always shows its diff under the line.
 A long diff shows a short window around the edits.
 A bash command stays on the `$` line.
 While that command runs, the line shows `Running for 3.8s` and the clock keeps counting.
-Its output sits in a separate block under that line.
+Its output sits in a quote bar under that line.
 A short result shows in that block.
 A long result stays closed until you click Show output.
 
@@ -76,6 +77,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 - User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
+  [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses the markdown preview quote bar.
 - Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L31-L110) is a disclosure.
   The heading stays open until it is clicked.
   It says Thinking while the thought is running and Thought once it finishes, with the elapsed time when known.
@@ -103,7 +105,7 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L15-L28) counts while the command runs.
   [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) feeds the same clock to the composer.
   [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L647-L676) keeps a long result closed.
-  Show output opens that result in the output block.
+  Show output opens that result in the quote bar from [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L54-L66).
   Command lines show a compact duration when known (`$ ls 117ms`).
   Summaries come from [toolCallCompactText.ts](../../../webview/acp-ui/src/toolCallCompactText.ts).
 
