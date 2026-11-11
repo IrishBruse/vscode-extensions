@@ -28,7 +28,7 @@ function BashRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
 }
 
 /**
- * Compact terminal tool: the command stays on the `$` line.
+ * Compact terminal tool: the command keeps its line breaks under `$`.
  * Output sits in a separate block. A long result opens from Show output.
  */
 export function ToolCallCompactExecuteBlock({

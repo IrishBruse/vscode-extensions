@@ -9,7 +9,7 @@
 .tool-call-compact-execute-command {
   display: grid;
   grid-template-columns: var(--acp-ui-trace-content-indent) minmax(0, 1fr);
-  align-items: baseline;
+  align-items: start;
   color: var(--vscode-foreground);
   word-break: break-word;
 }
@@ -26,6 +26,7 @@
 
 .tool-call-compact-execute-command-text {
   min-width: 0;
+  white-space: pre-wrap;
 }
 
 .tool-call-compact-execute-duration {

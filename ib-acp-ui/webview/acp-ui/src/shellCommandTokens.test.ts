@@ -95,4 +95,11 @@ describe("tokenizeShellCommand", () => {
     ]);
     expect(texts(tokens).at(-1)).toBe("# list all");
   });
+
+  it("ends a hash comment at the line break", () => {
+    const tokens = tokenizeShellCommand("echo hi # note\necho next");
+    const comment = tokens.find((token) => token.kind === "comment");
+    expect(comment?.text).toBe("# note");
+    expect(texts(tokens)).toContain("next");
+  });
 });

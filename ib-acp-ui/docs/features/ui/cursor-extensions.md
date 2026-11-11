@@ -8,6 +8,7 @@ A running card shows a live timer in the same form as Thinking, such as `Running
 Unknown work, and a lost connection, show as Unknown.
 Its messages and tool calls show on the card.
 `cursor/task` `agentId` attaches that child session to the task.
+Cursor streams that child only after `initialize` includes `_meta.subagents`.
 Open a card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 `cursor/ask_question` and basic `cursor/create_plan` dialogs already work.
 

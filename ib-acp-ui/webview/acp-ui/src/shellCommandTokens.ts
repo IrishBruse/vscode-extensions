@@ -138,8 +138,12 @@ export function tokenizeShellCommand(command: string): ShellHighlightToken[] {
     }
 
     if (ch === "#") {
-      pushToken(tokens, "comment", command.slice(index));
-      break;
+      const start = index;
+      while (index < command.length && (command[index] ?? "") !== "\n") {
+        index += 1;
+      }
+      pushToken(tokens, "comment", command.slice(start, index));
+      continue;
     }
 
     if (ch === "'" || ch === '"') {

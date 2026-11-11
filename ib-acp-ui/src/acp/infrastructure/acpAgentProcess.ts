@@ -3,6 +3,7 @@ import { Readable, Transform, Writable } from "node:stream";
 import * as acp from "@agentclientprotocol/sdk";
 import {
     type AcpAgentSpawnConfig,
+    CURSOR_SUBAGENTS_META_KEY,
     isCursorAcpAgent,
     PARAMETERIZED_MODEL_PICKER_META_KEY,
 } from "../domain/agentSpawnConfig";
@@ -161,6 +162,7 @@ export function buildAcpClientCapabilities(config: AcpAgentSpawnConfig): acp.Cli
     if (isCursorAcpAgent(config)) {
         capabilities._meta = {
             [PARAMETERIZED_MODEL_PICKER_META_KEY]: true,
+            [CURSOR_SUBAGENTS_META_KEY]: {},
         };
     }
     return capabilities;

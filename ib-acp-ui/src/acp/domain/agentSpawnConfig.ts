@@ -21,6 +21,12 @@ export type AcpAuthMethodRef = {
 /** Cursor ACP `_meta` key that requests separate model-parameter config options. */
 export const PARAMETERIZED_MODEL_PICKER_META_KEY = "parameterizedModelPicker";
 
+/**
+ * Cursor's bundled ACP schema drops a top-level `clientCapabilities.subagents`.
+ * The same empty object under `_meta` is what that agent actually reads.
+ */
+export const CURSOR_SUBAGENTS_META_KEY = "subagents";
+
 /** True when the spawn config targets Cursor's ACP agent (`cursor-agent`, etc.). */
 export function isCursorAcpAgent(config: AcpAgentSpawnConfig): boolean {
     const command = config.command.toLowerCase();

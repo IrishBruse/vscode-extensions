@@ -19,9 +19,11 @@ See [session-config](../ui/session-config.md) for the shipped model toolbar.
 
 ### Capabilities
 
-[buildAcpClientCapabilities](../../../src/acp/infrastructure/acpAgentProcess.ts#L156-L167) builds the `clientCapabilities` object sent on `initialize`.
+[buildAcpClientCapabilities](../../../src/acp/infrastructure/acpAgentProcess.ts#L156-L169) builds the `clientCapabilities` object sent on `initialize`.
 All agents advertise filesystem read and write support.
 The same object sets `subagents` to an empty object so agents may send child sessions.
+Cursor's current schema drops that top-level field.
+The same function also sets `_meta.subagents` to an empty object for Cursor, which is the field that agent reads.
 
 For Cursor spawn configs, [isCursorAcpAgent](../../../src/acp/domain/agentSpawnConfig.ts) gates `_meta.parameterizedModelPicker: true`.
 That unlocks agent-ordered `configOptions` rendered in [ConfigOptionControls](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx).
@@ -34,18 +36,12 @@ Protocol: [extensibility](../../acp/protocol/extensibility.mdx), [session config
 
 ### Initialization metadata
 
-[configureAcpClientInfo](../../../src/extension/activateAcpUiExtension.ts#L22-L31) runs at extension activation.
-
-It sets `clientInfo` from `package.json` via [buildAcpClientInfoFromPackage](../../../src/acp/infrastructure/acpAgentProcess.ts#L115-L133).
-
-[AcpAgentProcess.start](../../../src/acp/infrastructure/acpAgentProcess.ts#L291-L299) sends it on every `initialize`.
-
-[assertNegotiatedProtocolVersion](../../../src/acp/infrastructure/acpAgentProcess.ts#L148-L157) rejects incompatible agent responses.
-
-It throws [AcpProtocolVersionMismatchError](../../../src/acp/infrastructure/acpAgentProcess.ts#L89-L106).
-
+[configureAcpClientInfo](../../../src/extension/activateAcpUiExtension.ts#L19-L27) runs at extension activation.
+It sets `clientInfo` from `package.json` via [buildAcpClientInfoFromPackage](../../../src/acp/infrastructure/acpAgentProcess.ts#L115-L128).
+[AcpAgentProcess.start](../../../src/acp/infrastructure/acpAgentProcess.ts#L317-L326) sends it on every `initialize`.
+[assertNegotiatedProtocolVersion](../../../src/acp/infrastructure/acpAgentProcess.ts#L150-L154) rejects incompatible agent responses.
+It throws [AcpProtocolVersionMismatchError](../../../src/acp/infrastructure/acpAgentProcess.ts#L89-L105).
 The error message guides the user to update ACP UI or the agent.
-
 Connect failures surface that message in the chat UI and VS Code notification.
 
 Task: [initialization-metadata](../../tasks/initialization-metadata.md).

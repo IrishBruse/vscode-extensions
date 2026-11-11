@@ -73,6 +73,13 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).toContain("line 8");
   });
 
+  it("keeps line breaks in the command", async () => {
+    const html = await renderBlock(executeItem("", "python3 << 'PY'\nfrom PIL import Image"));
+    expect(html).toContain("python3");
+    expect(html).toContain("shell-hl--whitespace\">\n</span>");
+    expect(html).toContain(">from</span>");
+  });
+
   it("paints command output with the quote bar", () => {
     const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
     const rule = css.match(/\.tool-call-compact-execute-output\s*\{[^}]*\}/)?.[0] ?? "";
@@ -81,5 +88,8 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(rule).toContain("background-color: transparent");
     expect(rule).not.toContain("--vscode-textBlockQuote-background");
     expect(rule).toContain("--vscode-textBlockQuote-border");
+    const commandRule =
+      css.match(/\.tool-call-compact-execute-command-text\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(commandRule).toContain("white-space: pre-wrap");
   });
 });

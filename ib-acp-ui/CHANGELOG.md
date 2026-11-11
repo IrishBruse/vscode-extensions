@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: A bash command keeps its line breaks.
+- **Fix**: A Cursor subagent streams its messages and tool calls while it runs.
 - **Fix**: Allow always also approves other waiting requests of that same tool kind.
 - **Add**: A running subagent card shows a live timer in the same form as Thinking.
 - **Fix**: Opening a subagent shows its live messages and tool calls.

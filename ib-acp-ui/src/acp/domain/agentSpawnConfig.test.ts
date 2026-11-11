@@ -189,7 +189,7 @@ describe("buildAcpClientCapabilities", () => {
         ).toEqual({
             fs: { readTextFile: true, writeTextFile: true },
             subagents: {},
-            _meta: { parameterizedModelPicker: true },
+            _meta: { parameterizedModelPicker: true, subagents: {} },
         });
     });
 
