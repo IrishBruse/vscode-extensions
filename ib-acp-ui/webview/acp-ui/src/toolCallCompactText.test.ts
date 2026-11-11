@@ -284,7 +284,7 @@ describe("toolCallCompactText", () => {
     });
   });
 
-  it("previews long terminal output with a hidden-line hint and last line", () => {
+  it("keeps long terminal output closed until it is opened", () => {
     const lines = Array.from({ length: 24 }, (_, index) => `line ${index}`);
     lines[23] = "✓ built in 132ms";
     const item = toolItem({
@@ -294,8 +294,8 @@ describe("toolCallCompactText", () => {
       content: `$ npm run build:webview\n${lines.join("\n")}`,
     });
     expect(executeOutputPreview(item, false)).toEqual({
-      previewLines: ["✓ built in 132ms"],
-      hiddenLineCount: 23,
+      previewLines: [],
+      hiddenLineCount: 24,
       totalLineCount: 24,
     });
   });

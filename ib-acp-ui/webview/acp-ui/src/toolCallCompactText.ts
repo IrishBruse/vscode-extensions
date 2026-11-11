@@ -668,10 +668,9 @@ export function executeOutputPreview(
       totalLineCount,
     };
   }
-  const lastLine = lines[lines.length - 1] ?? "";
   return {
-    previewLines: lastLine.length > 0 ? [lastLine] : [],
-    hiddenLineCount: totalLineCount - 1,
+    previewLines: [],
+    hiddenLineCount: totalLineCount,
     totalLineCount,
   };
 }

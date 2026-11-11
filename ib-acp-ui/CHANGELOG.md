@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Bash output sits in its own block, and a long result opens from Show output.
 - **Change**: A read of `SKILL.md` shows as `Used` plus the skill folder name.
 - **Add**: The composer shows a context meter for how much of the agent context window is used.
 - **Fix**: Typing in the composer stays responsive when the chat is long, and a transcript update redraws only the row that changed.

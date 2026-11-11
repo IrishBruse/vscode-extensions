@@ -3,10 +3,15 @@ import { formatCompactDurationMs } from "../../../../../../../src/protocol/visib
 import "./ToolCallCompactExecuteBlock.css";
 import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import type { TraceToolItem } from "../../../../chatReducer";
-import { executeCommandText, executeOutputPreview } from "../../../../toolCallCompactText";
+import {
+  compactExecutePreviewLineCount,
+  executeCommandText,
+  executeOutputPreview,
+} from "../../../../toolCallCompactText";
 
 /**
- * Compact terminal tool: command line plus a short output preview.
+ * Compact terminal tool: the command stays on the `$` line.
+ * Output sits in a separate block. A long result opens from Show output.
  */
 export function ToolCallCompactExecuteBlock({
   item,
@@ -30,10 +35,21 @@ export function ToolCallCompactExecuteBlock({
 
   const expanded = expandAllToolOutputs || localExpanded;
   const command = executeCommandText(item);
-  const { previewLines, hiddenLineCount } = executeOutputPreview(item, expanded);
+  const { previewLines, totalLineCount } = executeOutputPreview(item, expanded);
+  const canToggle = totalLineCount > compactExecutePreviewLineCount;
   const inProgress = item.status === "pending" || item.status === "in_progress";
   const durationLabel =
     item.durationMs !== undefined ? formatCompactDurationMs(item.durationMs) : "";
+  const toggleOutput = (): void => {
+    if (expanded) {
+      setLocalExpanded(false);
+      if (expandAllToolOutputs) {
+        onCollapseExpandAll?.();
+      }
+      return;
+    }
+    setLocalExpanded(true);
+  };
 
   return (
     <div
@@ -58,26 +74,20 @@ export function ToolCallCompactExecuteBlock({
           ) : null}
         </span>
       </div>
-      {previewLines.length > 0 ? (
-        <pre className="tool-call-compact-execute-output">{previewLines.join("\n")}</pre>
-      ) : null}
-      {hiddenLineCount > 0 ? (
+      {canToggle ? (
         <button
           type="button"
-          className="tool-call-compact-execute-hidden"
-          onClick={() => {
-            if (expanded) {
-              setLocalExpanded(false);
-              if (expandAllToolOutputs) {
-                onCollapseExpandAll?.();
-              }
-            } else {
-              setLocalExpanded(true);
-            }
-          }}
+          className="tool-call-compact-execute-toggle"
+          aria-expanded={expanded}
+          onClick={toggleOutput}
         >
-          ... {hiddenLineCount} output lines hidden · ctrl+o to expand
+          {expanded ? "Hide output" : "Show output"}
         </button>
+      ) : null}
+      {previewLines.length > 0 ? (
+        <pre className="tool-call-compact-execute-output" aria-label="Command output">
+          {previewLines.join("\n")}
+        </pre>
       ) : null}
       {inProgress && previewLines.length === 0 ? (
         <div className="tool-call-compact-execute-running">Running…</div>
