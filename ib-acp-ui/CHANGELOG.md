@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A read of `SKILL.md` shows as `Used` plus the skill folder name.
+- **Add**: The composer shows a context meter for how much of the agent context window is used.
 - **Fix**: Typing in the composer stays responsive when the chat is long, and a transcript update redraws only the row that changed.
 - **Fix**: Allow always is remembered for that tool kind, and later requests of the same kind are approved without asking again.
 - **Remove**: Edited file previews no longer show an Expand control.

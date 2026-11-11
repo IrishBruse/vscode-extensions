@@ -38,6 +38,8 @@ describe("chatReducer", () => {
     expect(state.tokenUsage).toBeNull();
     state = chatReducer(state, { type: "tokenUsage", used: 12345, size: 200000 });
     expect(state.tokenUsage).toEqual({ used: 12345, size: 200000 });
+    state = chatReducer(state, { type: "tokenUsage", used: 800 });
+    expect(state.tokenUsage).toEqual({ used: 800, size: 200000 });
   });
 
   it("keeps agent-provided thought duration over client timing", () => {

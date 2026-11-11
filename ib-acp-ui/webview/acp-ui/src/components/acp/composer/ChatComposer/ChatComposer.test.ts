@@ -24,6 +24,14 @@ describe("ChatComposer", () => {
     expect(status).not.toContain("text-overflow");
   });
 
+  it("shows a context usage meter", () => {
+    const tsx = readFileSync(new URL("./ChatComposer.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("./ChatComposer.css", import.meta.url), "utf8");
+    expect(tsx).toContain('role="meter"');
+    expect(tsx).toContain('aria-label="Context usage"');
+    expect(css).toContain(".composer-context-fill");
+  });
+
   it("paints the composer frame with the input border", () => {
     const css = readFileSync(new URL("./ChatComposer.css", import.meta.url), "utf8");
     const start = css.indexOf(".composer-frame {");

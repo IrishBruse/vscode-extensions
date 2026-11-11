@@ -109,6 +109,23 @@ describe("toolCallCompactText", () => {
     expect(parts.pathSegment?.openTarget).toBeUndefined();
   });
 
+  it("labels a SKILL.md read as Used plus the skill folder", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("");
+    const item = toolItem({
+      toolCallId: "read-skill",
+      kind: "read",
+      title: "Read",
+      subtitle: "/home/econn/.agents/skills/misc/writing-for-agents/SKILL.md",
+    });
+    expect(compactToolDetailLine(item)).toBe("Used writing-for-agents");
+    expect(compactToolDetailParts(item).pathSegment).toMatchObject({
+      label: "writing-for-agents",
+      title: "~/.agents/skills/misc/writing-for-agents/SKILL.md",
+      openPath: "/home/econn/.agents/skills/misc/writing-for-agents/SKILL.md",
+    });
+  });
+
   it("shows a long file path from the end, up to 50 characters", () => {
     setCompactToolPathHome("/home/econn");
     const item = toolItem({

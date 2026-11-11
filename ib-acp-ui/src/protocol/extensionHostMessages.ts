@@ -285,8 +285,11 @@ export type ExtensionToWebviewMessage =
     | { type: "recentSessions"; sessions: AcpUiRecentSession[] }
     /** Whether the agent advertises image support for `session/prompt` content blocks. */
     | { type: "promptImageSupport"; supported: boolean }
-    /** Context window usage from ACP `usage_update` (`used` tokens of `size`). */
-    | { type: "tokenUsage"; used: number; size: number }
+    /**
+     * Context window usage.
+     * `size` is the window in tokens. Omit it when only a token count is known.
+     */
+    | { type: "tokenUsage"; used: number; size?: number }
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }
     | { type: "turnComplete"; stopReason: string }

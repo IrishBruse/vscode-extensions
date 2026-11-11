@@ -52,6 +52,14 @@ export const Idle: Story = {
   },
 };
 
+export const ContextUsage: Story = {
+  args: {
+    ...baseProps,
+    promptInFlight: false,
+    tokenUsage: { used: 12345, size: 200000 },
+  },
+};
+
 export const Running: Story = {
   args: {
     ...baseProps,

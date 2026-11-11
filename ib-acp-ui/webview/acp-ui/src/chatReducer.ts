@@ -883,6 +883,7 @@ function applySessionReset(state: ChatState): ChatState {
     replayToolStartedAtMsById: new Map(),
     composerPicksLocked: false,
     thoughtStartedAtMs: null,
+    tokenUsage: null,
     toolStartedAtMsById: new Map(),
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
   };
@@ -1206,7 +1207,13 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "promptImageSupport":
       return { ...state, promptImageSupported: action.supported };
     case "tokenUsage":
-      return { ...state, tokenUsage: { used: action.used, size: action.size } };
+      return {
+        ...state,
+        tokenUsage: {
+          used: action.used,
+          size: action.size !== undefined ? action.size : (state.tokenUsage?.size ?? null),
+        },
+      };
     case "permissionRequest":
       return {
         ...state,

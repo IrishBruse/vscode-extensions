@@ -1,6 +1,8 @@
 export type AcpUiTokenUsage = {
+  /** Tokens currently in context, or the reported token count when the window size is unknown. */
   used: number;
-  size: number;
+  /** Context window size in tokens. Null when the agent did not report a window. */
+  size: number | null;
 };
 
 function formatTokenCount(count: number): string {
@@ -16,6 +18,9 @@ function formatTokenCount(count: number): string {
  * Formats context window usage like `12.3k/200k (6%)`.
  */
 export function formatTokenUsage(usage: AcpUiTokenUsage): string {
+  if (usage.size === null) {
+    return formatTokenCount(usage.used);
+  }
   const percent = usage.size > 0 ? Math.round((usage.used / usage.size) * 100) : 0;
   return `${formatTokenCount(usage.used)}/${formatTokenCount(usage.size)} (${percent}%)`;
 }

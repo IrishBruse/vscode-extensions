@@ -21,4 +21,8 @@ describe("formatTokenUsage", () => {
   it("reports zero percent when the size is unknown", () => {
     expect(formatTokenUsage({ used: 500, size: 0 })).toBe("500/0 (0%)");
   });
+
+  it("shows only the token count when the window size is missing", () => {
+    expect(formatTokenUsage({ used: 12345, size: null })).toBe("12.3k");
+  });
 });

@@ -98,6 +98,8 @@ export class AcpSessionBridge {
     private agentProcess: AcpAgentProcess;
     private acpSessionId: string | null = null;
     private prompting = false;
+    /** True after this session receives an ACP `usage_update` with a context window. */
+    private contextWindowKnown = false;
     private lastModelSelection: AcpUiSessionModelSelection | null = null;
     private lastConfigOptions: AcpUiSessionConfigState | null = null;
     private toolCallKindTracking = createToolCallKindTracking();
@@ -463,6 +465,7 @@ export class AcpSessionBridge {
      */
     async connect(options?: AcpSessionConnectOptions): Promise<void> {
         this.seedConfigOptionsBeforeConnect();
+        this.contextWindowKnown = false;
         const init = await this.agentProcess.start();
         this.postToWebview({
             type: "promptImageSupport",
@@ -789,6 +792,14 @@ export class AcpSessionBridge {
         this.prompting = true;
         try {
             const result = await this.agentProcess.prompt(this.acpSessionId, text, images);
+            const reportedTokens = result.usage?.totalTokens;
+            if (
+                !this.contextWindowKnown &&
+                reportedTokens !== undefined &&
+                Number.isFinite(reportedTokens)
+            ) {
+                this.postToWebview({ type: "tokenUsage", used: reportedTokens });
+            }
             this.postToWebview({
                 type: "turnComplete",
                 stopReason: result.stopReason,
@@ -906,6 +917,13 @@ export class AcpSessionBridge {
     private handleSessionUpdate(params: acp.SessionNotification): void {
         if (params.update.sessionUpdate === "session_info_update") {
             this.hooks?.onSessionInfoUpdate?.(params.update);
+        }
+        if (
+            params.update.sessionUpdate === "usage_update" &&
+            Number.isFinite(params.update.used) &&
+            Number.isFinite(params.update.size)
+        ) {
+            this.contextWindowKnown = true;
         }
         if (params.update.sessionUpdate === "config_option_update") {
             this.syncConfigOptionsFromAgent(params.update.configOptions);

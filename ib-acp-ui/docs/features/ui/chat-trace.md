@@ -21,6 +21,7 @@ Each code block has a copy button.
 
 Tool calls appear as one line each while the agent works.
 A file path on that line shows the path.
+A read of `SKILL.md` shows `Used` and the folder that holds that file, for example `Used writing-for-agents`.
 A long path keeps the end and starts with `...` so the label stays within 50 characters.
 The path text uses the link color.
 Hover uses the link hover color.
@@ -86,6 +87,8 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
   Other paths shorten to `~/…`.
   [truncatePathLabel](../../../webview/acp-ui/src/toolCallCompactText.ts) keeps the end of a path and prefixes `...` when the label would pass 50 characters.
+  [skillFolderName](../../../webview/acp-ui/src/toolCallCompactText.ts#L187-L201) names the folder that holds `SKILL.md`.
+  [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L423-L438) then shows that read as `Used` plus that folder, and the folder still opens the file.
   [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.

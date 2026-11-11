@@ -183,6 +183,23 @@ function pathWithoutLineRange(text: string): string {
   return text.replace(/\s+lines?\s+\d+(?:\s*-\s*\d+)?$/i, "").trim();
 }
 
+/** Folder that contains `SKILL.md`, which is the skill name. */
+function skillFolderName(rawPath: string): string | null {
+  const normalized = rawPath.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  const slash = normalized.lastIndexOf("/");
+  const base = slash >= 0 ? normalized.slice(slash + 1) : normalized;
+  if (base.toLowerCase() !== "skill.md" || slash <= 0) {
+    return null;
+  }
+  const parent = normalized.slice(0, slash);
+  const parentSlash = parent.lastIndexOf("/");
+  const folder = parentSlash >= 0 ? parent.slice(parentSlash + 1) : parent;
+  if (folder.length === 0 || folder === "." || folder === "~") {
+    return null;
+  }
+  return folder;
+}
+
 function grepPatternFromText(text: string): string | null {
   const quoted = text.match(/"([^"]+)"/);
   if (quoted?.[1] !== undefined && quoted[1].length > 0) {
@@ -402,6 +419,23 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
     const rawPath = subtitle.length > 0 ? pathWithoutLineRange(subtitle) : "";
     if (rawPath.length === 0) {
       return { verb: "Read", detail: "" };
+    }
+    const skillName = skillFolderName(rawPath);
+    if (skillName !== null) {
+      const { full, link } = shortPathDisplay(rawPath);
+      return {
+        verb: "Used",
+        detail: skillName,
+        ...(link
+          ? {
+              pathSegment: {
+                label: skillName,
+                title: full,
+                openPath: rawPath.trim(),
+              },
+            }
+          : {}),
+      };
     }
     const lineRange = readLineRangeSuffix(item);
     const suffix = lineRange !== null && lineRange.length > 0 ? ` ${lineRange}` : "";

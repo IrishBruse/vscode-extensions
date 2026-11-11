@@ -92,7 +92,7 @@ export type ChatComposerProps = {
   onRemoveImage: (index: number) => void;
   /** Opens the fullscreen image viewer for one pending image (data URL). */
   onOpenImage: (src: string) => void;
-  /** Context window usage chip; hidden until the agent reports usage. */
+  /** Context window usage for the meter on the composer top line. */
   tokenUsage: AcpUiTokenUsage | null;
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
@@ -155,6 +155,41 @@ function useComposerStatusText(
     return detail.length > 0 ? detail : null;
   }
   return null;
+}
+
+function ContextUsageMeter({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
+  const windowSize = usage?.size ?? null;
+  const hasWindow = usage !== null && windowSize !== null && windowSize > 0;
+  const percent = hasWindow ? Math.min(100, Math.round((usage.used / windowSize) * 100)) : 0;
+  const tone =
+    hasWindow && percent >= 95
+      ? "composer-context--full"
+      : hasWindow && percent >= 85
+        ? "composer-context--high"
+        : "";
+  const label = usage === null ? "—" : formatTokenUsage(usage);
+  const title =
+    usage === null
+      ? "Context usage has not been reported"
+      : windowSize === null
+        ? `${usage.used} tokens reported. Context window size was not reported.`
+        : `${usage.used} of ${windowSize} context tokens`;
+  return (
+    <div
+      className={["composer-context", tone].filter((part) => part.length > 0).join(" ")}
+      role="meter"
+      aria-label="Context usage"
+      aria-valuemin={0}
+      {...(hasWindow ? { "aria-valuemax": windowSize, "aria-valuenow": usage.used } : {})}
+      aria-valuetext={label}
+      title={title}
+    >
+      <span className="composer-context-label">{label}</span>
+      <span className="composer-context-track" aria-hidden="true">
+        <span className="composer-context-fill" style={{ width: `${percent}%` }} />
+      </span>
+    </div>
+  );
 }
 
 function ComposerStatusText({
@@ -463,14 +498,6 @@ export function ChatComposer({
           <div className="composer-activity" title={workspacePathHint}>
             {workspacePathHint}
           </div>
-          {tokenUsage !== null ? (
-            <span
-              className="composer-token-usage"
-              title={`Context window: ${tokenUsage.used} of ${tokenUsage.size} tokens`}
-            >
-              {formatTokenUsage(tokenUsage)}
-            </span>
-          ) : null}
         </div>
         <div
           className={
@@ -490,6 +517,7 @@ export function ChatComposer({
           />
         </div>
         <div className="composer-top-bar-side composer-top-bar-side--end">
+          <ContextUsageMeter usage={tokenUsage} />
           <span className="composer-top-bar-hint">/ commands · @ files</span>
         </div>
       </div>
