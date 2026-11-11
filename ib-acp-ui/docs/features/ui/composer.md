@@ -8,6 +8,7 @@ A context meter sits on that right side.
 It shows how much of the agent context window is used, for example `12.3k/200k (6%)`, and the bar fills as that share grows.
 Before the agent reports usage, the meter shows a dash.
 Connecting and Thinking sit in the center of that line and pulse while they are active.
+A running bash command uses that same spot and shows `Running for 3.8s`.
 ACP connection errors sit in that same spot.
 A long error stays on one line, and the full text is in the tooltip.
 
@@ -62,9 +63,14 @@ Filtering is case-insensitive substring match, capped at 30 results.
 
 Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 
+### Status clock
+
+[useComposerStatusText](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L124-L167) draws Connecting, Thinking, and Running in the center of the top line.
+[runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) supplies the start time for a bash command that is still running.
+
 ### Context meter
 
-[ContextUsageMeter](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L160-L193) draws the meter on the composer top line.
+[ContextUsageMeter](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L169-L202) draws the meter on the composer top line.
 [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L975-L976) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
 When a turn ends with token counts and no context window has arrived, [prompt](../../../src/acp/session/acpSessionBridge.ts#L794-L801) sends that count so the meter still shows a number.
 

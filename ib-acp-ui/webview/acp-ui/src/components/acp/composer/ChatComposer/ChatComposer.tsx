@@ -87,6 +87,8 @@ export type ChatComposerProps = {
   statusDetail?: string | null;
   /** Epoch ms for a running thought, used by the Thinking label. */
   thoughtStartedAtMs?: number;
+  /** Epoch ms for a running bash tool, used by the Running label. */
+  commandStartedAtMs?: number;
   /** Base64 image attachments pending on the next send. */
   pendingImages: AcpUiPromptImage[];
   onRemoveImage: (index: number) => void;
@@ -122,11 +124,14 @@ function flattenStatusDetail(detail: string): string {
 function useComposerStatusText(
   activity: "connecting" | "thinking" | "disconnected" | null,
   thoughtStartedAtMs: number | undefined,
+  commandStartedAtMs: number | undefined,
   statusDetail: string | null,
 ): string | null {
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const commandRunning = commandStartedAtMs !== undefined;
+  const thoughtRunning = activity === "thinking" && thoughtStartedAtMs !== undefined;
   useEffect(() => {
-    if (activity !== "thinking" || thoughtStartedAtMs === undefined) {
+    if (!commandRunning && !thoughtRunning) {
       return;
     }
     const handle = window.setInterval(() => {
@@ -135,7 +140,7 @@ function useComposerStatusText(
     return () => {
       window.clearInterval(handle);
     };
-  }, [activity, thoughtStartedAtMs]);
+  }, [commandRunning, thoughtRunning]);
   if (activity === "disconnected") {
     const detail = statusDetail === null ? "" : flattenStatusDetail(statusDetail);
     if (detail.length === 0) {
@@ -145,6 +150,10 @@ function useComposerStatusText(
   }
   if (activity === "connecting") {
     return "Connecting to ACP";
+  }
+  if (commandRunning && commandStartedAtMs !== undefined) {
+    const seconds = formatThoughtSeconds(Math.max(0, nowMs - commandStartedAtMs));
+    return seconds.length > 0 ? `Running for ${seconds}` : "Running";
   }
   if (activity === "thinking" && thoughtStartedAtMs !== undefined) {
     const seconds = formatThoughtSeconds(Math.max(0, nowMs - thoughtStartedAtMs));
@@ -195,13 +204,20 @@ function ContextUsageMeter({ usage }: { usage: AcpUiTokenUsage | null }): ReactE
 function ComposerStatusText({
   activity,
   thoughtStartedAtMs,
+  commandStartedAtMs,
   statusDetail,
 }: {
   activity: "connecting" | "thinking" | "disconnected" | null;
   thoughtStartedAtMs: number | undefined;
+  commandStartedAtMs: number | undefined;
   statusDetail: string | null;
 }): ReactElement {
-  const statusText = useComposerStatusText(activity, thoughtStartedAtMs, statusDetail);
+  const statusText = useComposerStatusText(
+    activity,
+    thoughtStartedAtMs,
+    commandStartedAtMs,
+    statusDetail,
+  );
   return <span title={statusDetail ?? statusText ?? undefined}>{statusText}</span>;
 }
 
@@ -236,6 +252,7 @@ export function ChatComposer({
   activity = null,
   statusDetail = null,
   thoughtStartedAtMs,
+  commandStartedAtMs,
   pendingImages,
   onRemoveImage,
   onOpenImage,
@@ -502,9 +519,14 @@ export function ChatComposer({
         <div
           className={
             activity === "disconnected" ||
-            (statusDetail !== null && activity !== "thinking" && activity !== "connecting")
+            (statusDetail !== null &&
+              activity !== "thinking" &&
+              activity !== "connecting" &&
+              commandStartedAtMs === undefined)
               ? "composer-top-bar-status composer-top-bar-status--error"
-              : activity === "connecting" || activity === "thinking"
+              : activity === "connecting" ||
+                  activity === "thinking" ||
+                  commandStartedAtMs !== undefined
                 ? "composer-top-bar-status composer-top-bar-status--live"
                 : "composer-top-bar-status"
           }
@@ -513,6 +535,7 @@ export function ChatComposer({
           <ComposerStatusText
             activity={activity}
             thoughtStartedAtMs={thoughtStartedAtMs}
+            commandStartedAtMs={commandStartedAtMs}
             statusDetail={statusDetail}
           />
         </div>

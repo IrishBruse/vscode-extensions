@@ -15,7 +15,7 @@ import {
 } from "../../../src/acp/session/sessionConfigOptions";
 import type { AcpUiSessionModelSelection } from "../../../src/acp/session/sessionModels";
 import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../src/protocol/extensionHostMessages";
-import { type ChatAction, type TraceItem } from "./chatReducer";
+import { type ChatAction, runningBashStartedAtMs, type TraceItem } from "./chatReducer";
 import { type AcpUiTokenUsage } from "./tokenUsage";
 import { ChatComposer } from "./components/acp/composer/ChatComposer/ChatComposer";
 import { buildComposerAutocompleteState, wrapIndex } from "./components/acp/composer/ChatComposer/composerAutocomplete";
@@ -531,6 +531,7 @@ export function AcpUiComposer({
       activity={activity}
       statusDetail={statusDetail}
       thoughtStartedAtMs={thoughtStartedAtMs ?? undefined}
+      commandStartedAtMs={runningBashStartedAtMs(trace)}
       pendingImages={pendingImages}
       onRemoveImage={onRemovePendingImage}
       onOpenImage={onOpenImage}

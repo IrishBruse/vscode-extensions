@@ -1,5 +1,8 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
+import {
+  formatCompactDurationMs,
+  formatThoughtSeconds,
+} from "../../../../../../../src/protocol/visibleTrace";
 import "./ToolCallCompactExecuteBlock.css";
 import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import type { TraceToolItem } from "../../../../chatReducer";
@@ -8,6 +11,21 @@ import {
   executeCommandText,
   executeOutputPreview,
 } from "../../../../toolCallCompactText";
+
+function BashRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const handle = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 100);
+    return () => {
+      window.clearInterval(handle);
+    };
+  }, []);
+  const seconds = formatThoughtSeconds(Math.max(0, nowMs - startedAtMs));
+  const label = seconds.length > 0 ? `Running for ${seconds}` : "Running";
+  return <span className="tool-call-compact-execute-duration"> {label}</span>;
+}
 
 /**
  * Compact terminal tool: the command stays on the `$` line.
@@ -40,6 +58,7 @@ export function ToolCallCompactExecuteBlock({
   const inProgress = item.status === "pending" || item.status === "in_progress";
   const durationLabel =
     item.durationMs !== undefined ? formatCompactDurationMs(item.durationMs) : "";
+  const showRunTimer = inProgress && item.startedAtMs !== undefined;
   const toggleOutput = (): void => {
     if (expanded) {
       setLocalExpanded(false);
@@ -69,7 +88,9 @@ export function ToolCallCompactExecuteBlock({
         </span>
         <span className="tool-call-compact-execute-command-text">
           {command.length > 0 ? <ShellCommandHighlight command={command} /> : "Terminal"}
-          {durationLabel.length > 0 ? (
+          {showRunTimer && item.startedAtMs !== undefined ? (
+            <BashRunTimer startedAtMs={item.startedAtMs} />
+          ) : durationLabel.length > 0 ? (
             <span className="tool-call-compact-execute-duration"> {durationLabel}</span>
           ) : null}
         </span>
@@ -89,7 +110,7 @@ export function ToolCallCompactExecuteBlock({
           {previewLines.join("\n")}
         </pre>
       ) : null}
-      {inProgress && previewLines.length === 0 ? (
+      {inProgress && !showRunTimer && previewLines.length === 0 ? (
         <div className="tool-call-compact-execute-running">Running…</div>
       ) : null}
     </div>

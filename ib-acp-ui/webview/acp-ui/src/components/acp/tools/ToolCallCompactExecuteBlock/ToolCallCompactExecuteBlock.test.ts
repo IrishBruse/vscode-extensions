@@ -52,6 +52,17 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).not.toContain("Show output");
   });
 
+  it("shows a live Running timer while the command is in progress", async () => {
+    const html = await renderBlock({
+      ...executeItem("building…", "npm run build:webview"),
+      status: "in_progress",
+      durationMs: undefined,
+      startedAtMs: Date.now() - 3_800,
+    });
+    expect(html).toMatch(/Running for \d+\.\ds/);
+    expect(html).not.toContain("Running…");
+  });
+
   it("shows the full result when output is open", async () => {
     const lines = Array.from({ length: 8 }, (_, index) => `line ${index + 1}`);
     const html = await renderBlock(executeItem(lines.join("\n"), "git status"), true);

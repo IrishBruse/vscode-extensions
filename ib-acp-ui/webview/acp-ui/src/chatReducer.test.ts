@@ -5,6 +5,7 @@ import {
   createInitialChatState,
   joinThoughtChunks,
   replayChatState,
+  runningBashStartedAtMs,
 } from "./chatReducer";
 import {
   writeCachedModelParamOptions,
@@ -92,6 +93,12 @@ describe("chatReducer", () => {
       subtitle: "ls -la tests",
     });
     expect(state.toolStartedAtMsById.get("exec1")).toBe(Date.now());
+    const pending = state.trace[0];
+    expect(pending?.type).toBe("tool");
+    if (pending?.type === "tool") {
+      expect(pending.startedAtMs).toBe(Date.now());
+    }
+    expect(runningBashStartedAtMs(state.trace)).toBe(Date.now());
     vi.advanceTimersByTime(117);
     state = chatReducer(state, {
       type: "updateToolCall",
@@ -105,6 +112,8 @@ describe("chatReducer", () => {
       return;
     }
     expect(tool.durationMs).toBe(117);
+    expect(tool.startedAtMs).toBeUndefined();
+    expect(runningBashStartedAtMs(state.trace)).toBeUndefined();
     expect(state.toolStartedAtMsById.has("exec1")).toBe(false);
   });
 

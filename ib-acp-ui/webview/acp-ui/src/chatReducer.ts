@@ -47,6 +47,8 @@ export type TraceToolItem = {
   diffRows: ToolCallDiffRow[] | undefined;
   detailVisible: boolean;
   durationMs?: number;
+  /** Epoch ms while a bash tool is still running. */
+  startedAtMs?: number;
 };
 
 export type TraceItem =
@@ -250,6 +252,48 @@ function isTerminalToolStatus(status: ToolCallStatus): boolean {
   return status === "completed" || status === "failed";
 }
 
+function isBashToolKind(kind: string | undefined): boolean {
+  const normalized = kind?.toLowerCase() ?? "";
+  return normalized === "execute" || normalized === "terminal";
+}
+
+/** Start time of the newest bash tool that is still running. */
+export function runningBashStartedAtMs(trace: readonly TraceItem[]): number | undefined {
+  for (let index = trace.length - 1; index >= 0; index -= 1) {
+    const item = trace[index];
+    if (item === undefined || item.type !== "tool" || !isBashToolKind(item.kind)) {
+      continue;
+    }
+    if (isTerminalToolStatus(item.status) || item.startedAtMs === undefined) {
+      continue;
+    }
+    return item.startedAtMs;
+  }
+  return undefined;
+}
+
+function trackToolClock(
+  toolStartedAtMsById: Map<string, number>,
+  toolCallId: string,
+  kind: string | undefined,
+  status: ToolCallStatus,
+  knownStart: number | undefined,
+  resolvedDuration: number | undefined,
+): { toolStartedAtMsById: Map<string, number>; startedAtMs?: number } {
+  if (resolvedDuration !== undefined || isTerminalToolStatus(status)) {
+    return { toolStartedAtMsById: forgetToolStartedAt(toolStartedAtMsById, toolCallId) };
+  }
+  const startedAtMs = knownStart ?? Date.now();
+  const next =
+    knownStart === undefined
+      ? rememberToolStartedAt(toolStartedAtMsById, toolCallId, startedAtMs)
+      : toolStartedAtMsById;
+  if (!isBashToolKind(kind)) {
+    return { toolStartedAtMsById: next };
+  }
+  return { toolStartedAtMsById: next, startedAtMs };
+}
+
 function rememberToolStartedAt(
   toolStartedAtMsById: Map<string, number>,
   toolCallId: string,
@@ -438,6 +482,7 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
       const hasDiff = item.diffRows !== undefined && item.diffRows.length > 0;
       const hasContent = item.content !== undefined && item.content.trim().length > 0;
       const durationMs = positiveDurationMs(item.durationMs);
+      const startedAtMs = positiveDurationMs(item.startedAtMs);
       const tool: TraceToolItem = {
         type: "tool",
         toolCallId: item.toolCallId,
@@ -449,6 +494,7 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
         diffRows: item.diffRows,
         detailVisible: item.detailVisible === true || hasDiff || hasContent,
         ...(durationMs !== undefined ? { durationMs } : {}),
+        ...(durationMs === undefined && startedAtMs !== undefined ? { startedAtMs } : {}),
       };
       toolIndexById.set(tool.toolCallId, trace.length);
       const canonicalId = canonicalToolCallId(tool.toolCallId);
@@ -461,6 +507,17 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
     trace.push(item);
   }
   return { trace, toolIndexById };
+}
+
+function toolClocksFromTrace(trace: readonly TraceItem[]): Map<string, number> {
+  let clocks = new Map<string, number>();
+  for (const item of trace) {
+    if (item.type !== "tool" || item.startedAtMs === undefined || isTerminalToolStatus(item.status)) {
+      continue;
+    }
+    clocks = rememberToolStartedAt(clocks, item.toolCallId, item.startedAtMs);
+  }
+  return clocks;
 }
 
 function thoughtClockFromTrace(trace: readonly TraceItem[]): number | null {
@@ -483,6 +540,7 @@ export function createChatStateFromInit(payload: InitPayload): ChatState {
     trace: seeded.trace,
     toolIndexById: seeded.toolIndexById,
     thoughtStartedAtMs: thoughtClockFromTrace(seeded.trace),
+    toolStartedAtMsById: toolClocksFromTrace(seeded.trace),
     sessionHistoryLoading: payload.sessionHistoryLoading === true,
     viewportCacheActive: seeded.trace.length > 0 && payload.sessionHistoryLoading === true,
     acpAgentSelection: buildAcpAgentSelectionFromInit(payload),
@@ -679,18 +737,28 @@ function appendToolCall(
         subtitle !== undefined && subtitle.trim().length > 0 ? subtitle.trim() : existing.subtitle;
       const mergedContent =
         content !== undefined && content.trim().length > 0 ? content : existing.content;
-      const startedAtMs = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
+      const mergedKind = kind !== undefined ? kind : existing.kind;
+      const knownStart = resolveToolStartedAtMs(state.toolStartedAtMsById, id) ?? existing.startedAtMs;
       const resolvedDuration = resolveToolDurationMs(
         durationMs,
         existing.durationMs,
-        startedAtMs,
+        knownStart,
         mergedStatus,
       );
+      const clock = trackToolClock(
+        state.toolStartedAtMsById,
+        id,
+        mergedKind,
+        mergedStatus,
+        knownStart,
+        resolvedDuration,
+      );
+      const { startedAtMs: _previousStart, ...existingWithoutClock } = existing;
       const trace = state.trace.slice();
       trace[existingIdx] = {
-        ...existing,
-        title: toolDisplayTitle(kind !== undefined ? kind : existing.kind, title),
-        kind: kind !== undefined ? kind : existing.kind,
+        ...existingWithoutClock,
+        title: toolDisplayTitle(mergedKind, title),
+        kind: mergedKind,
         status: mergedStatus,
         subtitle: mergedSubtitle,
         content: mergedContent,
@@ -698,15 +766,11 @@ function appendToolCall(
           (mergedContent !== undefined && mergedContent.trim().length > 0) ||
           (existing.diffRows !== undefined && existing.diffRows.length > 0),
         ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
+        ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
       };
       const toolIndexById = new Map(state.toolIndexById);
       rememberToolIndex(toolIndexById, id, existingIdx);
-      let toolStartedAtMsById = state.toolStartedAtMsById;
-      if (resolvedDuration !== undefined || isTerminalToolStatus(mergedStatus)) {
-        toolStartedAtMsById = forgetToolStartedAt(toolStartedAtMsById, id);
-      } else if (startedAtMs === undefined) {
-        toolStartedAtMsById = rememberToolStartedAt(toolStartedAtMsById, id, Date.now());
-      }
+      const toolStartedAtMsById = clock.toolStartedAtMsById;
       return {
         ...state,
         trace,
@@ -717,8 +781,16 @@ function appendToolCall(
     }
   }
   const newStatus = status ?? "pending";
-  const startedAtMs = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
-  const resolvedDuration = resolveToolDurationMs(durationMs, undefined, startedAtMs, newStatus);
+  const knownStart = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
+  const resolvedDuration = resolveToolDurationMs(durationMs, undefined, knownStart, newStatus);
+  const clock = trackToolClock(
+    state.toolStartedAtMsById,
+    id,
+    kind,
+    newStatus,
+    knownStart,
+    resolvedDuration,
+  );
   const newItem: TraceToolItem = {
     type: "tool",
     toolCallId: id,
@@ -730,16 +802,12 @@ function appendToolCall(
     diffRows: undefined,
     detailVisible: content !== undefined && content.trim().length > 0,
     ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
+    ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
   };
   const trace = [...state.trace, newItem];
   const toolIndexById = new Map(state.toolIndexById);
   rememberToolIndex(toolIndexById, id, trace.length - 1);
-  let toolStartedAtMsById = state.toolStartedAtMsById;
-  if (resolvedDuration !== undefined || isTerminalToolStatus(newStatus)) {
-    toolStartedAtMsById = forgetToolStartedAt(toolStartedAtMsById, id);
-  } else {
-    toolStartedAtMsById = rememberToolStartedAt(toolStartedAtMsById, id, Date.now());
-  }
+  const toolStartedAtMsById = clock.toolStartedAtMsById;
   return {
     ...state,
     trace,
@@ -778,16 +846,25 @@ function updateToolCall(
       mergedKind ??
       (mergedDiffRows !== undefined && mergedDiffRows.length > 0 ? "edit" : undefined);
     const mergedTitle = toolDisplayTitle(inferredKind, item.title);
-    const startedAtMs = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
+    const knownStart = resolveToolStartedAtMs(state.toolStartedAtMsById, id) ?? item.startedAtMs;
     const resolvedDuration = resolveToolDurationMs(
       durationMs,
       item.durationMs,
-      startedAtMs,
+      knownStart,
       status,
     );
+    const clock = trackToolClock(
+      state.toolStartedAtMsById,
+      id,
+      inferredKind,
+      status,
+      knownStart,
+      resolvedDuration,
+    );
+    const { startedAtMs: _previousStart, ...itemWithoutClock } = item;
     const trace = state.trace.slice();
     trace[idx] = {
-      ...item,
+      ...itemWithoutClock,
       toolCallId: canonicalToolCallId(item.toolCallId),
       status,
       content: mergedContent,
@@ -797,16 +874,11 @@ function updateToolCall(
       kind: inferredKind,
       title: mergedTitle,
       ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
+      ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
     };
     const toolIndexById = new Map(state.toolIndexById);
     rememberToolIndex(toolIndexById, id, idx);
-    let toolStartedAtMsById = state.toolStartedAtMsById;
-    if (resolvedDuration !== undefined || isTerminalToolStatus(status)) {
-      toolStartedAtMsById = forgetToolStartedAt(toolStartedAtMsById, id);
-    } else if (startedAtMs === undefined) {
-      toolStartedAtMsById = rememberToolStartedAt(toolStartedAtMsById, id, Date.now());
-    }
-    return { ...state, trace, toolIndexById, toolStartedAtMsById };
+    return { ...state, trace, toolIndexById, toolStartedAtMsById: clock.toolStartedAtMsById };
   }
   state = stateAfterLeavingOpenThoughtStream(state);
   const mergedContent = content;
@@ -820,8 +892,16 @@ function updateToolCall(
       : mergedDiffRows !== undefined && mergedDiffRows.length > 0
         ? "edit"
         : undefined;
-  const startedAtMs = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
-  const resolvedDuration = resolveToolDurationMs(durationMs, undefined, startedAtMs, status);
+  const knownStart = resolveToolStartedAtMs(state.toolStartedAtMsById, id);
+  const resolvedDuration = resolveToolDurationMs(durationMs, undefined, knownStart, status);
+  const clock = trackToolClock(
+    state.toolStartedAtMsById,
+    id,
+    inferredKind,
+    status,
+    knownStart,
+    resolvedDuration,
+  );
   const newItem: TraceToolItem = {
     type: "tool",
     toolCallId: id,
@@ -833,16 +913,12 @@ function updateToolCall(
     diffRows: mergedDiffRows,
     detailVisible,
     ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
+    ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
   };
   const trace = [...state.trace, newItem];
   const toolIndexById = new Map(state.toolIndexById);
   rememberToolIndex(toolIndexById, id, trace.length - 1);
-  let toolStartedAtMsById = state.toolStartedAtMsById;
-  if (resolvedDuration !== undefined || isTerminalToolStatus(status)) {
-    toolStartedAtMsById = forgetToolStartedAt(toolStartedAtMsById, id);
-  } else {
-    toolStartedAtMsById = rememberToolStartedAt(toolStartedAtMsById, id, Date.now());
-  }
+  const toolStartedAtMsById = clock.toolStartedAtMsById;
   return {
     ...state,
     trace,

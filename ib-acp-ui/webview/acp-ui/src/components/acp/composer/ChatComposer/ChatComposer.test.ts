@@ -16,6 +16,7 @@ describe("ChatComposer", () => {
     expect(tsx).toContain("Connecting to ACP");
     expect(tsx).not.toContain("Connecting to ACP…");
     expect(tsx).toContain("Thinking for");
+    expect(tsx).toContain("Running for");
     expect(tsx).toContain("composer-top-bar-status--live");
     expect(tsx).toContain("ACP disconnected");
     expect(css).toContain("grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)");

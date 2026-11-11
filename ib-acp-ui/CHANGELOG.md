@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: A running bash command shows a live timer in the same form as Thinking.
 - **Change**: Bash output sits in its own block, and a long result opens from Show output.
 - **Change**: A read of `SKILL.md` shows as `Used` plus the skill folder name.
 - **Add**: The composer shows a context meter for how much of the agent context window is used.

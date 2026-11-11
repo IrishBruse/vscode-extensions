@@ -31,6 +31,7 @@ Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
 A long diff shows a short window around the edits.
 A bash command stays on the `$` line.
+While that command runs, the line shows `Running for 3.8s` and the clock keeps counting.
 Its output sits in a separate block under that line.
 A short result shows in that block.
 A long result stays closed until you click Show output.
@@ -97,8 +98,10 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.
   A markdown `file://` path is decoded by [filesystemPathFromFileUri](../../../src/platform/fileUriPath.ts#L6-L28) and opened with the default text editor by [openWorkspacePathTarget](../../../src/platform/openWorkspacePathTarget.ts#L13-L21), including a plan file outside the workspace.
-  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L15-L97).
+  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L34-L118).
   The command stays on the `$` line.
+  [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L15-L28) counts while the command runs.
+  [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) feeds the same clock to the composer.
   [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L647-L676) keeps a long result closed.
   Show output opens that result in the output block.
   Command lines show a compact duration when known (`$ ls 117ms`).

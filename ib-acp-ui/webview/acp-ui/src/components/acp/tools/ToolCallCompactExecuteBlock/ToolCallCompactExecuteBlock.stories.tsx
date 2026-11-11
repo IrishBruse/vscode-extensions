@@ -1,3 +1,4 @@
+import { useState, type ReactElement } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { TraceToolItem } from "../../../../chatReducer";
 import { ToolCallCompactExecuteBlock } from "./ToolCallCompactExecuteBlock";
@@ -35,9 +36,32 @@ export const Default: Story = {
   },
 };
 
+function RunningCommand(): ReactElement {
+  const [startedAtMs] = useState(() => Date.now());
+  return (
+    <ToolCallCompactExecuteBlock
+      item={{
+        ...executeItem,
+        status: "in_progress",
+        content: "$ npm run build:webview\nbuilding…",
+        durationMs: undefined,
+        startedAtMs,
+      }}
+      expandAllToolOutputs={false}
+      onCollapseExpandAll={() => undefined}
+    />
+  );
+}
+
 export const Running: Story = {
+  render: () => <RunningCommand />,
   args: {
-    item: { ...executeItem, status: "in_progress", content: "$ npm run build:webview\nbuilding…", durationMs: undefined },
+    item: {
+      ...executeItem,
+      status: "in_progress",
+      content: "$ npm run build:webview\nbuilding…",
+      durationMs: undefined,
+    },
     expandAllToolOutputs: false,
     onCollapseExpandAll: () => undefined,
   },

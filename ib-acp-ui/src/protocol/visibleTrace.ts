@@ -34,6 +34,7 @@ export type AcpUiVisibleTraceItem =
           diffRows?: ToolCallDiffRow[];
           detailVisible?: boolean;
           durationMs?: number;
+          startedAtMs?: number;
       }
     | { type: "plan"; entries: PlanEntry[] };
 
@@ -203,6 +204,8 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
     const diffRows = parseDiffRows(value.diffRows);
     const detailVisible = value.detailVisible === true;
     const durationMs = positiveDurationMs(value.durationMs);
+    const startedAtMs = positiveDurationMs(value.startedAtMs);
+    const running = value.status === "pending" || value.status === "in_progress";
     return {
         type: "tool",
         toolCallId: value.toolCallId,
@@ -214,6 +217,9 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
         ...(diffRows !== undefined ? { diffRows } : {}),
         ...(detailVisible ? { detailVisible } : {}),
         ...(durationMs !== undefined ? { durationMs } : {}),
+        ...(durationMs === undefined && running && startedAtMs !== undefined
+            ? { startedAtMs }
+            : {}),
     };
 }
 
