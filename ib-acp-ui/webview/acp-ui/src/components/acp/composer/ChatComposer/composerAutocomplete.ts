@@ -102,14 +102,7 @@ export function buildComposerAutocompleteState(args: {
     return null;
   }
   const queryLower = fileQuery.toLowerCase();
-  const items = args.workspaceFiles
-    .filter((filePath) => filePath.toLowerCase().includes(queryLower))
-    .slice(0, 30)
-    .map((filePath) => ({
-      key: `file:${filePath}`,
-      primary: filePath,
-      insertText: `${formatPathMention(filePath)} `,
-    }));
+  const items = workspaceFileSuggestions(args.workspaceFiles, queryLower);
   return items.length > 0
     ? {
         mode: "file",
@@ -119,6 +112,58 @@ export function buildComposerAutocompleteState(args: {
         activeIndex: 0,
       }
     : null;
+}
+
+const fileSuggestionLimit = 30;
+
+type IndexedWorkspaceFile = { raw: string; lower: string };
+
+let indexedWorkspaceFiles: IndexedWorkspaceFile[] | null = null;
+let indexedWorkspaceFileSource: readonly string[] | null = null;
+
+function fileSuggestion(filePath: string): ComposerSuggestionItem {
+  return {
+    key: `file:${filePath}`,
+    primary: filePath,
+    insertText: `${formatPathMention(filePath)} `,
+  };
+}
+
+/** Returns at most 30 path matches and stops early once that many are found. */
+function workspaceFileSuggestions(
+  files: readonly string[],
+  queryLower: string,
+): ComposerSuggestionItem[] {
+  const items: ComposerSuggestionItem[] = [];
+  const indexed = indexedWorkspaceFileSource === files ? indexedWorkspaceFiles : null;
+  if (indexed !== null) {
+    for (let i = 0; i < indexed.length && items.length < fileSuggestionLimit; i++) {
+      const file = indexed[i]!;
+      if (file.lower.includes(queryLower)) {
+        items.push(fileSuggestion(file.raw));
+      }
+    }
+    return items;
+  }
+  const built: IndexedWorkspaceFile[] = [];
+  let scannedAll = true;
+  for (let i = 0; i < files.length; i++) {
+    const raw = files[i] ?? "";
+    const lower = raw.toLowerCase();
+    built.push({ raw, lower });
+    if (lower.includes(queryLower) && items.length < fileSuggestionLimit) {
+      items.push(fileSuggestion(raw));
+    }
+    if (items.length >= fileSuggestionLimit && i < files.length - 1) {
+      scannedAll = false;
+      break;
+    }
+  }
+  if (scannedAll) {
+    indexedWorkspaceFileSource = files;
+    indexedWorkspaceFiles = built;
+  }
+  return items;
 }
 
 export function wrapIndex(index: number, size: number): number {

@@ -1,4 +1,13 @@
-import { lazy, Suspense, useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from "react";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type RefObject,
+} from "react";
 import "./TraceList.css";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import type { TraceItem, TraceToolItem } from "../../../../chatReducer";
@@ -95,10 +104,172 @@ function visibleTraceType(item: TraceItem, showThoughts: boolean): TraceItem["ty
   return item.type;
 }
 
+type TraceSegmentViewProps = {
+  segment: TraceRenderSegment;
+  gapClass: string;
+  expandAllToolOutputs: boolean;
+  collapseNonce: number;
+  onCollapseExpandAll?: () => void;
+  onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
+  onOpenImage?: (src: string) => void;
+};
+
+function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegmentViewProps): boolean {
+  if (prev.gapClass !== next.gapClass || prev.expandAllToolOutputs !== next.expandAllToolOutputs) {
+    return false;
+  }
+  if (prev.collapseNonce !== next.collapseNonce) {
+    return false;
+  }
+  if (
+    prev.onCollapseExpandAll !== next.onCollapseExpandAll ||
+    prev.onOpenWorkspacePath !== next.onOpenWorkspacePath ||
+    prev.onOpenImage !== next.onOpenImage
+  ) {
+    return false;
+  }
+  const left = prev.segment;
+  const right = next.segment;
+  if (left.kind !== right.kind || left.index !== right.index) {
+    return false;
+  }
+  if (left.kind === "single" && right.kind === "single") {
+    return left.item === right.item;
+  }
+  if (left.kind !== "single" && right.kind !== "single") {
+    return left.tool === right.tool;
+  }
+  return false;
+}
+
+const TraceSegmentView = memo(function TraceSegmentView({
+  segment,
+  gapClass,
+  expandAllToolOutputs,
+  collapseNonce,
+  onCollapseExpandAll,
+  onOpenWorkspacePath,
+  onOpenImage,
+}: TraceSegmentViewProps): ReactElement | null {
+  if (segment.kind === "toolExecute") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <ToolCallCompactExecuteBlock
+        className={gapClass.trim()}
+        item={segment.tool}
+        expandAllToolOutputs={expandAllToolOutputs}
+        onCollapseExpandAll={onCollapseExpandAll}
+      />,
+    );
+  }
+  if (segment.kind === "toolCompactSingle") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <ToolCallCompactBlock
+        className={gapClass.trim()}
+        items={[segment.tool]}
+        expandAllToolOutputs={expandAllToolOutputs}
+        onCollapseExpandAll={onCollapseExpandAll}
+        onOpenWorkspacePath={onOpenWorkspacePath}
+      />,
+    );
+  }
+  const item = segment.item;
+  if (item.type === "user") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <section className={`user-prompt-bar${gapClass}`} aria-label="User message">
+        {item.images !== undefined && item.images.length > 0 ? (
+          <div className="user-prompt-image-row" role="list" aria-label="Attached images">
+            {item.images.map((image, imageIndex) => {
+              const src = promptImageSrc(image);
+              return (
+                <button
+                  key={`${imageIndex}:${image.mimeType}:${image.data.length}`}
+                  type="button"
+                  className="user-prompt-image"
+                  role="listitem"
+                  aria-label={`View image ${imageIndex + 1}`}
+                  onClick={() => onOpenImage?.(src)}
+                >
+                  <img className="user-prompt-image-thumb" src={src} alt="" />
+                </button>
+              );
+            })}
+          </div>
+        ) : item.imageCount !== undefined && item.imageCount > 0 ? (
+          <span className="user-prompt-images" role="presentation">
+            {item.imageCount === 1 ? "1 image" : `${item.imageCount} images`}
+          </span>
+        ) : null}
+        <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
+          <AgentMarkdown text={item.text} />
+        </Suspense>
+      </section>,
+    );
+  }
+  if (item.type === "agent") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <div className={`agent-response-stream${gapClass}`}>
+        <div className="agent-response-markdown" aria-label="Agent response">
+          <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
+            <AgentMarkdown text={item.text} />
+          </Suspense>
+        </div>
+      </div>,
+    );
+  }
+  if (item.type === "thought") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <AgentThoughtBlock
+        className={gapClass.trim()}
+        text={item.text}
+        durationMs={item.durationMs}
+        startedAtMs={item.startedAtMs}
+        collapseNonce={collapseNonce}
+      />,
+    );
+  }
+  if (item.type === "tool") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      isSubagentTaskTool(item) ? (
+        <SubagentTaskBlock
+          className={gapClass.trim()}
+          item={item}
+          expandAllToolOutputs={expandAllToolOutputs}
+          onCollapseExpandAll={onCollapseExpandAll}
+        />
+      ) : (
+        <ToolCallCompactBlock
+          className={gapClass.trim()}
+          items={[item]}
+          expandAllToolOutputs={expandAllToolOutputs}
+          onCollapseExpandAll={onCollapseExpandAll}
+          onOpenWorkspacePath={onOpenWorkspacePath}
+        />
+      ),
+    );
+  }
+  return traceRow(
+    segment.index,
+    segment.index,
+    <PlanBlock className={gapClass.trim()} entries={item.entries} />,
+  );
+}, traceSegmentPropsAreEqual);
+
 /**
  * Renders the conversation trace: user lines, streamed agent markdown, tool blocks, and plan blocks.
  */
-export function TraceList({
+export const TraceList = memo(function TraceList({
   items,
   showThoughts,
   expandAllToolOutputs,
@@ -200,141 +371,25 @@ export function TraceList({
   let previousVisibleType: TraceItem["type"] | undefined;
 
   const renderSegment = (segment: TraceRenderSegment): ReactElement | null => {
-        if (segment.kind === "toolExecute") {
-          const gapClass = traceSegmentGapClass(previousVisibleType, "tool");
-          previousVisibleType = "tool";
-          return traceRow(
-            segment.index,
-            segment.index,
-            <ToolCallCompactExecuteBlock
-              key={segment.tool.toolCallId}
-              className={gapClass.trim()}
-              item={segment.tool}
-              expandAllToolOutputs={expandAllToolOutputs}
-              onCollapseExpandAll={onCollapseExpandAll}
-            />,
-          );
-        }
-
-        if (segment.kind === "toolCompactSingle") {
-          const gapClass = traceSegmentGapClass(previousVisibleType, "tool");
-          previousVisibleType = "tool";
-          return traceRow(
-            segment.index,
-            segment.index,
-            <ToolCallCompactBlock
-              key={segment.tool.toolCallId}
-              className={gapClass.trim()}
-              items={[segment.tool]}
-              expandAllToolOutputs={expandAllToolOutputs}
-              onCollapseExpandAll={onCollapseExpandAll}
-              onOpenWorkspacePath={onOpenWorkspacePath}
-            />,
-          );
-        }
-
-        const item = segment.item;
-        const currentType = visibleTraceType(item, showThoughts);
-        if (currentType === undefined) {
-          return null;
-        }
-        const gapClass = traceSegmentGapClass(previousVisibleType, currentType);
-        previousVisibleType = currentType;
-
-        if (item.type === "user") {
-          return traceRow(
-            segment.index,
-            segment.index,
-            <section
-              key={segment.index}
-              className={`user-prompt-bar${gapClass}`}
-              aria-label="User message"
-            >
-              {item.images !== undefined && item.images.length > 0 ? (
-                <div className="user-prompt-image-row" role="list" aria-label="Attached images">
-                  {item.images.map((image, imageIndex) => {
-                    const src = promptImageSrc(image);
-                    return (
-                      <button
-                        key={`${imageIndex}:${image.mimeType}:${image.data.length}`}
-                        type="button"
-                        className="user-prompt-image"
-                        role="listitem"
-                        aria-label={`View image ${imageIndex + 1}`}
-                        onClick={() => onOpenImage?.(src)}
-                      >
-                        <img className="user-prompt-image-thumb" src={src} alt="" />
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : item.imageCount !== undefined && item.imageCount > 0 ? (
-                <span className="user-prompt-images" role="presentation">
-                  {item.imageCount === 1 ? "1 image" : `${item.imageCount} images`}
-                </span>
-              ) : null}
-              <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
-                <AgentMarkdown text={item.text} />
-              </Suspense>
-            </section>,
-          );
-        }
-        if (item.type === "agent") {
-          return traceRow(
-            segment.index,
-            segment.index,
-            <div key={segment.index} className={`agent-response-stream${gapClass}`}>
-              <div className="agent-response-markdown" aria-label="Agent response">
-                <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
-                  <AgentMarkdown text={item.text} />
-                </Suspense>
-              </div>
-            </div>,
-          );
-        }
-        if (item.type === "thought") {
-          return traceRow(
-            segment.index,
-            segment.index,
-            <AgentThoughtBlock
-              key={segment.index}
-              className={gapClass.trim()}
-              text={item.text}
-              durationMs={item.durationMs}
-              startedAtMs={item.startedAtMs}
-              collapseNonce={collapseNonceByIndex.get(segment.index) ?? 0}
-            />,
-          );
-        }
-        if (item.type === "tool") {
-          return traceRow(
-            segment.index,
-            segment.index,
-            isSubagentTaskTool(item) ? (
-              <SubagentTaskBlock
-                key={item.toolCallId}
-                className={gapClass.trim()}
-                item={item}
-                expandAllToolOutputs={expandAllToolOutputs}
-                onCollapseExpandAll={onCollapseExpandAll}
-              />
-            ) : (
-              <ToolCallCompactBlock
-                key={item.toolCallId}
-                className={gapClass.trim()}
-                items={[item]}
-                expandAllToolOutputs={expandAllToolOutputs}
-                onCollapseExpandAll={onCollapseExpandAll}
-                onOpenWorkspacePath={onOpenWorkspacePath}
-              />
-            ),
-          );
-        }
-        return traceRow(
-          segment.index,
-          segment.index,
-          <PlanBlock key={segment.index} className={gapClass.trim()} entries={item.entries} />,
-        );
+    const currentType =
+      segment.kind === "single" ? visibleTraceType(segment.item, showThoughts) : "tool";
+    if (currentType === undefined) {
+      return null;
+    }
+    const gapClass = traceSegmentGapClass(previousVisibleType, currentType);
+    previousVisibleType = currentType;
+    return (
+      <TraceSegmentView
+        key={segment.index}
+        segment={segment}
+        gapClass={gapClass}
+        expandAllToolOutputs={expandAllToolOutputs}
+        collapseNonce={collapseNonceByIndex.get(segment.index) ?? 0}
+        onCollapseExpandAll={onCollapseExpandAll}
+        onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenImage={onOpenImage}
+      />
+    );
   };
 
   const groupByStart = new Map(
@@ -371,7 +426,7 @@ export function TraceList({
   }
 
   return <>{rows}</>;
-}
+});
 
 function segmentTraceType(segment: TraceRenderSegment): TraceItem["type"] {
   if (segment.kind === "single") {

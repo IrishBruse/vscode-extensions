@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Typing in the composer stays responsive when the chat is long, and a transcript update redraws only the row that changed.
 - **Fix**: Allow always is remembered for that tool kind, and later requests of the same kind are approved without asking again.
 - **Remove**: Edited file previews no longer show an Expand control.
 - **Add**: A chat remembers its last model configuration in the `.acp` file and restores it when the chat opens.

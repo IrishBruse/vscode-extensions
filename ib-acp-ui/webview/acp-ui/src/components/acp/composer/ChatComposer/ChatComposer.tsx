@@ -157,6 +157,19 @@ function useComposerStatusText(
   return null;
 }
 
+function ComposerStatusText({
+  activity,
+  thoughtStartedAtMs,
+  statusDetail,
+}: {
+  activity: "connecting" | "thinking" | "disconnected" | null;
+  thoughtStartedAtMs: number | undefined;
+  statusDetail: string | null;
+}): ReactElement {
+  const statusText = useComposerStatusText(activity, thoughtStartedAtMs, statusDetail);
+  return <span title={statusDetail ?? statusText ?? undefined}>{statusText}</span>;
+}
+
 /**
  * Workspace path, optional model picker, message input, and send/cancel actions.
  */
@@ -195,7 +208,6 @@ export function ChatComposer({
   composerInputRef,
 }: ChatComposerProps): ReactElement {
   const textareaDisabled = inputBlocked;
-  const statusText = useComposerStatusText(activity, thoughtStartedAtMs, statusDetail);
   const autocomplete = useMemo(() => {
     const caret = draft.length;
     return buildComposerAutocompleteState({
@@ -462,16 +474,20 @@ export function ChatComposer({
         </div>
         <div
           className={
-            activity === "disconnected" || (statusDetail !== null && activity !== "thinking" && activity !== "connecting")
+            activity === "disconnected" ||
+            (statusDetail !== null && activity !== "thinking" && activity !== "connecting")
               ? "composer-top-bar-status composer-top-bar-status--error"
               : activity === "connecting" || activity === "thinking"
                 ? "composer-top-bar-status composer-top-bar-status--live"
                 : "composer-top-bar-status"
           }
           role="status"
-          title={statusDetail ?? statusText ?? undefined}
         >
-          {statusText}
+          <ComposerStatusText
+            activity={activity}
+            thoughtStartedAtMs={thoughtStartedAtMs}
+            statusDetail={statusDetail}
+          />
         </div>
         <div className="composer-top-bar-side composer-top-bar-side--end">
           <span className="composer-top-bar-hint">/ commands · @ files</span>

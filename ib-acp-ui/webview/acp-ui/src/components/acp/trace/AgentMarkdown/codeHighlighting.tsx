@@ -44,25 +44,53 @@ export function languageFromClassName(className: string | undefined): string | u
   return match?.[1]?.toLowerCase();
 }
 
+let highlightCodeBuilds = 0;
+const highlightTokenCache = new Map<string, Token[]>();
+const highlightTokenCacheLimit = 80;
+
+/** How many times code was tokenized. Repeat calls for the same text reuse the cache. */
+export function highlightCodeBuildCount(): number {
+  return highlightCodeBuilds;
+}
+
+function cachedHighlightTokens(language: string, code: string, build: () => Token[]): Token[] {
+  const key = `${language}\0${code}`;
+  const cached = highlightTokenCache.get(key);
+  if (cached !== undefined) {
+    highlightTokenCache.delete(key);
+    highlightTokenCache.set(key, cached);
+    return cached;
+  }
+  highlightCodeBuilds += 1;
+  const tokens = build();
+  highlightTokenCache.set(key, tokens);
+  if (highlightTokenCache.size > highlightTokenCacheLimit) {
+    const oldest = highlightTokenCache.keys().next().value;
+    if (oldest !== undefined) {
+      highlightTokenCache.delete(oldest);
+    }
+  }
+  return tokens;
+}
+
 export function highlightCodeToNodes(language: string | undefined, code: string): ReactNode[] {
   if (language === "json") {
-    const quoted = tokenizeByRegex(code, /"(?:\\.|[^"\\])*"/g, "string");
-    return tokensToNodes(
-      quoted.flatMap((token) => {
+    const quoted = cachedHighlightTokens(language, code, () =>
+      tokenizeByRegex(code, /"(?:\\.|[^"\\])*"/g, "string").flatMap((token) => {
         if (token.kind !== "plain") {
           return [token];
         }
         return tokenizeByRegex(token.text, /\b-?\d+(?:\.\d+)?\b/g, "number");
       }),
     );
+    return tokensToNodes(quoted);
   }
   if (language === "typescript" || language === "ts") {
-    const comments = tokenizeByRegex(code, /\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "comment");
     const keywords =
       /\b(?:const|let|var|function|class|interface|type|return|if|else|for|while|import|export|from|extends|implements|new|async|await|try|catch|throw)\b/g;
     const numbers = /\b\d+(?:\.\d+)?\b/g;
-    return tokensToNodes(
-      comments.flatMap((token) => {
+    const tokens = cachedHighlightTokens(language, code, () =>
+      tokenizeByRegex(code, /\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "comment").flatMap((token) => {
         if (token.kind !== "plain") {
           return [token];
         }
@@ -74,17 +102,18 @@ export function highlightCodeToNodes(language: string | undefined, code: string)
         });
       }),
     );
+    return tokensToNodes(tokens);
   }
   if (language === "markdown" || language === "md") {
-    const headers = tokenizeByRegex(code, /^#{1,6}\s.*$/gm, "keyword");
-    return tokensToNodes(
-      headers.flatMap((token) => {
+    const headers = cachedHighlightTokens(language, code, () =>
+      tokenizeByRegex(code, /^#{1,6}\s.*$/gm, "keyword").flatMap((token) => {
         if (token.kind !== "plain") {
           return [token];
         }
         return tokenizeByRegex(token.text, /`[^`\n]+`/g, "string");
       }),
     );
+    return tokensToNodes(headers);
   }
   return [code];
 }

@@ -23,6 +23,44 @@ function durationLabel(durationMs: number | undefined, running: boolean): string
   return seconds.length > 0 ? `${verb} for ${seconds}` : verb;
 }
 
+function ThoughtDurationButton({
+  durationMs,
+  startedAtMs,
+  expanded,
+  onToggle,
+}: {
+  durationMs?: number;
+  startedAtMs?: number;
+  expanded: boolean;
+  onToggle: () => void;
+}): ReactElement {
+  const ticking = durationMs === undefined && startedAtMs !== undefined;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ticking) {
+      return;
+    }
+    const handle = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 100);
+    return () => {
+      window.clearInterval(handle);
+    };
+  }, [ticking]);
+  const liveDurationMs =
+    ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
+  return (
+    <button
+      type="button"
+      className="agent-thought-chunk-title"
+      aria-expanded={expanded}
+      onClick={onToggle}
+    >
+      {durationLabel(liveDurationMs, ticking)}
+    </button>
+  );
+}
+
 /**
  * Renders a model-thought chunk.
  * The body always shows the latest three lines.
@@ -43,21 +81,6 @@ export function AgentThoughtBlock({
   /** Increments to close this block without a click. */
   collapseNonce?: number;
 }): ReactElement {
-  const ticking = durationMs === undefined && startedAtMs !== undefined;
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    if (!ticking) {
-      return;
-    }
-    const handle = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, 100);
-    return () => {
-      window.clearInterval(handle);
-    };
-  }, [ticking]);
-  const liveDurationMs =
-    ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
   const [expanded, setExpanded] = useState(false);
   const seenCollapseNonceRef = useRef(collapseNonce);
 
@@ -79,16 +102,14 @@ export function AgentThoughtBlock({
 
   return (
     <div className={rootClass} aria-label="Agent thought">
-      <button
-        type="button"
-        className="agent-thought-chunk-title"
-        aria-expanded={expanded}
-        onClick={() => {
+      <ThoughtDurationButton
+        durationMs={durationMs}
+        startedAtMs={startedAtMs}
+        expanded={expanded}
+        onToggle={() => {
           setExpanded((open) => !open);
         }}
-      >
-        {durationLabel(liveDurationMs, ticking)}
-      </button>
+      />
       <div className="agent-thought-chunk-body">
         <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>
           <AgentMarkdown text={text} />

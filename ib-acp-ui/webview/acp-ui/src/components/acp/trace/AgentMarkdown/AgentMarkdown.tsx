@@ -2,6 +2,7 @@ import "./AgentMarkdown.css";
 import {
   Children,
   isValidElement,
+  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -110,49 +111,50 @@ function CopyCodeButton({ text }: { text: string }): ReactElement {
   );
 }
 
+const markdownRemarkPlugins = [remarkGfm];
+
+const markdownComponents = {
+  pre({ children, node: _node, ...rest }: { children?: ReactNode; node?: unknown }) {
+    const codeText = codeTextFromPreChild(children);
+    return (
+      <div className="agent-markdown-code-block">
+        <CopyCodeButton text={codeText} />
+        <pre {...rest}>{children}</pre>
+      </div>
+    );
+  },
+  code(props: { className?: string; children?: ReactNode; node?: unknown }) {
+    const { className, children, node: _node, ...rest } = props;
+    const language = languageFromClassName(className);
+    const codeText = reactNodeToPlainText(children).replace(/\n$/, "");
+    if (!className) {
+      return (
+        <code {...rest} className={className}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code {...rest} className={className} {...{ [CODE_TEXT_ATTR]: codeText }}>
+        {renderHighlightedCode(language, codeText)}
+      </code>
+    );
+  },
+};
+
 /**
- * Renders chat markdown with GFM (tables, strikethrough, task lists). Re-parses on each text
- * update so streaming chunks render incrementally without a separate streaming parser.
+ * Renders chat markdown with GFM (tables, strikethrough, task lists). Re-parses when `text`
+ * changes so streaming chunks render incrementally. Unchanged text skips that parse.
  */
-export function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
+export const AgentMarkdown = memo(function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
   if (text.length === 0) {
     return <div className="agent-markdown agent-markdown-empty" aria-hidden="true" />;
   }
   return (
     <div className="agent-markdown">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          pre({ children, node: _node, ...rest }) {
-            const codeText = codeTextFromPreChild(children);
-            return (
-              <div className="agent-markdown-code-block">
-                <CopyCodeButton text={codeText} />
-                <pre {...rest}>{children}</pre>
-              </div>
-            );
-          },
-          code(props) {
-            const { className, children, node: _node, ...rest } = props;
-            const language = languageFromClassName(className);
-            const codeText = reactNodeToPlainText(children).replace(/\n$/, "");
-            if (!className) {
-              return (
-                <code {...rest} className={className}>
-                  {children}
-                </code>
-              );
-            }
-            return (
-              <code {...rest} className={className} {...{ [CODE_TEXT_ATTR]: codeText }}>
-                {renderHighlightedCode(language, codeText)}
-              </code>
-            );
-          },
-        }}
-      >
+      <ReactMarkdown remarkPlugins={markdownRemarkPlugins} components={markdownComponents}>
         {text}
       </ReactMarkdown>
     </div>
   );
-}
+});
