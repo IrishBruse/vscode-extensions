@@ -830,4 +830,39 @@ describe("chatReducer", () => {
     state = chatReducer(state, { type: "pickSessionAgent", agentName: "Cursor" });
     expect(state.acpAgentSelection?.currentName).toBe("OpenCode");
   });
+
+  it("keeps a subagent transcript separate and shows its status on the parent", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "appendAgentText", text: "Parent" });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      title: "Explore",
+      description: "Find the login bug",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child-1",
+      event: { type: "appendAgentText", text: "Looking" },
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: "child-1",
+      state: "idle",
+      stopReason: "end_turn",
+    });
+    expect(state.trace[0]).toEqual({ type: "agent", text: "Parent" });
+    expect(state.trace[1]).toMatchObject({
+      type: "subagent",
+      sessionId: "child-1",
+      title: "Explore",
+      description: "Find the login bug",
+      state: "idle",
+      stopReason: "end_turn",
+    });
+    expect(state.subagentActivity.get("child-1")?.trace).toEqual([
+      { type: "agent", text: "Looking" },
+    ]);
+  });
 });

@@ -1,0 +1,32 @@
+.subagent-focus-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  margin: 0 0 var(--acp-ui-space-10);
+}
+
+.subagent-focus-back {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  font: inherit;
+  cursor: pointer;
+}
+
+.subagent-focus-status {
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+}
+
+.subagent-focus-title {
+  font-weight: 600;
+}
+
+.subagent-focus-description {
+  margin: 0 0 var(--acp-ui-space-10);
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  white-space: pre-wrap;
+}

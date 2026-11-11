@@ -5,6 +5,10 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: You can open a subagent, read its status, and return to the parent chat.
+- **Change**: An agent plan shows as a TODO list, and each item uses a mark for its state.
+- **Fix**: The composer shows the workspace path while the chat title is still New Cursor chat.
+- **Change**: Each chat is a `<uuid>.acp` file, and the chat title stays in that file.
 - **Change**: Quotes and command output use the markdown preview bar, with the theme quote background, a 5px border, and inner padding.
 - **Change**: Context usage shows as `13.3k/256.0k`, with space before the command hint.
 - **Change**: The composer and editor tab use the chat title stored in the `.acp` file.

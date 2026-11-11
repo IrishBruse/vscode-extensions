@@ -6,16 +6,14 @@ import {
     enqueueSessionFileWrite,
     modelConfigFromSessionOptions,
     normalizeSessionModelConfig,
-    isFlatSessionFilePath,
     normalizeUserMessageHistory,
     parseSessionDocument,
     parseSessionFile,
     parseSessionHeaderBlock,
     parseSessionHeaderLine,
     serializeSessionDocument,
-    sessionFileBaseNameFromTitle,
+    sessionFileNameForId,
     shouldDeferJsonlHistoryReplay,
-    uniqueSessionFileBaseNameFromTitle,
 } from "./acpUiSessionJsonlFormat";
 
 describe("enqueueSessionFileWrite", () => {
@@ -44,26 +42,11 @@ describe("enqueueSessionFileWrite", () => {
     });
 });
 
-describe("sessionFileBaseNameFromTitle", () => {
-    it("sanitizes invalid characters and appends .acp", () => {
-        expect(sessionFileBaseNameFromTitle("Fix auth flow")).toBe("Fix auth flow.acp");
-        expect(sessionFileBaseNameFromTitle('bad<>:"/\\|?*name')).toBe("badname.acp");
-    });
-
-    it("falls back when the title is empty after sanitization", () => {
-        expect(sessionFileBaseNameFromTitle("   ")).toBe("Chat.acp");
-    });
-});
-
-describe("uniqueSessionFileBaseNameFromTitle", () => {
-    it("adds a numeric suffix when the base name is taken", () => {
-        const used = new Set(["Chat 1.acp"]);
-        expect(uniqueSessionFileBaseNameFromTitle("Chat 1", used)).toBe("Chat 1 (2).acp");
-    });
-
-    it("keeps the current file name when excluding it", () => {
-        const used = new Set(["Chat 1.acp", "Chat 2.acp"]);
-        expect(uniqueSessionFileBaseNameFromTitle("Chat 1", used, "Chat 1.acp")).toBe("Chat 1.acp");
+describe("sessionFileNameForId", () => {
+    it("names the chat file from the session id", () => {
+        expect(sessionFileNameForId("6f1c2a40-1b2e-4c3d-9a8b-0e1f2a3b4c5d")).toBe(
+            "6f1c2a40-1b2e-4c3d-9a8b-0e1f2a3b4c5d.acp",
+        );
     });
 });
 
@@ -312,15 +295,6 @@ describe("parseSessionHeaderLine", () => {
         expect(parseSessionHeaderLine("{}")).toBeNull();
         expect(parseSessionHeaderLine("")).toBeNull();
         expect(parseSessionHeaderLine("not json")).toBeNull();
-    });
-});
-
-describe("isFlatSessionFilePath", () => {
-    it("detects legacy flat files directly under the chats root", () => {
-        expect(isFlatSessionFilePath("/data/chats/My Chat.acp", "/data/chats")).toBe(true);
-        expect(isFlatSessionFilePath("/data/chats/session-id/My Chat.acp", "/data/chats")).toBe(
-            false,
-        );
     });
 });
 

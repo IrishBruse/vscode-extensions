@@ -4,9 +4,8 @@ import { getAcpUiPromptHistoryEntries } from "./acpUiPromptHistoryMemento";
 import {
     createSessionFile,
     deleteSessionFile,
-    ensureSessionFileNameMatchesTitle,
     listSessionHeaders,
-    migrateFlatSessionFilesToFolderLayout,
+    migrateSessionFilesToIdNames,
     setAcpUiSessionJsonlLogger,
     updateSessionHeader,
 } from "./acpUiSessionJsonl";
@@ -121,7 +120,7 @@ export async function initializeAcpUiSessionsStore(
     sessions.length = 0;
     activeId = null;
     await migrateLegacyStorageIfNeeded();
-    await migrateFlatSessionFilesToFolderLayout(context);
+    await migrateSessionFilesToIdNames(context);
     await reloadSessionsFromDisk();
     activeId = sessions[0]?.id ?? null;
 }
@@ -368,9 +367,6 @@ export async function renameAcpUiSession(id: string, nextTitle: string): Promise
     row.title = title;
     row.updatedAt = Date.now();
     await updateSessionHeader(row.uri, { title, updatedAt: row.updatedAt });
-    if (extensionContext !== null) {
-        row.uri = await ensureSessionFileNameMatchesTitle(extensionContext, row.uri, title, id);
-    }
     return true;
 }
 

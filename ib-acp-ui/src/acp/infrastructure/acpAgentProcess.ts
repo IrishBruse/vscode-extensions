@@ -156,6 +156,7 @@ export function assertNegotiatedProtocolVersion(response: acp.InitializeResponse
 export function buildAcpClientCapabilities(config: AcpAgentSpawnConfig): acp.ClientCapabilities {
     const capabilities: acp.ClientCapabilities = {
         fs: { readTextFile: true, writeTextFile: true },
+        subagents: {},
     };
     if (isCursorAcpAgent(config)) {
         capabilities._meta = {

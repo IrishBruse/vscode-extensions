@@ -47,7 +47,7 @@ import type { FollowUpMode } from "./composerFollowUp";
 export type ChatComposerProps = {
   /** Workspace path shown in the composer status slot. */
   workspacePathHint: string;
-  /** Chat title stored in the `.acp` file. Shown in place of the workspace path when set. */
+  /** Chat title stored in the `.acp` file. A title such as New Cursor chat leaves the path in place. */
   sessionTitle?: string;
   modelSelection: AcpUiSessionModelSelection | null;
   sessionConfigOptions: AcpUiSessionConfigOption[] | null;
@@ -166,6 +166,18 @@ function useComposerStatusText(
     return detail.length > 0 ? detail : null;
   }
   return null;
+}
+
+/** Auto-generated title for a chat that has not been renamed yet. */
+const emptyChatTitlePattern = /^New .* chat$/;
+
+/** Left composer label: a real chat title, or the workspace path for a new chat. */
+export function composerLocationLabel(sessionTitle: string, workspacePathHint: string): string {
+  const title = sessionTitle.trim();
+  if (title.length === 0 || emptyChatTitlePattern.test(title)) {
+    return workspacePathHint;
+  }
+  return title;
 }
 
 function ContextUsageLabel({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
@@ -497,7 +509,7 @@ export function ChatComposer({
       <div className="composer-top-bar">
         <div className="composer-top-bar-side">
           <div className="composer-activity" title={workspacePathHint}>
-            {sessionTitle.trim().length > 0 ? sessionTitle.trim() : workspacePathHint}
+            {composerLocationLabel(sessionTitle, workspacePathHint)}
           </div>
         </div>
         <div

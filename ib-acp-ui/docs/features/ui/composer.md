@@ -4,7 +4,8 @@
 
 The chat composer is where you draft messages, run slash commands, mention workspace files, and (planned) attach multimodal content.
 The top line shows the chat title from the `.acp` file on the left and `/ commands · @ files` on the right.
-The workspace path stays in the tooltip for that title.
+A title such as `New Cursor chat` leaves that spot on the workspace path.
+The workspace path stays in the tooltip.
 Context usage sits on that right side, before `/ commands · @ files`.
 It shows used tokens and the context window, for example `13.3k/256.0k`.
 Before the agent reports usage, that label shows a dash.
@@ -66,13 +67,14 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 
 ### Status clock
 
-[useComposerStatusText](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L124-L167) draws Connecting, Thinking, and Running in the center of the top line.
+[useComposerStatusText](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L126-L169) draws Connecting, Thinking, and Running in the center of the top line.
 [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) supplies the start time for a bash command that is still running.
 
 ### Context usage
 
-[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L171-L185) draws `13.3k/256.0k` on the composer top line.
-[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L975-L976) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
+[composerLocationLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L175-L181) keeps the workspace path when the stored title is still `New Cursor chat`.
+[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L183-L197) draws `13.3k/256.0k` on the composer top line.
+[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L977-L978) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
 When a turn ends with token counts and no context window has arrived, [prompt](../../../src/acp/session/acpSessionBridge.ts#L794-L801) sends that count so the label still shows a number.
 
 ### Prompt history

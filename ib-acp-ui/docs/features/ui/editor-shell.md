@@ -9,7 +9,8 @@ Create a chat from the Setup view **+**, from the `.acp` editor tab **New Chat**
 `Ctrl+T` / `Cmd+T` opens a new chat when the Setup view or an ACP UI editor tab is focused.
 
 Each chat opens as an editor tab with the ACP UI webview.
-The tab name is the chat title stored in that `.acp` file.
+Each chat is one `<uuid>.acp` file.
+The tab name is the chat title stored in that file.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
 
 The Setup sidebar configures ACP clients, shows runtime choices that live outside VS Code settings, and reviews the chat open in the editor.
@@ -45,8 +46,10 @@ The chat UI and the markdown renderer load as later chunks from `media/acp-ui/ch
 
 ### Session file layout
 
-[ACP_UI_SESSION_SCHEMA](../../../src/extension/acpUiSessionJsonlFormat.ts#L3) is `acpUi/session/1`.
-[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L55-L77) resolves the configured or default storage directory.
-Each session lives in a folder named by UUID with a title-based `.acp` file inside.
+[ACP_UI_SESSION_SCHEMA](../../../src/extension/acpUiSessionJsonlFormat.ts#L4) is `acpUi/session/1`.
+[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L56-L75) resolves the configured or default storage directory.
+[sessionFileUriForId](../../../src/extension/acpUiSessionJsonl.ts#L78-L80) stores each chat as `<uuid>.acp`.
+The chat title stays in the file header.
+[ensureSessionFileNamedById](../../../src/extension/acpUiSessionJsonl.ts#L189-L208) moves an older folder path to that file name.
 
 Related: [sessions](../acp/sessions.md), [agents](./agents.md).

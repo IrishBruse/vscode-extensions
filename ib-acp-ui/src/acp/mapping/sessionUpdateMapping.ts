@@ -1,6 +1,8 @@
 import type * as acp from "@agentclientprotocol/sdk";
 import type {
     ExtensionToWebviewMessage,
+    SubagentActivityEvent,
+    SubagentWorkState,
     ToolCallDiffRow,
     ToolCallStatus,
 } from "../../protocol/extensionHostMessages";
@@ -974,7 +976,87 @@ export function sessionUpdateToWebviewMessages(
         }
         case "usage_update":
             return [{ type: "tokenUsage", used: update.used, size: update.size }];
+        case "subagent_update":
+            return [subagentUpdateMessage(update)];
         default:
             return [];
     }
+}
+
+const subagentActivityTypes = new Set<SubagentActivityEvent["type"]>([
+    "appendAgentText",
+    "appendUserText",
+    "appendUserImage",
+    "appendAgentThought",
+    "appendToolCall",
+    "updateToolCall",
+    "appendPlan",
+]);
+
+/** True when a parent transcript message can also land in a child subagent trace. */
+export function isSubagentActivityMessage(
+    message: ExtensionToWebviewMessage,
+): message is SubagentActivityEvent {
+    return subagentActivityTypes.has(message.type as SubagentActivityEvent["type"]);
+}
+
+function subagentWorkState(update: acp.SubagentUpdate): {
+    state?: SubagentWorkState | null;
+    stopReason?: string | null;
+} {
+    const snapshot = update.state;
+    if (snapshot === undefined) {
+        return {};
+    }
+    if (snapshot === null) {
+        return { state: null, stopReason: null };
+    }
+    const name = snapshot.state;
+    const state: SubagentWorkState =
+        name === "running" || name === "idle" || name === "requires_action" || name === "unknown"
+            ? name
+            : "unknown";
+    if (state !== "idle") {
+        return { state, stopReason: null };
+    }
+    const stopReason =
+        "stopReason" in snapshot && typeof snapshot.stopReason === "string"
+            ? snapshot.stopReason
+            : null;
+    return { state, stopReason };
+}
+
+/** Maps an ACP `subagent_update` onto the parent chat. */
+export function subagentUpdateMessage(update: acp.SubagentUpdate): ExtensionToWebviewMessage {
+    return {
+        type: "subagentUpdate",
+        sessionId: update.sessionId,
+        ...(update.title !== undefined ? { title: update.title } : {}),
+        ...(update.description !== undefined ? { description: update.description } : {}),
+        ...subagentWorkState(update),
+    };
+}
+
+/**
+ * Routes a session notification to the parent transcript or a child subagent.
+ * The outer `sessionId` is the parent for `subagent_update` and the child for later child events.
+ */
+export function messagesForSessionNotification(
+    params: acp.SessionNotification,
+    parentSessionId: string | null,
+    tracking: ToolCallKindTracking,
+): ExtensionToWebviewMessage[] {
+    if (params.update.sessionUpdate === "subagent_update") {
+        return [subagentUpdateMessage(params.update)];
+    }
+    const messages = sessionUpdateToWebviewMessages(params.update, tracking);
+    if (parentSessionId !== null && params.sessionId !== parentSessionId) {
+        const childId = params.sessionId;
+        return messages.flatMap((message) =>
+            isSubagentActivityMessage(message)
+                ? [{ type: "subagentActivity" as const, sessionId: childId, event: message }]
+                : [],
+        );
+    }
+    return messages;
 }

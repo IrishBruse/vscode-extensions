@@ -1,78 +1,15 @@
-import { dirname } from "node:path";
 import { type PermissionGrant, normalizePermissionGrants } from "../acp/session/permissionMemory";
 import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
 
 export const ACP_UI_SESSION_SCHEMA = "acpUi/session/1" as const;
 export const ACP_UI_SESSION_FILE_SUFFIX = ".acp";
 
-/** True when the session file sits directly under the chats root (legacy layout). */
-export function isFlatSessionFilePath(sessionFilePath: string, sessionsDirPath: string): boolean {
-    return dirname(sessionFilePath) === sessionsDirPath;
+/** File name for a chat: `<sessionId>.acp`. The title stays in the file header. */
+export function sessionFileNameForId(sessionId: string): string {
+    return `${sessionId.trim()}${ACP_UI_SESSION_FILE_SUFFIX}`;
 }
 
-const sessionTitleFileNameMaxLength = 120;
-const invalidSessionFileNameChars = /[<>:"/\\|?*]/g;
 const maxUserMessageHistoryEntries = 55;
-
-function stripControlCharacters(value: string): string {
-    let out = "";
-    for (const ch of value) {
-        const code = ch.charCodeAt(0);
-        if (code >= 32) {
-            out += ch;
-        }
-    }
-    return out;
-}
-
-/**
- * Maps a chat title to a safe `.acp` file name inside a session folder (including suffix).
- */
-export function sessionFileBaseNameFromTitle(title: string): string {
-    let sanitized = stripControlCharacters(title)
-        .trim()
-        .replace(invalidSessionFileNameChars, "")
-        .replace(/\s+/g, " ")
-        .replace(/[. ]+$/g, "");
-    if (sanitized.length === 0) {
-        sanitized = "Chat";
-    }
-    if (sanitized.length > sessionTitleFileNameMaxLength) {
-        sanitized = sanitized.slice(0, sessionTitleFileNameMaxLength).trim();
-    }
-    if (sanitized.length === 0) {
-        sanitized = "Chat";
-    }
-    return `${sanitized}${ACP_UI_SESSION_FILE_SUFFIX}`;
-}
-
-/**
- * Picks a unique `.acp` file name for `title` among `usedFileNames` in one session folder (case-insensitive).
- */
-export function uniqueSessionFileBaseNameFromTitle(
-    title: string,
-    usedFileNames: ReadonlySet<string>,
-    excludeFileName?: string,
-): string {
-    const excludeKey = excludeFileName?.toLowerCase();
-    const reserved = new Set(
-        [...usedFileNames].map((name) => name.toLowerCase()).filter((name) => name !== excludeKey),
-    );
-    const first = sessionFileBaseNameFromTitle(title);
-    if (!reserved.has(first.toLowerCase())) {
-        return first;
-    }
-    const stem = first.slice(0, -ACP_UI_SESSION_FILE_SUFFIX.length);
-    let suffix = 2;
-    while (suffix < 10_000) {
-        const candidate = `${stem} (${suffix})${ACP_UI_SESSION_FILE_SUFFIX}`;
-        if (!reserved.has(candidate.toLowerCase())) {
-            return candidate;
-        }
-        suffix += 1;
-    }
-    return first;
-}
 
 /** Serializes all mutations to one session file so concurrent writes do not race. */
 const sessionFileWriteTails = new Map<string, Promise<unknown>>();

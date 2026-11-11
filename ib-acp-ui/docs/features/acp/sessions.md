@@ -45,10 +45,10 @@ Protocol: [session setup](../../acp/protocol/v1/session-setup.mdx).
 ACP UI uses client-owned session files (`acpUi/session/1` schema) for session metadata, composer user-message history, the viewport transcript, and the last model configuration.
 
 [acpUiSessionJsonl.ts](../../../src/extension/acpUiSessionJsonl.ts) handles read and write.
-[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L54-L73) honors `ib-acp-ui.sessionsDirectory` when set.
+[resolveSessionsDirectoryUri](../../../src/extension/acpUiSessionJsonl.ts#L56-L75) honors `ib-acp-ui.sessionsDirectory` when set.
 See [editor-shell](../ui/editor-shell.md).
 [acpUiSessionController.ts](../../../src/extension/acpUiSessionController.ts) passes composer `history` in the `init` bootstrap payload.
-[deleteSessionFile](../../../src/extension/acpUiSessionJsonl.ts) removes the per-session folder (or a legacy flat file only).
+[deleteSessionFile](../../../src/extension/acpUiSessionJsonl.ts) removes the `<uuid>.acp` file.
 
 Allow always and Reject always choices are `permissionGrants` on the session document.
 Reopening the chat restores them.
@@ -57,8 +57,8 @@ The last model id and config values are `modelConfig` on the session document.
 Reopening the chat seeds the composer from that snapshot and applies it again after the agent connects.
 Resetting the chat or switching clients clears it.
 The last on-screen transcript, including UI-only fields such as thought and tool `durationMs`, is the `cache` array on the session document.
-[writeSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L142-L153) stores that array, capped at the last screen.
-[readSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L102-L105) sends the items on `init`.
+[writeSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L147-L158) stores that array, capped at the last screen.
+[readSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L82-L85) sends the items on `init`.
 There is no sibling `.jsonl` file and no `acpUi/visibleTrace` schema.
 When `session/load` succeeds, agent replay is authoritative for the transcript text.
 The webview keeps the cached screen until replay finishes, then swaps the full transcript in without moving the scroll position.

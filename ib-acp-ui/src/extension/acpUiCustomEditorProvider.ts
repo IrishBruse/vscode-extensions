@@ -16,7 +16,7 @@ import {
     formatAgentTabTitle,
 } from "../protocol/agentTabTitle";
 import { AcpUiSessionController } from "./acpUiSessionController";
-import { ensureSessionFileNameMatchesTitle, parseSessionFile } from "./acpUiSessionJsonl";
+import { ensureSessionFileNamedById, parseSessionFile } from "./acpUiSessionJsonl";
 import { updateAcpUiSessionFileUri } from "./acpUiSessionsStore";
 import { getAcpUiWebviewHtml } from "./acpUiWebviewShell";
 
@@ -181,10 +181,9 @@ export class AcpUiCustomEditorProvider implements CustomTextEditorProvider {
             return;
         }
 
-        const sessionUri = await ensureSessionFileNameMatchesTitle(
+        const sessionUri = await ensureSessionFileNamedById(
             this.context,
             document.uri,
-            parsed.header.title,
             parsed.header.id,
         );
         if (sessionUri.toString() !== document.uri.toString()) {

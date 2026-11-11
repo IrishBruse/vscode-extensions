@@ -1,0 +1,39 @@
+.subagent-session {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  width: 100%;
+  margin: 0 0 var(--acp-ui-space-10);
+  padding: var(--acp-ui-space-6) var(--acp-ui-space-10);
+  border: var(--acp-ui-stroke-width) solid
+    var(--vscode-terminal-ansiBlack, var(--vscode-panel-border, var(--vscode-widget-border)));
+  border-radius: var(--acp-ui-radius-md);
+  background-color: var(
+    --vscode-terminal-background,
+    color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-widget-border) 10%)
+  );
+  color: var(--vscode-foreground);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.subagent-session-status {
+  flex-shrink: 0;
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+}
+
+.subagent-session-title {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.subagent-session-description {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  word-break: break-word;
+}

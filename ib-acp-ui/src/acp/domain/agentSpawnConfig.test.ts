@@ -188,6 +188,7 @@ describe("buildAcpClientCapabilities", () => {
             }),
         ).toEqual({
             fs: { readTextFile: true, writeTextFile: true },
+            subagents: {},
             _meta: { parameterizedModelPicker: true },
         });
     });
@@ -201,6 +202,7 @@ describe("buildAcpClientCapabilities", () => {
             }),
         ).toEqual({
             fs: { readTextFile: true, writeTextFile: true },
+            subagents: {},
         });
     });
 });

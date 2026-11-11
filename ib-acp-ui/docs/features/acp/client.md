@@ -8,6 +8,7 @@ Agents receive `clientInfo` (name, version, title) from the extension `package.j
 If protocol version negotiation fails, the chat shows a clear error with guidance to update ACP UI or the agent.
 
 The most visible capability result today is the Cursor model and thinking-level toolbar in the composer when you use the Cursor ACP agent.
+The client also advertises subagent support, so an agent can report child sessions.
 Other capability flags (terminals, terminal auth, boolean config options, elicitation) are planned.
 See [session-config](../ui/session-config.md) for the shipped model toolbar.
 
@@ -15,8 +16,9 @@ See [session-config](../ui/session-config.md) for the shipped model toolbar.
 
 ### Capabilities
 
-[buildAcpClientCapabilities](../../../src/acp/infrastructure/acpAgentProcess.ts#L90-L102) builds the `clientCapabilities` object sent on `initialize`.
+[buildAcpClientCapabilities](../../../src/acp/infrastructure/acpAgentProcess.ts#L156-L167) builds the `clientCapabilities` object sent on `initialize`.
 All agents advertise filesystem read and write support.
+The same object sets `subagents` to an empty object so agents may send child sessions.
 
 For Cursor spawn configs, [isCursorAcpAgent](../../../src/acp/domain/agentSpawnConfig.ts) gates `_meta.parameterizedModelPicker: true`.
 That unlocks agent-ordered `configOptions` rendered in [ConfigOptionControls](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx).

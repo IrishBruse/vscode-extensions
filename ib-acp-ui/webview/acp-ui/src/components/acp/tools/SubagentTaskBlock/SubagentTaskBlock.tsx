@@ -3,6 +3,7 @@ import { subagentTaskViewFromTool } from "../../../../../../../src/acp/mapping/t
 import type { ToolCallStatus } from "../../../../../../../src/protocol/extensionHostMessages";
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import type { TraceToolItem } from "../../../../chatReducer";
+import { taskStatusLabel } from "../../trace/SubagentSessionBlock/subagentStatus";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./SubagentTaskBlock.css";
 
@@ -39,11 +40,13 @@ export function SubagentTaskBlock({
   item,
   expandAllToolOutputs,
   onCollapseExpandAll,
+  onOpen,
   className,
 }: {
   item: TraceToolItem;
   expandAllToolOutputs: boolean;
   onCollapseExpandAll?: () => void;
+  onOpen?: (toolCallId: string) => void;
   className?: string;
 }): ReactElement | null {
   const view = subagentTaskViewFromTool(item);
@@ -79,12 +82,20 @@ export function SubagentTaskBlock({
       data-tool-id={item.toolCallId}
       data-status={item.status}
       role="status"
-      aria-label={`Subagent task: ${view.description}`}
+      aria-label={`Subagent task: ${view.description}, ${taskStatusLabel(item.status)}`}
     >
       <div className="subagent-task-line">
         <TaskStatusGlyph status={item.status} />
         <span className="subagent-task-label">Task</span>
+        <span className="subagent-task-status">{taskStatusLabel(item.status)}</span>
         <span className="subagent-task-description">{view.description}</span>
+        <button
+          type="button"
+          className="subagent-task-expand"
+          onClick={() => onOpen?.(item.toolCallId)}
+        >
+          Open
+        </button>
       </div>
       {meta.length > 0 ? <div className="subagent-task-meta">{meta}</div> : null}
       {shownPrompt.trim().length > 0 ? (

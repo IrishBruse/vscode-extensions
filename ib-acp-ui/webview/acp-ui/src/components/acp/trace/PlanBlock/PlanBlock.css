@@ -20,20 +20,62 @@
 .agent-plan-row {
   display: flex;
   gap: var(--acp-ui-space-8);
-  align-items: baseline;
+  align-items: flex-start;
   font-size: var(--acp-ui-font-size-x-small);
   line-height: var(--acp-ui-line-height-heading);
   margin-bottom: var(--acp-ui-space-4);
 }
 
-.agent-plan-status {
+.agent-plan-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
   flex-shrink: 0;
-  color: var(--acp-ui-text-primary);
-  text-transform: uppercase;
-  font-size: var(--acp-ui-font-size-label);
+  box-sizing: border-box;
+  border: 1.5px solid var(--acp-ui-text-secondary);
+  border-radius: 50%;
+  color: var(--vscode-editor-background, #fff);
+}
+
+.agent-plan-mark svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.agent-plan-mark--in_progress {
+  border-color: var(--vscode-progressBar-background, var(--vscode-textLink-foreground));
+  background: linear-gradient(
+    90deg,
+    transparent 50%,
+    var(--vscode-progressBar-background, var(--vscode-textLink-foreground)) 50%
+  );
+}
+
+.agent-plan-mark--completed {
+  border-color: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #35a854));
+  background: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #35a854));
+}
+
+.agent-plan-mark--cancelled {
+  border-color: var(--acp-ui-text-tertiary);
+  color: var(--acp-ui-text-tertiary);
 }
 
 .agent-plan-content {
   color: var(--acp-ui-text-primary);
   word-break: break-word;
+}
+
+.agent-plan-row--completed .agent-plan-content,
+.agent-plan-row--cancelled .agent-plan-content {
+  color: var(--acp-ui-text-secondary);
+  text-decoration: line-through;
 }

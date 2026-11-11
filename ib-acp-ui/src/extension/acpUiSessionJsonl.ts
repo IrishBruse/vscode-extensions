@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { basename, dirname, isAbsolute } from "node:path";
+import { isAbsolute } from "node:path";
 import { type ExtensionContext, FileType, Range, Uri, WorkspaceEdit, workspace } from "vscode";
 import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
 import type { PermissionGrant } from "../acp/session/permissionMemory";
@@ -10,12 +10,10 @@ import {
     type AcpUiSessionModelConfig,
     enqueueSessionFileWrite,
     normalizeSessionModelConfig,
-    isFlatSessionFilePath,
     normalizeUserMessageHistory,
     parseSessionDocument,
     serializeSessionDocument,
-    sessionFileBaseNameFromTitle,
-    uniqueSessionFileBaseNameFromTitle,
+    sessionFileNameForId,
 } from "./acpUiSessionJsonlFormat";
 
 export {
@@ -26,7 +24,6 @@ export {
     type AcpUiSessionMetadata,
     type AcpUiSessionModelConfig,
     enqueueSessionFileWrite,
-    isFlatSessionFilePath,
     normalizeUserMessageHistory,
     applySavedModelConfig,
     modelConfigFromSessionOptions,
@@ -36,9 +33,8 @@ export {
     parseSessionHeaderBlock,
     parseSessionHeaderLine,
     serializeSessionDocument,
-    sessionFileBaseNameFromTitle,
+    sessionFileNameForId,
     shouldDeferJsonlHistoryReplay,
-    uniqueSessionFileBaseNameFromTitle,
 } from "./acpUiSessionJsonlFormat";
 
 /**
@@ -47,7 +43,6 @@ export {
  */
 const sessionsDirectorySettingKey = "ib-acp-ui.sessionsDirectory";
 const chatsSubdir = "chats";
-const folderLayoutMigrationKey = "acpUi.chats.folderLayoutMigration.v1";
 
 let logWarn: ((message: string) => void) | null = null;
 
@@ -79,25 +74,9 @@ export function resolveSessionsDirectoryUri(context: ExtensionContext): Uri {
     return Uri.joinPath(folder.uri, configured);
 }
 
-/**
- * Per-session directory under the chats root (`chats/<sessionId>/`).
- */
-export function sessionDirectoryUriForId(context: ExtensionContext, sessionId: string): Uri {
-    return Uri.joinPath(resolveSessionsDirectoryUri(context), sessionId);
-}
-
-/**
- * Resolves the `.acp` file path for a session id and title.
- */
-export function sessionFileUriForId(
-    context: ExtensionContext,
-    sessionId: string,
-    title = "Chat",
-): Uri {
-    return Uri.joinPath(
-        sessionDirectoryUriForId(context, sessionId),
-        sessionFileBaseNameFromTitle(title),
-    );
+/** Resolves `chats/<sessionId>.acp`. The chat title stays in the file header. */
+export function sessionFileUriForId(context: ExtensionContext, sessionId: string): Uri {
+    return Uri.joinPath(resolveSessionsDirectoryUri(context), sessionFileNameForId(sessionId));
 }
 
 export async function readSessionCache(sessionFileUri: Uri): Promise<AcpUiVisibleTraceItem[]> {
@@ -178,82 +157,54 @@ export async function writeSessionCache(sessionFileUri: Uri, items: unknown): Pr
     });
 }
 
-/** True when the session file sits directly under the chats root (legacy layout). */
-export function isFlatSessionFileUri(uri: Uri, sessionsDir: Uri): boolean {
-    return isFlatSessionFilePath(uri.fsPath, sessionsDir.fsPath);
-}
-
-async function listSessionFileNamesInDirectory(dir: Uri): Promise<Set<string>> {
+async function uriExists(uri: Uri): Promise<boolean> {
     try {
-        const entries = await workspace.fs.readDirectory(dir);
-        return new Set(
-            entries
-                .filter(
-                    ([name, fileType]) =>
-                        fileType === FileType.File && name.endsWith(ACP_UI_SESSION_FILE_SUFFIX),
-                )
-                .map(([name]) => name),
-        );
+        await workspace.fs.stat(uri);
+        return true;
     } catch {
-        return new Set();
+        return false;
     }
 }
 
-async function resolveSessionFileUriForTitle(
-    context: ExtensionContext,
-    sessionId: string,
-    title: string,
-    options?: { excludeUri?: Uri },
-): Promise<Uri> {
-    const dir = sessionDirectoryUriForId(context, sessionId);
-    await workspace.fs.createDirectory(dir);
-    const used = await listSessionFileNamesInDirectory(dir);
-    const excludeFileName =
-        options?.excludeUri !== undefined ? basename(options.excludeUri.fsPath) : undefined;
-    const fileName = uniqueSessionFileBaseNameFromTitle(title, used, excludeFileName);
-    return Uri.joinPath(dir, fileName);
+async function removeEmptyParentDirectory(context: ExtensionContext, uri: Uri): Promise<void> {
+    const sessionsDir = resolveSessionsDirectoryUri(context);
+    const parent = Uri.joinPath(uri, "..");
+    if (parent.toString() === sessionsDir.toString()) {
+        return;
+    }
+    try {
+        const entries = await workspace.fs.readDirectory(parent);
+        if (entries.length === 0) {
+            await workspace.fs.delete(parent);
+        }
+    } catch {
+        // The parent directory may already be gone.
+    }
 }
 
-async function ensureSessionFileInFolder(
+/**
+ * Moves a chat file to `chats/<sessionId>.acp` when it still uses an older path.
+ * The title in the file is left unchanged.
+ */
+export async function ensureSessionFileNamedById(
     context: ExtensionContext,
     uri: Uri,
     sessionId: string,
 ): Promise<Uri> {
-    const sessionsDir = resolveSessionsDirectoryUri(context);
-    const parentName = basename(dirname(uri.fsPath));
-    if (!isFlatSessionFileUri(uri, sessionsDir) && parentName === sessionId) {
+    const target = sessionFileUriForId(context, sessionId);
+    if (uri.toString() === target.toString()) {
         return uri;
     }
-    const sessionDir = sessionDirectoryUriForId(context, sessionId);
-    await workspace.fs.createDirectory(sessionDir);
-    const dest = Uri.joinPath(sessionDir, basename(uri.fsPath));
-    if (uri.toString() !== dest.toString()) {
-        await workspace.fs.rename(uri, dest, { overwrite: false });
+    await ensureSessionsDirectory(context);
+    if (await uriExists(target)) {
+        logWarn?.(
+            `Chat file ${sessionFileNameForId(sessionId)} already exists; left ${uri.fsPath} in place.`,
+        );
+        return uri;
     }
-    return dest;
-}
-
-function sessionFileNamesMatch(current: string, expected: string): boolean {
-    return current.toLowerCase() === expected.toLowerCase();
-}
-
-export async function ensureSessionFileNameMatchesTitle(
-    context: ExtensionContext,
-    uri: Uri,
-    title: string,
-    sessionId: string,
-): Promise<Uri> {
-    const inFolder = await ensureSessionFileInFolder(context, uri, sessionId);
-    const targetUri = await resolveSessionFileUriForTitle(context, sessionId, title, {
-        excludeUri: inFolder,
-    });
-    const currentName = basename(inFolder.fsPath);
-    const targetName = basename(targetUri.fsPath);
-    if (sessionFileNamesMatch(currentName, targetName)) {
-        return inFolder;
-    }
-    await workspace.fs.rename(inFolder, targetUri, { overwrite: false });
-    return targetUri;
+    await workspace.fs.rename(uri, target, { overwrite: false });
+    await removeEmptyParentDirectory(context, uri);
+    return target;
 }
 
 async function ensureSessionsDirectory(context: ExtensionContext): Promise<Uri> {
@@ -303,7 +254,7 @@ export async function createSessionFile(
 ): Promise<{ id: string; uri: Uri; header: AcpUiSessionDocument }> {
     await ensureSessionsDirectory(context);
     const document = buildSessionDocument(title, options);
-    const uri = await resolveSessionFileUriForTitle(context, document.id, document.title);
+    const uri = sessionFileUriForId(context, document.id);
     await persistSessionDocument(uri, document);
     return { id: document.id, uri, header: document };
 }
@@ -426,32 +377,12 @@ export async function updateSessionHeader(
 }
 
 export async function deleteSessionFile(context: ExtensionContext, uri: Uri): Promise<void> {
-    const sessionsDir = resolveSessionsDirectoryUri(context);
-    if (isFlatSessionFileUri(uri, sessionsDir)) {
-        try {
-            await workspace.fs.delete(uri, { useTrash: true });
-        } catch {
-            // File may already be gone.
-        }
-        return;
-    }
-    const document = await readSessionDocumentAtUri(uri);
-    const deleteTarget =
-        document !== null
-            ? sessionDirectoryUriForId(context, document.id)
-            : Uri.joinPath(uri, "..");
     try {
-        await workspace.fs.delete(deleteTarget, {
-            recursive: true,
-            useTrash: true,
-        });
+        await workspace.fs.delete(uri, { useTrash: true });
     } catch {
-        try {
-            await workspace.fs.delete(uri, { useTrash: true });
-        } catch {
-            // File may already be gone.
-        }
+        // File may already be gone.
     }
+    await removeEmptyParentDirectory(context, uri);
 }
 
 async function readSessionHeaderAtUri(
@@ -508,42 +439,16 @@ async function listSessionHeadersInDirectory(
     return out;
 }
 
-export async function migrateFlatSessionFilesToFolderLayout(
-    context: ExtensionContext,
-): Promise<void> {
-    if (context.globalState.get<boolean>(folderLayoutMigrationKey) === true) {
-        return;
-    }
-    const dir = await ensureSessionsDirectory(context);
-    let entries: [string, FileType][];
-    try {
-        entries = await workspace.fs.readDirectory(dir);
-    } catch {
-        await context.globalState.update(folderLayoutMigrationKey, true);
-        return;
-    }
-    for (const [name, fileType] of entries) {
-        if (fileType !== FileType.File || !name.endsWith(ACP_UI_SESSION_FILE_SUFFIX)) {
-            continue;
-        }
-        const uri = Uri.joinPath(dir, name);
-        const row = await readSessionHeaderAtUri(uri);
-        if (row === null) {
-            continue;
-        }
+/** Moves older `chats/<id>/<title>.acp` files to `chats/<id>.acp`. Titles stay in the file. */
+export async function migrateSessionFilesToIdNames(context: ExtensionContext): Promise<void> {
+    const rows = await listSessionHeaders(context);
+    for (const row of rows) {
         try {
-            const inFolder = await ensureSessionFileInFolder(context, uri, row.header.id);
-            await ensureSessionFileNameMatchesTitle(
-                context,
-                inFolder,
-                row.header.title,
-                row.header.id,
-            );
+            await ensureSessionFileNamedById(context, row.uri, row.header.id);
         } catch {
-            logWarn?.(`Failed to migrate chat "${row.header.title}" to folder layout.`);
+            logWarn?.(`Failed to move chat "${row.header.title}" to ${row.header.id}.acp.`);
         }
     }
-    await context.globalState.update(folderLayoutMigrationKey, true);
 }
 
 export async function listSessionHeaders(
@@ -555,7 +460,26 @@ export async function listSessionHeaders(
     } catch {
         return [];
     }
-    const out = await listSessionHeadersInDirectory(dir);
+    const out = preferIdNamedSessionFiles(await listSessionHeadersInDirectory(dir), dir);
     out.sort((a, b) => a.header.updatedAt - b.header.updatedAt);
     return out;
+}
+
+function preferIdNamedSessionFiles(
+    rows: Array<{ header: AcpUiSessionDocument; uri: Uri }>,
+    sessionsDir: Uri,
+): Array<{ header: AcpUiSessionDocument; uri: Uri }> {
+    const byId = new Map<string, { header: AcpUiSessionDocument; uri: Uri }>();
+    for (const row of rows) {
+        const existing = byId.get(row.header.id);
+        if (existing === undefined) {
+            byId.set(row.header.id, row);
+            continue;
+        }
+        const canonical = Uri.joinPath(sessionsDir, sessionFileNameForId(row.header.id)).toString();
+        if (row.uri.toString() === canonical) {
+            byId.set(row.header.id, row);
+        }
+    }
+    return [...byId.values()];
 }

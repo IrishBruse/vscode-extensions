@@ -12,7 +12,8 @@ import { canonicalToolCallId } from "../mapping/canonicalToolCallId";
 import {
     createToolCallKindTracking,
     extensionMessagesForPermissionRequest,
-    sessionUpdateToWebviewMessages,
+    messagesForSessionNotification,
+    type ToolCallKindTracking,
 } from "../mapping/sessionUpdateMapping";
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
@@ -103,6 +104,8 @@ export class AcpSessionBridge {
     private lastModelSelection: AcpUiSessionModelSelection | null = null;
     private lastConfigOptions: AcpUiSessionConfigState | null = null;
     private toolCallKindTracking = createToolCallKindTracking();
+    /** Tool-kind maps for child sessions, keyed by the child session id. */
+    private childToolCallKindTracking = new Map<string, ToolCallKindTracking>();
     /** Read tool calls awaiting `fs/readTextFile` path correlation (FIFO). */
     private readToolCallQueue: string[] = [];
     private nextPermissionRequestId = 0;
@@ -482,17 +485,17 @@ export class AcpSessionBridge {
             await this.hooks?.onResumeSession?.();
             try {
                 bootstrap = await this.loadSessionWithAuthRetry(init, runtimeSessionId);
-                this.acpSessionId = runtimeSessionId;
+                this.setParentSessionId(runtimeSessionId);
             } catch {
                 await this.hooks?.onLoadSessionFailed?.();
                 const created = await this.newSessionWithAuthRetry(init);
                 bootstrap = created;
-                this.acpSessionId = created.sessionId;
+                this.setParentSessionId(created.sessionId);
             }
         } else {
             const created = await this.newSessionWithAuthRetry(init);
             bootstrap = created;
-            this.acpSessionId = created.sessionId;
+            this.setParentSessionId(created.sessionId);
         }
         const preferredModelId = options?.preferredModelId;
         if (bootstrap.configOptions !== undefined && bootstrap.configOptions !== null) {
@@ -843,7 +846,7 @@ export class AcpSessionBridge {
         this.cancelPendingExtensionRequests();
         void this.logoutBestEffort();
         this.agentProcess.dispose();
-        this.acpSessionId = null;
+        this.setParentSessionId(null);
     }
 
     private async ensureAuthenticated(init: acp.InitializeResponse): Promise<void> {
@@ -903,7 +906,7 @@ export class AcpSessionBridge {
     }
 
     private handleAgentProcessExit(details: AgentProcessExitDetails): void {
-        this.acpSessionId = null;
+        this.setParentSessionId(null);
         this.prompting = false;
         const message = formatAgentProcessExitMessage(this.config.name, details);
         this.postToWebview({
@@ -914,22 +917,46 @@ export class AcpSessionBridge {
         this.hooks?.onAgentDisconnected?.(message);
     }
 
+    private setParentSessionId(sessionId: string | null): void {
+        this.acpSessionId = sessionId;
+        this.childToolCallKindTracking.clear();
+    }
+
+    private childKindTracking(sessionId: string): ToolCallKindTracking {
+        const existing = this.childToolCallKindTracking.get(sessionId);
+        if (existing !== undefined) {
+            return existing;
+        }
+        const created = createToolCallKindTracking();
+        this.childToolCallKindTracking.set(sessionId, created);
+        return created;
+    }
+
     private handleSessionUpdate(params: acp.SessionNotification): void {
-        if (params.update.sessionUpdate === "session_info_update") {
-            this.hooks?.onSessionInfoUpdate?.(params.update);
+        const child =
+            this.acpSessionId !== null &&
+            params.sessionId !== this.acpSessionId &&
+            params.update.sessionUpdate !== "subagent_update";
+        if (!child) {
+            if (params.update.sessionUpdate === "session_info_update") {
+                this.hooks?.onSessionInfoUpdate?.(params.update);
+            }
+            if (
+                params.update.sessionUpdate === "usage_update" &&
+                Number.isFinite(params.update.used) &&
+                Number.isFinite(params.update.size)
+            ) {
+                this.contextWindowKnown = true;
+            }
+            if (params.update.sessionUpdate === "config_option_update") {
+                this.syncConfigOptionsFromAgent(params.update.configOptions);
+            }
+            this.trackReadToolCallForFilesystemCorrelation(params.update);
         }
-        if (
-            params.update.sessionUpdate === "usage_update" &&
-            Number.isFinite(params.update.used) &&
-            Number.isFinite(params.update.size)
-        ) {
-            this.contextWindowKnown = true;
-        }
-        if (params.update.sessionUpdate === "config_option_update") {
-            this.syncConfigOptionsFromAgent(params.update.configOptions);
-        }
-        this.trackReadToolCallForFilesystemCorrelation(params.update);
-        const messages = sessionUpdateToWebviewMessages(params.update, this.toolCallKindTracking);
+        const tracking = child
+            ? this.childKindTracking(params.sessionId)
+            : this.toolCallKindTracking;
+        const messages = messagesForSessionNotification(params, this.acpSessionId, tracking);
         for (const msg of messages) {
             this.postToWebview(msg);
         }

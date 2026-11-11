@@ -40,6 +40,9 @@ import { CursorCreatePlanDialog } from "./components/acp/dialogs/CursorCreatePla
 import { EmptyChatState } from "./components/acp/session/EmptyChatState/EmptyChatState";
 import { ImageViewer } from "./components/acp/dialogs/ImageViewer/ImageViewer";
 import { PermissionDialog } from "./components/acp/dialogs/PermissionDialog/PermissionDialog";
+import { SubagentFocus } from "./components/acp/trace/SubagentFocus/SubagentFocus";
+import { TaskFocus } from "./components/acp/trace/SubagentFocus/TaskFocus";
+import { subagentStatusLabel } from "./components/acp/trace/SubagentSessionBlock/subagentStatus";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
 import { collectPathsFromDataTransfer, dataTransferLooksLikePathDrop } from "./droppedFilePaths";
@@ -132,6 +135,9 @@ export function AcpUiApp({
   const [earlierOverlay, setEarlierOverlay] = useState(false);
   const [fileDragActive, setFileDragActive] = useState(false);
   const [viewerImageSrc, setViewerImageSrc] = useState<string | null>(null);
+  const [openAgent, setOpenAgent] = useState<
+    { kind: "session"; sessionId: string } | { kind: "task"; toolCallId: string } | null
+  >(null);
   const appendDroppedPathsRef = useRef<(paths: string[]) => void>(() => {});
 
   const scrollTraceToBottomIfPinned = useCallback((): void => {
@@ -410,6 +416,17 @@ export function AcpUiApp({
     appendDroppedPathsRef.current(paths);
   };
 
+  const openSession =
+    openAgent?.kind === "session"
+      ? state.trace.find(
+          (item) => item.type === "subagent" && item.sessionId === openAgent.sessionId,
+        )
+      : undefined;
+  const openTask =
+    openAgent?.kind === "task"
+      ? state.trace.find((item) => item.type === "tool" && item.toolCallId === openAgent.toolCallId)
+      : undefined;
+
   return (
     <Fragment>
       <div
@@ -454,17 +471,56 @@ export function AcpUiApp({
                 }}
               />
             ) : null}
-            <TraceList
-              items={state.trace}
-              showThoughts={showThinkingBlocks}
-              expandAllToolOutputs={expandAllToolOutputs}
-              followBottom={stickToBottomRef.current}
-              historyCommit={state.historyCommit}
-              traceScrollRef={traceRef}
-              onOpenWorkspacePath={postOpenWorkspacePath}
-              onOpenImage={setViewerImageSrc}
-              onCollapseExpandAll={onCollapseExpandAll}
-            />
+            {openSession?.type === "subagent" ? (
+              <SubagentFocus
+                title={openSession.title.trim().length > 0 ? openSession.title : "Subagent"}
+                status={subagentStatusLabel(openSession.state, openSession.stopReason)}
+                description={openSession.description}
+                items={state.subagentActivity.get(openSession.sessionId)?.trace ?? []}
+                showThoughts={showThinkingBlocks}
+                expandAllToolOutputs={expandAllToolOutputs}
+                followBottom={stickToBottomRef.current}
+                historyCommit={state.historyCommit}
+                traceScrollRef={traceRef}
+                onBack={() => {
+                  setOpenAgent(null);
+                }}
+                onCollapseExpandAll={onCollapseExpandAll}
+                onOpenWorkspacePath={postOpenWorkspacePath}
+                onOpenImage={setViewerImageSrc}
+                onOpenSubagent={(sessionId) => {
+                  setOpenAgent({ kind: "session", sessionId });
+                }}
+                onOpenTask={(toolCallId) => {
+                  setOpenAgent({ kind: "task", toolCallId });
+                }}
+              />
+            ) : openTask?.type === "tool" ? (
+              <TaskFocus
+                item={openTask}
+                onBack={() => {
+                  setOpenAgent(null);
+                }}
+              />
+            ) : (
+              <TraceList
+                items={state.trace}
+                showThoughts={showThinkingBlocks}
+                expandAllToolOutputs={expandAllToolOutputs}
+                followBottom={stickToBottomRef.current}
+                historyCommit={state.historyCommit}
+                traceScrollRef={traceRef}
+                onOpenWorkspacePath={postOpenWorkspacePath}
+                onOpenImage={setViewerImageSrc}
+                onCollapseExpandAll={onCollapseExpandAll}
+                onOpenSubagent={(sessionId) => {
+                  setOpenAgent({ kind: "session", sessionId });
+                }}
+                onOpenTask={(toolCallId) => {
+                  setOpenAgent({ kind: "task", toolCallId });
+                }}
+              />
+            )}
           </div>
           <div className="agent-trace-follow-gap" aria-hidden="true" />
         </main>

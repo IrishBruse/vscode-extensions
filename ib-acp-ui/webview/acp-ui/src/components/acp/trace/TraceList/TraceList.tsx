@@ -24,6 +24,7 @@ const AgentMarkdown = lazy(() =>
 );
 import { AgentThoughtBlock } from "../AgentThoughtBlock/AgentThoughtBlock";
 import { PlanBlock } from "../PlanBlock/PlanBlock";
+import { SubagentSessionBlock } from "../SubagentSessionBlock/SubagentSessionBlock";
 import { SubagentTaskBlock } from "../../tools/SubagentTaskBlock/SubagentTaskBlock";
 import { ToolCallCompactBlock } from "../../tools/ToolCallCompactBlock/ToolCallCompactBlock";
 import { ToolCallCompactExecuteBlock } from "../../tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock";
@@ -112,6 +113,8 @@ type TraceSegmentViewProps = {
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
   onOpenImage?: (src: string) => void;
+  onOpenSubagent?: (sessionId: string) => void;
+  onOpenTask?: (toolCallId: string) => void;
 };
 
 function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegmentViewProps): boolean {
@@ -124,7 +127,9 @@ function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegme
   if (
     prev.onCollapseExpandAll !== next.onCollapseExpandAll ||
     prev.onOpenWorkspacePath !== next.onOpenWorkspacePath ||
-    prev.onOpenImage !== next.onOpenImage
+    prev.onOpenImage !== next.onOpenImage ||
+    prev.onOpenSubagent !== next.onOpenSubagent ||
+    prev.onOpenTask !== next.onOpenTask
   ) {
     return false;
   }
@@ -150,6 +155,8 @@ const TraceSegmentView = memo(function TraceSegmentView({
   onCollapseExpandAll,
   onOpenWorkspacePath,
   onOpenImage,
+  onOpenSubagent,
+  onOpenTask,
 }: TraceSegmentViewProps): ReactElement | null {
   if (segment.kind === "toolExecute") {
     return traceRow(
@@ -247,6 +254,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
           item={item}
           expandAllToolOutputs={expandAllToolOutputs}
           onCollapseExpandAll={onCollapseExpandAll}
+          onOpen={onOpenTask}
         />
       ) : (
         <ToolCallCompactBlock
@@ -258,6 +266,20 @@ const TraceSegmentView = memo(function TraceSegmentView({
         />
       ),
     );
+  }
+  if (item.type === "subagent") {
+    return traceRow(
+      segment.index,
+      segment.index,
+      <SubagentSessionBlock
+        className={gapClass.trim()}
+        item={item}
+        onOpen={onOpenSubagent}
+      />,
+    );
+  }
+  if (item.type !== "plan") {
+    return null;
   }
   return traceRow(
     segment.index,
@@ -279,6 +301,8 @@ export const TraceList = memo(function TraceList({
   onCollapseExpandAll,
   onOpenWorkspacePath,
   onOpenImage,
+  onOpenSubagent,
+  onOpenTask,
 }: {
   items: TraceItem[];
   showThoughts: boolean;
@@ -291,6 +315,8 @@ export const TraceList = memo(function TraceList({
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
   onOpenImage?: (src: string) => void;
+  onOpenSubagent?: (sessionId: string) => void;
+  onOpenTask?: (toolCallId: string) => void;
 }): ReactElement {
   const thoughtIndexesRef = useRef<number[] | null>(null);
   const seenHistoryCommitRef = useRef(historyCommit);
@@ -388,6 +414,8 @@ export const TraceList = memo(function TraceList({
         onCollapseExpandAll={onCollapseExpandAll}
         onOpenWorkspacePath={onOpenWorkspacePath}
         onOpenImage={onOpenImage}
+        onOpenSubagent={onOpenSubagent}
+        onOpenTask={onOpenTask}
       />
     );
   };

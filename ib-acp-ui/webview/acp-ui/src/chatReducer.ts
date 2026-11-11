@@ -21,7 +21,8 @@ import type {
     ExtensionToWebviewMessage,
     AcpUiSlashCommand,
     PlanEntry,
-    TodoEntry,
+    SubagentActivityEvent,
+    SubagentWorkState,
     ToolCallDiffRow,
     ToolCallStatus,
 } from "../../../src/protocol/extensionHostMessages";
@@ -51,12 +52,28 @@ export type TraceToolItem = {
   startedAtMs?: number;
 };
 
+export type SubagentTraceItem = {
+  type: "subagent";
+  sessionId: string;
+  title: string;
+  description: string;
+  state: SubagentWorkState | null;
+  stopReason: string | null;
+};
+
 export type TraceItem =
   | { type: "user"; text: string; imageCount?: number; images?: AcpUiPromptImage[] }
   | { type: "thought"; text: string; durationMs?: number; startedAtMs?: number }
   | { type: "agent"; text: string }
   | TraceToolItem
-  | { type: "plan"; entries: PlanEntry[] };
+  | { type: "plan"; entries: PlanEntry[] }
+  | SubagentTraceItem;
+
+export type SubagentActivity = {
+  trace: TraceItem[];
+  toolIndexById: Map<string, number>;
+  openStreamIndex: number | null;
+};
 
 export type AcpAgentSelectionState = {
   currentName: string;
@@ -101,6 +118,8 @@ export type ChatState = {
   historyCommit: number;
   /** Increments when the on-screen trace should be persisted to the session file cache. */
   visibleTraceCacheEpoch: number;
+  /** Live transcript for each child subagent, keyed by child session id. */
+  subagentActivity: Map<string, SubagentActivity>;
   acpAgentSelection: AcpAgentSelectionState | null;
   /** Configured ACP agent (provider) names for the empty-chat provider select. */
   providers: string[];
@@ -233,6 +252,7 @@ export function createInitialChatState(): ChatState {
     replayToolStartedAtMsById: new Map(),
     historyCommit: 0,
     visibleTraceCacheEpoch: 0,
+    subagentActivity: new Map(),
     acpAgentSelection: null,
     providers: [],
     recentSessions: [],
@@ -965,21 +985,9 @@ function applySessionReset(state: ChatState): ChatState {
     thoughtStartedAtMs: null,
     tokenUsage: null,
     toolStartedAtMsById: new Map(),
+    subagentActivity: new Map(),
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
   };
-}
-
-function todoStatusEmoji(status: TodoEntry["status"]): string {
-  if (status === "completed") {
-    return "x";
-  }
-  if (status === "in_progress") {
-    return "~";
-  }
-  if (status === "cancelled") {
-    return "-";
-  }
-  return " ";
 }
 
 function isReplayTranscriptAction(action: ChatAction): boolean {
@@ -1077,6 +1085,92 @@ function upsertCursorTask(
   const toolIndexById = new Map(base.toolIndexById);
   rememberToolIndex(toolIndexById, id, trace.length - 1);
   return { ...base, trace, toolIndexById, openStreamIndex: null };
+}
+
+function blankSubagent(sessionId: string): SubagentTraceItem {
+  return {
+    type: "subagent",
+    sessionId,
+    title: "Subagent",
+    description: "",
+    state: null,
+    stopReason: null,
+  };
+}
+
+function patchSubagent(
+  item: SubagentTraceItem,
+  action: Extract<ChatAction, { type: "subagentUpdate" }>,
+): SubagentTraceItem {
+  return {
+    ...item,
+    title: action.title === undefined ? item.title : (action.title ?? ""),
+    description: action.description === undefined ? item.description : (action.description ?? ""),
+    state: action.state === undefined ? item.state : action.state,
+    stopReason: action.stopReason === undefined ? item.stopReason : action.stopReason,
+  };
+}
+
+function applySubagentUpdate(
+  state: ChatState,
+  action: Extract<ChatAction, { type: "subagentUpdate" }>,
+): ChatState {
+  const index = state.trace.findIndex(
+    (item) => item.type === "subagent" && item.sessionId === action.sessionId,
+  );
+  const trace = state.trace.slice();
+  if (index >= 0) {
+    const current = trace[index];
+    if (current?.type === "subagent") {
+      trace[index] = patchSubagent(current, action);
+    }
+  } else {
+    trace.push(patchSubagent(blankSubagent(action.sessionId), action));
+  }
+  return {
+    ...state,
+    trace,
+    visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
+  };
+}
+
+function applySubagentActivity(
+  state: ChatState,
+  sessionId: string,
+  event: SubagentActivityEvent,
+): ChatState {
+  const current = state.subagentActivity.get(sessionId) ?? {
+    trace: [],
+    toolIndexById: new Map<string, number>(),
+    openStreamIndex: null,
+  };
+  const shadow = chatReducer(
+    {
+      ...createInitialChatState(),
+      trace: current.trace,
+      toolIndexById: current.toolIndexById,
+      openStreamIndex: current.openStreamIndex,
+    },
+    event,
+  );
+  const subagentActivity = new Map(state.subagentActivity);
+  subagentActivity.set(sessionId, {
+    trace: shadow.trace,
+    toolIndexById: shadow.toolIndexById,
+    openStreamIndex: shadow.openStreamIndex,
+  });
+  const hasCard = state.trace.some(
+    (item) => item.type === "subagent" && item.sessionId === sessionId,
+  );
+  const trace = hasCard
+    ? state.trace
+    : [...state.trace, { ...blankSubagent(sessionId), state: "running" as const }];
+  return {
+    ...state,
+    trace,
+    subagentActivity,
+    ...(hasCard ? {} : { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) }),
+  };
 }
 
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
@@ -1293,6 +1387,10 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, slashCommands: action.commands };
     case "promptImageSupport":
       return { ...state, promptImageSupported: action.supported };
+    case "subagentUpdate":
+      return applySubagentUpdate(state, action);
+    case "subagentActivity":
+      return applySubagentActivity(state, action.sessionId, action.event);
     case "tokenUsage":
       return {
         ...state,
@@ -1321,7 +1419,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         {
           type: "plan" as const,
           entries: action.todos.map((todo) => ({
-            content: `[${todoStatusEmoji(todo.status)}] ${todo.content}`,
+            content: todo.content,
             status: todo.status,
           })),
         },

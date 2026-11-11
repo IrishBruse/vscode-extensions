@@ -3,7 +3,7 @@
 ## User facing
 
 The chat trace is the scrolling conversation panel above the composer.
-It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and structured agent plans.
+It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and TODO lists.
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
 A thought block uses quieter text.
 The open body shows three lines and stays on the newest text.
@@ -37,8 +37,13 @@ Its output sits in a quote bar under that line.
 A short result shows in that block.
 A long result stays closed until you click Show output.
 
+A TODO list shows the agent plan.
+Each item has a mark for pending, in progress, complete, or cancelled.
+
 A subagent task shows as its own card.
-The card shows the short description, the subagent type, and the prompt.
+The card shows the status, the short description, the subagent type, and the prompt.
+Open the card to read that subagent, then use Back to return to the parent chat.
+A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, or Cancelled.
 A long prompt starts collapsed.
 
 While a session loads from the agent, a saved last screen is shown when one exists.
@@ -86,9 +91,12 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   The close is skipped when the transcript is scrolled up and that row is on screen.
   [activityGroupRanges](../../../webview/acp-ui/src/components/acp/trace/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
   [trace-activity-group](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.css#L91-L96) adds padding around that run.
-- Plans: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L8-L40).
-- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L38-L113).
-  [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L45-L67) keeps each task on its own row.
+- TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
+- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) shows status and an Open control.
+  [SubagentSessionBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentSessionBlock/SubagentSessionBlock.tsx#L10-L38) shows an ACP child session on the parent chat.
+  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L10-L68) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L12-L40) show that subagent, and Back returns to the parent.
+  [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1044-L1062) keeps child session updates on that child.
+  [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L77) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.

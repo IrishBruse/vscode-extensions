@@ -139,6 +139,8 @@ export type WebviewToExtensionMessage =
 /**
  * Messages sent from the extension host to a webview (or other UI host).
  */
+export type SubagentWorkState = "running" | "idle" | "requires_action" | "unknown";
+
 export type ExtensionToWebviewMessage =
     | {
           type: "init";
@@ -264,6 +266,20 @@ export type ExtensionToWebviewMessage =
           merge: boolean;
       }
     | {
+          type: "subagentUpdate";
+          sessionId: string;
+          /** Omitted leaves the field unchanged. Null clears it. */
+          title?: string | null;
+          description?: string | null;
+          state?: SubagentWorkState | null;
+          stopReason?: string | null;
+      }
+    | {
+          type: "subagentActivity";
+          sessionId: string;
+          event: SubagentActivityEvent;
+      }
+    | {
           type: "cursorTask";
           toolCallId: string;
           description: string;
@@ -301,6 +317,21 @@ export type ExtensionToWebviewMessage =
     | { type: "sessionReset" }
     /** Replays persisted session log lines after `init` (custom editor restore). */
     | { type: "historyReplay"; events: AcpUiHistoryReplayEvent[] };
+
+/** Parent-trace messages that also belong inside a child subagent session. */
+export type SubagentActivityEvent = Extract<
+    ExtensionToWebviewMessage,
+    {
+        type:
+            | "appendAgentText"
+            | "appendUserText"
+            | "appendUserImage"
+            | "appendAgentThought"
+            | "appendToolCall"
+            | "updateToolCall"
+            | "appendPlan";
+    }
+>;
 
 /**
  * True when `raw` is a non-null object (`typeof null === "object"` is excluded).

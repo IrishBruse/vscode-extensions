@@ -3,6 +3,7 @@ import { canonicalToolCallId } from "./canonicalToolCallId";
 import {
     createToolCallKindTracking,
     extensionMessagesForPermissionRequest,
+    messagesForSessionNotification,
     searchStatsSubtitleFromRawOutput,
     sessionUpdateToWebviewMessages,
     toolCallUpdateSubtitleHint,
@@ -318,6 +319,56 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(update.subtitle).toBe("docs/test.md");
         expect(update.diffRows).toBeDefined();
         expect(update.diffRows!.length).toBeGreaterThan(0);
+    });
+});
+
+describe("messagesForSessionNotification", () => {
+    it("announces a child session on the parent", () => {
+        expect(
+            messagesForSessionNotification(
+                {
+                    sessionId: "parent",
+                    update: {
+                        sessionUpdate: "subagent_update",
+                        sessionId: "child",
+                        title: "Explore",
+                        state: { state: "running" },
+                    },
+                },
+                "parent",
+                createToolCallKindTracking(),
+            ),
+        ).toEqual([
+            {
+                type: "subagentUpdate",
+                sessionId: "child",
+                title: "Explore",
+                state: "running",
+                stopReason: null,
+            },
+        ]);
+    });
+
+    it("routes a child message into that child session", () => {
+        expect(
+            messagesForSessionNotification(
+                {
+                    sessionId: "child",
+                    update: {
+                        sessionUpdate: "agent_message_chunk",
+                        content: { type: "text", text: "Found it" },
+                    },
+                },
+                "parent",
+                createToolCallKindTracking(),
+            ),
+        ).toEqual([
+            {
+                type: "subagentActivity",
+                sessionId: "child",
+                event: { type: "appendAgentText", text: "Found it" },
+            },
+        ]);
     });
 });
 

@@ -9,9 +9,8 @@ vi.mock("vscode", () => ({
 vi.mock("./acpUiSessionJsonl", () => ({
     createSessionFile: vi.fn(),
     deleteSessionFile: vi.fn(),
-    ensureSessionFileNameMatchesTitle: vi.fn(),
     listSessionHeaders: vi.fn(async () => []),
-    migrateFlatSessionFilesToFolderLayout: vi.fn(async () => {}),
+    migrateSessionFilesToIdNames: vi.fn(async () => {}),
     setAcpUiSessionJsonlLogger: vi.fn(),
     updateSessionHeader: vi.fn(async () => null),
 }));

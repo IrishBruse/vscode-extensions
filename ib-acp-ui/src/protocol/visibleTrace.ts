@@ -36,7 +36,15 @@ export type AcpUiVisibleTraceItem =
           durationMs?: number;
           startedAtMs?: number;
       }
-    | { type: "plan"; entries: PlanEntry[] };
+    | { type: "plan"; entries: PlanEntry[] }
+    | {
+          type: "subagent";
+          sessionId: string;
+          title: string;
+          description: string;
+          state: "running" | "idle" | "requires_action" | "unknown" | null;
+          stopReason: string | null;
+      };
 
 const toolCallStatuses = new Set<ToolCallStatus>(["pending", "in_progress", "completed", "failed"]);
 
@@ -177,6 +185,30 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             text: value.text,
             ...(durationMs !== undefined ? { durationMs } : {}),
             ...(durationMs === undefined && startedAtMs !== undefined ? { startedAtMs } : {}),
+        };
+    }
+    if (value.type === "subagent") {
+        if (typeof value.sessionId !== "string" || value.sessionId.length === 0) {
+            return null;
+        }
+        const state = value.state;
+        const work =
+            state === "running" ||
+            state === "idle" ||
+            state === "requires_action" ||
+            state === "unknown"
+                ? state
+                : null;
+        return {
+            type: "subagent",
+            sessionId: value.sessionId,
+            title:
+                typeof value.title === "string" && value.title.trim().length > 0
+                    ? value.title
+                    : "Subagent",
+            description: typeof value.description === "string" ? value.description : "",
+            state: work,
+            stopReason: typeof value.stopReason === "string" ? value.stopReason : null,
         };
     }
     if (value.type === "plan") {
