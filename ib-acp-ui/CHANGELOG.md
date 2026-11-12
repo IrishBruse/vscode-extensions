@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A tool path shows the full path.
+- **Change**: A grep line shows the pattern, the path, and the match count.
 - **Change**: The plan dialog covers the chat.
 - **Add**: Open plan writes that plan to `plan.md` and opens it in the editor.
 - **Fix**: A running timer updates each tenth of a second.

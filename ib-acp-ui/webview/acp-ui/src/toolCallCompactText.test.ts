@@ -126,7 +126,7 @@ describe("toolCallCompactText", () => {
     });
   });
 
-  it("shows a long file path from the end, up to 50 characters", () => {
+  it("shows the full file path", () => {
     setCompactToolPathHome("/home/econn");
     const item = toolItem({
       toolCallId: "read-settings",
@@ -134,10 +134,10 @@ describe("toolCallCompactText", () => {
       subtitle: "/home/econn/git/dotfiles/home/.config/Cursor/User/settings.json",
     });
     expect(compactToolDetailLine(item)).toBe(
-      "Read ...dotfiles/home/.config/Cursor/User/settings.json",
+      "Read ~/git/dotfiles/home/.config/Cursor/User/settings.json",
     );
     expect(compactToolDetailParts(item).pathSegment?.label).toBe(
-      "...dotfiles/home/.config/Cursor/User/settings.json",
+      "~/git/dotfiles/home/.config/Cursor/User/settings.json",
     );
     expect(compactToolDetailParts(item).pathSegment?.title).toBe(
       "~/git/dotfiles/home/.config/Cursor/User/settings.json",
@@ -269,6 +269,20 @@ describe("toolCallCompactText", () => {
       content: "2 match(es), complete",
     });
     expect(compactToolDetailLine(item)).toBe("Grepped 2 matches");
+    expect(toolCallDetailKind(item)).toBe("summary");
+  });
+
+  it("keeps the grep pattern and path next to the match count", () => {
+    const item = toolItem({
+      toolCallId: "grep-count",
+      kind: "search",
+      title: "grep",
+      subtitle:
+        '"createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts · 2 matches',
+    });
+    expect(compactToolDetailLine(item)).toBe(
+      'Grepped "createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts · 2 matches',
+    );
   });
 
   it("drops a leading exit 0 line from terminal output", () => {

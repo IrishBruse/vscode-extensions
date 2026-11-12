@@ -170,10 +170,44 @@ describe("sessionUpdateToWebviewMessages", () => {
                 type: "updateToolCall",
                 toolCallId: "tool_a471658c",
                 status: "completed",
-                content: "2 match(es), complete",
                 subtitle: "2 matches",
             },
         ]);
+    });
+
+    it("keeps the grep pattern when a completion also reports a match count", () => {
+        const hint = toolCallUpdateSubtitleHint({
+            toolCallId: "tool_grep",
+            status: "completed",
+            kind: "search",
+            rawInput: {
+                pattern: "createChatStateFromInit",
+                path: "webview/acp-ui/src/chatReducer.test.ts",
+            },
+            rawOutput: { totalMatches: 2, truncated: false },
+        });
+        expect(hint).toBe(
+            '"createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts · 2 matches',
+        );
+    });
+
+    it("formats grep hits instead of a bare match count", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "tool_call_update",
+            toolCallId: "tool_grep_hits",
+            status: "completed",
+            kind: "search",
+            rawInput: { pattern: "plan", path: "src" },
+            rawOutput: {
+                totalMatches: 1,
+                matches: [{ file: "src/plan.md", line: 4, text: "Open plan" }],
+            },
+        } as never);
+        expect(messages[0]).toMatchObject({
+            type: "updateToolCall",
+            subtitle: '"plan" in src · 1 match',
+            content: "src/plan.md:4: Open plan",
+        });
     });
 
     it("extracts path from Cursor-style search error rawOutput", () => {

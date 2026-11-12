@@ -870,6 +870,26 @@ function appendToolCall(
   };
 }
 
+function isBareSearchCount(text: string): boolean {
+  return /^\d+\s+(?:matches|match|files|file|results|result)$/i.test(text.trim());
+}
+
+/** A later count does not replace the pattern and path already on the row. */
+function mergeToolSubtitle(previous: string | undefined, incoming: string | undefined): string | undefined {
+  if (incoming === undefined || incoming.trim().length === 0) {
+    return previous;
+  }
+  const next = incoming.trim();
+  const prior = previous?.trim() ?? "";
+  if (prior.length > 0 && isBareSearchCount(next) && !isBareSearchCount(prior)) {
+    if (prior === next || prior.endsWith(`· ${next}`)) {
+      return prior;
+    }
+    return `${prior} · ${next}`;
+  }
+  return next;
+}
+
 function updateToolCall(
   state: ChatState,
   toolCallId: string,
@@ -892,8 +912,7 @@ function updateToolCall(
     const detailVisible =
       (mergedContent !== undefined && mergedContent.trim().length > 0) ||
       (mergedDiffRows !== undefined && mergedDiffRows.length > 0);
-    const mergedSubtitle =
-      subtitle !== undefined && subtitle.trim().length > 0 ? subtitle.trim() : item.subtitle;
+    const mergedSubtitle = mergeToolSubtitle(item.subtitle, subtitle);
     const mergedKind = kind !== undefined && kind.trim().length > 0 ? kind.trim() : item.kind;
     const inferredKind =
       mergedKind ??
@@ -966,7 +985,7 @@ function updateToolCall(
     toolCallId: id,
     title: toolDisplayTitle(inferredKind, ""),
     kind: inferredKind,
-    subtitle: subtitle !== undefined && subtitle.trim().length > 0 ? subtitle.trim() : undefined,
+    subtitle: mergeToolSubtitle(undefined, subtitle),
     status,
     content: mergedContent,
     diffRows: mergedDiffRows,

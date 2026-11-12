@@ -320,20 +320,7 @@ function formatRawToolOutput(raw: unknown): string | undefined {
             typeof record.totalFiles === "number" ||
             typeof record.resultCount === "number"
         ) {
-            const parts: string[] = [];
-            if (typeof record.totalMatches === "number") {
-                parts.push(`${record.totalMatches} match(es)`);
-            }
-            if (typeof record.totalFiles === "number") {
-                parts.push(`${record.totalFiles} file(s)`);
-            }
-            if (typeof record.resultCount === "number") {
-                parts.push(`${record.resultCount} result(s)`);
-            }
-            if (typeof record.truncated === "boolean") {
-                parts.push(record.truncated ? "truncated" : "complete");
-            }
-            return parts.join(", ");
+            return formatSearchMatchLines(record);
         }
         try {
             return clipToolDisplayText(JSON.stringify(raw, null, 2));
@@ -491,6 +478,17 @@ export function toolCallUpdateSubtitleHint(
     update: acp.ToolCallUpdate,
     options?: { pendingKind?: string },
 ): string | undefined {
+    return appendSearchStats(
+        toolCallUpdateSubtitleBody(update, options),
+        update,
+        options?.pendingKind,
+    );
+}
+
+function toolCallUpdateSubtitleBody(
+    update: acp.ToolCallUpdate,
+    options?: { pendingKind?: string },
+): string | undefined {
     const task = taskToolFieldsFromRaw(update.rawInput);
     if (task !== undefined) {
         return task.subagentType.length > 0 ? task.subagentType : undefined;
@@ -643,6 +641,88 @@ function pathHintFromErrorField(raw: unknown): string | undefined {
         return pathHintFromErrorText(record.error);
     }
     return undefined;
+}
+
+/** Turns structured grep hits into `file:line: text` lines. A count-only payload stays on the summary. */
+function formatSearchMatchLines(record: Record<string, unknown>): string | undefined {
+    const list = record.matches ?? record.results ?? record.files;
+    if (!Array.isArray(list) || list.length === 0) {
+        return undefined;
+    }
+    const lines: string[] = [];
+    for (const entry of list) {
+        if (typeof entry === "string") {
+            const trimmed = entry.trim();
+            if (trimmed.length > 0) {
+                lines.push(trimmed);
+            }
+            continue;
+        }
+        if (entry === null || typeof entry !== "object") {
+            continue;
+        }
+        const row = entry as Record<string, unknown>;
+        const file =
+            typeof row.file === "string"
+                ? row.file.trim()
+                : typeof row.path === "string"
+                  ? row.path.trim()
+                  : "";
+        const lineNumber =
+            typeof row.line === "number"
+                ? String(row.line)
+                : typeof row.lineNumber === "number"
+                  ? String(row.lineNumber)
+                  : "";
+        const text =
+            typeof row.text === "string"
+                ? row.text.trim()
+                : typeof row.content === "string"
+                  ? row.content.trim()
+                  : "";
+        if (file.length > 0 && lineNumber.length > 0 && text.length > 0) {
+            lines.push(`${file}:${lineNumber}: ${text}`);
+            continue;
+        }
+        if (file.length > 0 && text.length > 0) {
+            lines.push(`${file}: ${text}`);
+            continue;
+        }
+        if (file.length > 0) {
+            lines.push(file);
+        }
+    }
+    if (lines.length === 0) {
+        return undefined;
+    }
+    return clipToolDisplayText(lines.join("\n"));
+}
+
+function isBareSearchCount(text: string): boolean {
+    return /^\d+\s+(?:matches|match|files|file|results|result)$/i.test(text.trim());
+}
+
+function appendSearchStats(
+    subtitle: string | undefined,
+    update: acp.ToolCallUpdate,
+    pendingKind: string | undefined,
+): string | undefined {
+    const kind = effectiveToolKindForUpdate(update, pendingKind);
+    if (kind !== "search" && kind !== "grep" && kind !== "glob") {
+        return subtitle;
+    }
+    const stats = searchStatsSubtitleFromRawOutput(update.rawOutput);
+    if (stats === undefined) {
+        return subtitle;
+    }
+    if (subtitle === undefined || subtitle.trim().length === 0 || isBareSearchCount(subtitle)) {
+        return stats;
+    }
+    const trimmed = subtitle.trim();
+    if (trimmed === stats || trimmed.endsWith(`· ${stats}`)) {
+        return trimmed;
+    }
+    return `${trimmed} · ${stats}`;
 }
 
 /** Compact count label for Cursor-style search completions (`totalMatches` / `totalFiles`). */

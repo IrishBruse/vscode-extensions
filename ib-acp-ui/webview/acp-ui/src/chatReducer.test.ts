@@ -177,6 +177,26 @@ describe("chatReducer", () => {
     expect(joinThoughtChunks("```ts\nconst x", "=1;\n```")).toBe("```ts\nconst x=1;\n```");
   });
 
+  it("keeps a grep pattern when a later update only sends a match count", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "grep-1",
+      title: "grep",
+      kind: "search",
+      status: "pending",
+      subtitle: '"plan" in src',
+    });
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "grep-1",
+      status: "completed",
+      subtitle: "2 matches",
+    });
+    const tool = state.trace.find((item) => item.type === "tool");
+    expect(tool).toMatchObject({ subtitle: '"plan" in src · 2 matches' });
+  });
+
   it("merges appendToolCall into an existing tool row from an earlier updateToolCall", () => {
     let state = createInitialChatState();
     state = chatReducer(state, {

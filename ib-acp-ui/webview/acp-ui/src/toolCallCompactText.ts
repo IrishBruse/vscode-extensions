@@ -50,23 +50,13 @@ function formatCompactPath(path: string): string {
   return formatPathWithTilde(expanded, compactToolPathHome);
 }
 
-/** Visible file-tool path length, including a leading `...` when the path is longer. */
-const compactPathLabelMax = 50;
-
-function truncatePathLabel(path: string): string {
-  if (path.length <= compactPathLabelMax) {
-    return path;
-  }
-  return `...${path.slice(path.length - (compactPathLabelMax - 3))}`;
-}
-
 function shortPathDisplay(rawPath: string): {
   label: string;
   full: string;
   link: boolean;
 } {
   const full = formatCompactPath(rawPath);
-  return { label: truncatePathLabel(full), full, link: full.includes("/") };
+  return { label: full, full, link: full.includes("/") };
 }
 
 function pathSegmentFromRaw(
@@ -216,6 +206,38 @@ function isSearchStatsLabel(text: string): boolean {
   return /^\d+\s+(match|matches|file|files|result|results)$/i.test(text.trim());
 }
 
+function withoutSearchCountSuffix(text: string): string {
+  return text
+    .replace(/\s+·\s+\d+\s+(?:matches|match|files|file|results|result)\s*$/i, "")
+    .trim();
+}
+
+function trailingSearchStats(text: string): string | null {
+  const match = text.match(/\s+·\s+(\d+\s+(?:matches|match|files|file|results|result))\s*$/i);
+  if (match?.[1] === undefined) {
+    return null;
+  }
+  return searchStatsDetailFromText(match[1]);
+}
+
+/** True when the body is only a count, for example `2 match(es), complete`. */
+export function isSearchCountContent(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return false;
+  }
+  return trimmed.split(",").every((part) => {
+    const token = part.trim();
+    return (
+      token === "complete" ||
+      token === "truncated" ||
+      /^\d+\s+match(?:es|\(es\))?$/i.test(token) ||
+      /^\d+\s+file(?:s|\(s\))?$/i.test(token) ||
+      /^\d+\s+result(?:s|\(s\))?$/i.test(token)
+    );
+  });
+}
+
 function searchStatsDetailFromText(text: string): string | null {
   const trimmed = text.trim();
   if (isSearchStatsLabel(trimmed)) {
@@ -284,8 +306,10 @@ function pluralCount(count: number, singular: string, plural: string): string {
 }
 
 function grepPathFromItem(item: TraceToolItem): string {
-  const subtitle = item.subtitle?.trim() ?? "";
-  const content = item.content?.trim() ?? "";
+  const subtitle = withoutSearchCountSuffix(item.subtitle?.trim() ?? "");
+  const content = isSearchCountContent(item.content ?? "")
+    ? ""
+    : (item.content?.trim() ?? "");
   const inMatch = content.match(/\bin\s+(\S+)/i) ?? subtitle.match(/\bin\s+(\S+)/i);
   if (inMatch?.[1] !== undefined && inMatch[1].length > 0) {
     return inMatch[1];
@@ -467,31 +491,39 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
   }
 
   if (isSearchTool(item)) {
+    const subtitleBody = withoutSearchCountSuffix(subtitle);
+    const contentBody = isSearchCountContent(item.content ?? "") ? "" : (item.content ?? "");
     const pattern =
-      grepPatternFromText(item.content ?? "") ??
-      grepPatternFromText(subtitle) ??
+      grepPatternFromText(contentBody) ??
+      grepPatternFromText(subtitleBody) ??
       grepPatternFromText(item.title);
     const path = grepPathFromItem(item);
+    const stats =
+      trailingSearchStats(subtitle) ??
+      (isSearchStatsLabel(subtitle) ? searchStatsDetailFromText(subtitle) : null) ??
+      (isSearchCountContent(item.content ?? "")
+        ? searchStatsDetailFromText(item.content ?? "")
+        : null);
+    const countSuffix = stats !== null ? ` · ${stats}` : "";
     if (pattern !== null && path.length > 0) {
       return {
         verb: "Grepped",
         ...pathSegmentFromRaw(path, {
           prefix: `"${pattern}" in `,
+          suffix: countSuffix,
           openTarget: "auto",
         }),
       };
     }
     if (pattern !== null) {
-      return { verb: "Grepped", detail: `"${pattern}"` };
+      return { verb: "Grepped", detail: `"${pattern}"${countSuffix}` };
     }
     if (path.length > 0) {
       return {
         verb: "Grepped",
-        ...pathSegmentFromRaw(path, { openTarget: "auto" }),
+        ...pathSegmentFromRaw(path, { suffix: countSuffix, openTarget: "auto" }),
       };
     }
-    const stats =
-      searchStatsDetailFromText(subtitle) ?? searchStatsDetailFromText(item.content ?? "");
     if (stats !== null) {
       return { verb: "Grepped", detail: stats };
     }
@@ -579,7 +611,7 @@ export function toolCallDetailKind(item: TraceToolItem): ToolCallDetailKind {
   if (normalizedKind(item) === "edit" && (item.diffRows?.length ?? 0) > 0) {
     return "diff";
   }
-  if ((item.content?.trim().length ?? 0) > 0) {
+  if ((item.content?.trim().length ?? 0) > 0 && !isSearchCountContent(item.content ?? "")) {
     if (normalizedKind(item) === "read" && !isRangedReadTool(item)) {
       return "summary";
     }
