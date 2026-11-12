@@ -39,10 +39,30 @@ describe("buildComposerAutocompleteState", () => {
       "workspace",
       "user skill",
     ]);
+    expect(state?.items.map((item) => item.primary)).toEqual(["/rename", "/docs", "/release"]);
     expect(state?.items.find((item) => item.primary === "/release")).toMatchObject({
       secondary: "Bump version",
       source: "user skill · global",
     });
+  });
+
+  it("orders slash items to match the highlighted menu row", () => {
+    const state = buildComposerAutocompleteState({
+      draft: "/unatte",
+      caret: "/unatte".length,
+      slashCommands: [
+        {
+          name: "unattended-pr",
+          description: "Finish work end to end and stop with a draft PR (user skill)",
+        },
+        {
+          name: "unattended",
+          description: "Finish work end to end without the user watching (user skill)",
+        },
+      ],
+      workspaceFiles: [],
+    });
+    expect(state?.items.map((item) => item.primary)).toEqual(["/unattended", "/unattended-pr"]);
   });
 
   it("builds file suggestions for @ query", () => {

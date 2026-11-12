@@ -93,8 +93,9 @@ export function buildComposerAutocompleteState(args: {
       .filter((command) => command.name.toLowerCase().startsWith(queryLower))
       .map((command) => slashSuggestionItem(command));
     const groups = groupSlashSuggestionItems(items);
-    return items.length > 0
-      ? { mode: "slash", query: slashQuery, groups, items, activeIndex: 0 }
+    const orderedItems = groups.flatMap((group) => group.items);
+    return orderedItems.length > 0
+      ? { mode: "slash", query: slashQuery, groups, items: orderedItems, activeIndex: 0 }
       : null;
   }
   const fileQuery = queryFromCaret(args.draft, args.caret, "@");
