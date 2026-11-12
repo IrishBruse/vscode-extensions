@@ -2,12 +2,12 @@ import {
   lazy,
   Suspense,
   type ReactElement,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
+import { useLiveNow } from "../../../../liveClock";
 import "./AgentThoughtBlock.css";
 
 const AgentMarkdown = lazy(() =>
@@ -35,18 +35,7 @@ function ThoughtDurationButton({
   onToggle: () => void;
 }): ReactElement {
   const ticking = durationMs === undefined && startedAtMs !== undefined;
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    if (!ticking) {
-      return;
-    }
-    const handle = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, 100);
-    return () => {
-      window.clearInterval(handle);
-    };
-  }, [ticking]);
+  const nowMs = useLiveNow(ticking);
   const liveDurationMs =
     ticking && startedAtMs !== undefined ? Math.max(0, nowMs - startedAtMs) : durationMs;
   return (

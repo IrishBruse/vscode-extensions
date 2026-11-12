@@ -38,5 +38,6 @@ export const Default: Story = {
     onAccept: () => undefined,
     onReject: () => undefined,
     onCancel: () => undefined,
+    onOpenPlan: () => undefined,
   },
 };

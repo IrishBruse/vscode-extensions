@@ -3,6 +3,7 @@ import {
   formatCompactDurationMs,
   formatThoughtSeconds,
 } from "../../../../../../../src/protocol/visibleTrace";
+import { useLiveNow } from "../../../../liveClock";
 import "./ToolCallCompactExecuteBlock.css";
 import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import type { TraceToolItem } from "../../../../chatReducer";
@@ -13,15 +14,7 @@ import {
 } from "../../../../toolCallCompactText";
 
 function BashRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    const handle = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, 100);
-    return () => {
-      window.clearInterval(handle);
-    };
-  }, []);
+  const nowMs = useLiveNow(true);
   const seconds = formatThoughtSeconds(Math.max(0, nowMs - startedAtMs));
   const label = seconds.length > 0 ? `Running for ${seconds}` : "Running";
   return <span className="tool-call-compact-execute-duration"> {label}</span>;

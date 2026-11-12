@@ -6,6 +6,7 @@ import "./global.css";
 import "./boot.css";
 import type { ChatState, ExtensionMessageAfterInit, InitPayload } from "./chatReducer";
 import { createVsCodeAcpUiHost } from "./host";
+import { bindLiveClockTransport, publishHostClock } from "./liveClock";
 import type { ChatView } from "./ui";
 
 function isInitPayload(message: ExtensionToWebviewMessage): message is InitPayload {
@@ -152,11 +153,27 @@ async function mountView(): Promise<void> {
     (indicator, animate) => {
       host.post({ type: "tabActivity", indicator, animate });
     },
+    (payload) => {
+      host.post({
+        type: "openPlanFile",
+        requestId: payload.requestId,
+        plan: payload.plan,
+        ...(payload.name !== undefined ? { name: payload.name } : {}),
+      });
+    },
   );
   flushPendingExtensionMessages();
 }
 
+bindLiveClockTransport((active) => {
+  host.post({ type: "liveClock", active });
+});
+
 host.onExtensionMessage((message: ExtensionToWebviewMessage) => {
+  if (message.type === "clock") {
+    publishHostClock(message.nowMs);
+    return;
+  }
   if (message.type === "sessionHistoryLoading") {
     if (view !== null) {
       view.handleMessage(message);

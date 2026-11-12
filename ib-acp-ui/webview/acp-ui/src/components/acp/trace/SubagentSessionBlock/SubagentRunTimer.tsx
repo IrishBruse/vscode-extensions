@@ -1,5 +1,6 @@
-import { type ReactElement, useEffect, useState } from "react";
+import type { ReactElement } from "react";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
+import { useLiveNow } from "../../../../liveClock";
 
 /** Live clock in the same form as Thinking, for example `Running for 1.2s`. */
 export function subagentRunLabel(startedAtMs: number, nowMs: number): string {
@@ -8,14 +9,6 @@ export function subagentRunLabel(startedAtMs: number, nowMs: number): string {
 }
 
 export function SubagentRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    const handle = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, 100);
-    return () => {
-      window.clearInterval(handle);
-    };
-  }, []);
+  const nowMs = useLiveNow(true);
   return <>{subagentRunLabel(startedAtMs, nowMs)}</>;
 }

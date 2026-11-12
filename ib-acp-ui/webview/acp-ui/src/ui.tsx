@@ -57,6 +57,7 @@ export function mountChatView(
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void,
   postSaveVisibleTrace?: (items: TraceItem[]) => void,
   postTabActivity?: (indicator: AgentTabIndicator | null, animate: boolean) => void,
+  postOpenPlan?: (payload: { requestId: string; name?: string; plan: string }) => void,
 ): ChatView {
   root.replaceChildren();
   root.className = "root agent-root";
@@ -95,6 +96,7 @@ export function mountChatView(
       postPermissionResponse={postPermissionResponse}
       postCursorAskQuestionResponse={postCursorAskQuestionResponse}
       postCursorCreatePlanResponse={postCursorCreatePlanResponse}
+      postOpenPlan={postOpenPlan}
       extensionDispatchRef={extensionDispatchRef}
       onExtensionDispatchReady={flushPendingExtensionMessages}
     />,

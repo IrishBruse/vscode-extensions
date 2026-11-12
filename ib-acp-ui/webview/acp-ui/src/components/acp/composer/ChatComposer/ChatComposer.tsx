@@ -6,7 +6,6 @@ import {
   type RefObject,
   useEffect,
   useMemo,
-  useState,
   useRef,
 } from "react";
 import "./ChatComposer.css";
@@ -42,6 +41,7 @@ import { SessionModeIndicator } from "../SessionModeIndicator/SessionModeIndicat
 import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 import { promptImageSrc } from "../../../../pastedImages";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
+import { useLiveNow } from "../../../../liveClock";
 import type { FollowUpMode } from "./composerFollowUp";
 
 export type ChatComposerProps = {
@@ -129,20 +129,9 @@ function useComposerStatusText(
   commandStartedAtMs: number | undefined,
   statusDetail: string | null,
 ): string | null {
-  const [nowMs, setNowMs] = useState(() => Date.now());
   const commandRunning = commandStartedAtMs !== undefined;
   const thoughtRunning = activity === "thinking" && thoughtStartedAtMs !== undefined;
-  useEffect(() => {
-    if (!commandRunning && !thoughtRunning) {
-      return;
-    }
-    const handle = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, 100);
-    return () => {
-      window.clearInterval(handle);
-    };
-  }, [commandRunning, thoughtRunning]);
+  const nowMs = useLiveNow(commandRunning || thoughtRunning);
   if (activity === "disconnected") {
     const detail = statusDetail === null ? "" : flattenStatusDetail(statusDetail);
     if (detail.length === 0) {

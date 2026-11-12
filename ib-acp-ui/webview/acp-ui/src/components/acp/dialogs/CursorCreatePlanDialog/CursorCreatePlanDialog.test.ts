@@ -25,6 +25,7 @@ async function renderPlan(): Promise<string> {
       onAccept: () => undefined,
       onReject: () => undefined,
       onCancel: () => undefined,
+      onOpenPlan: () => undefined,
     }),
   );
   const chunks: Buffer[] = [];
@@ -43,6 +44,7 @@ describe("CursorCreatePlanDialog", () => {
     expect(html).toContain("<strong>Change</strong>");
     expect(html).not.toContain("## Check");
     expect(html).not.toContain("**Change**");
+    expect(html).toContain("Open plan");
     expect(html).toContain("Accept");
     expect(html).toContain("Reject");
     expect(html).toContain("Cancel");

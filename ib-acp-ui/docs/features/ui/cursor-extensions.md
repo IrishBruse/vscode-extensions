@@ -11,6 +11,8 @@ Its messages and tool calls show on the card.
 Cursor streams that child only after `initialize` includes `_meta.subagents`.
 Open a card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 `cursor/ask_question` and basic `cursor/create_plan` dialogs already work.
+The plan dialog covers the chat.
+Open plan writes that plan to `plan.md` and opens it in the editor.
 
 Planned: richer UI for the remaining Cursor extension methods.
 Goals include phased plan dialogs, a dedicated todo panel, and inline generated images.
@@ -19,7 +21,8 @@ Goals include phased plan dialogs, a dedicated todo panel, and inline generated 
 
 [handleExtensionMethod](../../../src/acp/session/acpSessionBridge.ts#L264-L387) routes `cursor/*` ext methods.
 [CursorAskQuestionDialog](../../../webview/acp-ui/src/components/acp/dialogs/CursorAskQuestionDialog/CursorAskQuestionDialog.tsx) handles ask-question flows.
-[CursorCreatePlanDialog](../../../webview/acp-ui/src/components/acp/dialogs/CursorCreatePlanDialog/CursorCreatePlanDialog.tsx) handles basic create-plan acceptance.
+[CursorCreatePlanDialog](../../../webview/acp-ui/src/components/acp/dialogs/CursorCreatePlanDialog/CursorCreatePlanDialog.tsx#L7-L56) covers the chat and keeps Open plan at the bottom left.
+[openPlanMarkdownInEditor](../../../src/platform/openPlanMarkdown.ts#L17-L34) writes that plan to `plan.md` and opens it in the editor.
 
 [taskToolFieldsFromRaw](../../../src/acp/mapping/taskToolPresentation.ts#L34-L63) reads a Cursor task `rawInput` (`_toolName: "task"`, prompt, description, subagent type).
 [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L820-L894) stores the subagent type as the subtitle and the prompt as the tool content.

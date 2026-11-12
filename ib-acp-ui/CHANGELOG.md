@@ -5,6 +5,9 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: The plan dialog covers the chat.
+- **Add**: Open plan writes that plan to `plan.md` and opens it in the editor.
+- **Fix**: A running timer updates each tenth of a second.
 - **Fix**: Enter in the slash menu inserts the highlighted command.
 - **Fix**: A bash command keeps its line breaks.
 - **Fix**: A Cursor subagent streams its messages and tool calls while it runs.

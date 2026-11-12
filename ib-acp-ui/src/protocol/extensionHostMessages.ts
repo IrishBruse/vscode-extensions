@@ -113,6 +113,8 @@ export type WebviewToExtensionMessage =
               | { outcome: "rejected"; reason?: string }
               | { outcome: "cancelled" };
       }
+    /** Write the current plan as `plan.md` and open it in the editor. */
+    | { type: "openPlanFile"; requestId: string; name?: string; plan: string }
     /** Persists composer Arrow Up / Down user message history for this session. */
     | { type: "saveHistory"; entries: string[] }
     /** Persists the viewport transcript tail on the session file `cache` key. */
@@ -134,7 +136,9 @@ export type WebviewToExtensionMessage =
           type: "tabActivity";
           indicator: AgentTabIndicator | null;
           animate: boolean;
-      };
+      }
+    /** Ask the host to send `clock` ticks while a tenth-of-a-second timer is visible. */
+    | { type: "liveClock"; active: boolean };
 
 /**
  * Messages sent from the extension host to a webview (or other UI host).
@@ -315,6 +319,8 @@ export type ExtensionToWebviewMessage =
     /** Chat title stored in the `.acp` file. The composer and editor tab use this value. */
     | { type: "sessionTitle"; title: string }
     | { type: "tokenUsage"; used: number; size?: number }
+    /** Host clock sample so a `1.2s` timer can move each tenth of a second. */
+    | { type: "clock"; nowMs: number }
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }
     | { type: "turnComplete"; stopReason: string }
@@ -486,6 +492,22 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
             >["outcome"],
         };
     }
+    if (
+        messageType === "openPlanFile" &&
+        typeof record.requestId === "string" &&
+        record.requestId.length > 0 &&
+        typeof record.plan === "string" &&
+        record.plan.length > 0
+    ) {
+        return {
+            type: "openPlanFile",
+            requestId: record.requestId,
+            plan: record.plan,
+            ...(typeof record.name === "string" && record.name.trim().length > 0
+                ? { name: record.name }
+                : {}),
+        };
+    }
     if (messageType === "saveHistory" && Array.isArray(record.entries)) {
         const entries: string[] = [];
         for (const item of record.entries) {
@@ -518,6 +540,9 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
     }
     if (messageType === "openNewChat") {
         return { type: "openNewChat" };
+    }
+    if (messageType === "liveClock" && typeof record.active === "boolean") {
+        return { type: "liveClock", active: record.active };
     }
     if (messageType === "tabActivity") {
         if (record.indicator !== null && !isAgentTabIndicator(record.indicator)) {

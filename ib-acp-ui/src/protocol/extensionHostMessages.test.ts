@@ -48,6 +48,33 @@ describe("tryParseWebviewMessage", () => {
         });
     });
 
+    it("parses an open plan request", () => {
+        expect(
+            tryParseWebviewMessage({
+                type: "openPlanFile",
+                requestId: "plan-1",
+                name: "Cloud band source",
+                plan: "# Plan",
+            }),
+        ).toEqual({
+            type: "openPlanFile",
+            requestId: "plan-1",
+            name: "Cloud band source",
+            plan: "# Plan",
+        });
+        expect(
+            tryParseWebviewMessage({ type: "openPlanFile", requestId: "plan-1", plan: "" }),
+        ).toBeNull();
+    });
+
+    it("parses a live clock request", () => {
+        expect(tryParseWebviewMessage({ type: "liveClock", active: true })).toEqual({
+            type: "liveClock",
+            active: true,
+        });
+        expect(tryParseWebviewMessage({ type: "liveClock", active: "yes" })).toBeNull();
+    });
+
     it("drops invalid image lists", () => {
         expect(tryParseWebviewMessage({ type: "send", body: "hi", images: "nope" })).toEqual({
             type: "send",

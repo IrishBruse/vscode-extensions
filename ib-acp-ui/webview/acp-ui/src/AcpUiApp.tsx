@@ -86,6 +86,7 @@ export type AcpUiAppProps = {
       | { outcome: "rejected"; reason?: string }
       | { outcome: "cancelled" };
   }) => void;
+  postOpenPlan?: (payload: { requestId: string; name?: string; plan: string }) => void;
   extensionDispatchRef: RefObject<((message: ExtensionMessageAfterInit) => void) | null>;
   onExtensionDispatchReady?: () => void;
 };
@@ -112,6 +113,7 @@ export function AcpUiApp({
   postPermissionResponse,
   postCursorAskQuestionResponse,
   postCursorCreatePlanResponse,
+  postOpenPlan,
   extensionDispatchRef,
   onExtensionDispatchReady,
 }: AcpUiAppProps): ReactElement {
@@ -626,6 +628,15 @@ export function AcpUiApp({
                     outcome: { outcome: "cancelled" },
                   });
                   dispatch({ type: "clearCreatePlanPrompt" });
+                }}
+                onOpenPlan={() => {
+                  postOpenPlan?.({
+                    requestId: createPlan.requestId,
+                    plan: createPlan.plan,
+                    ...(createPlan.name !== undefined && createPlan.name.trim().length > 0
+                      ? { name: createPlan.name }
+                      : {}),
+                  });
                 }}
               />
             ) : null}

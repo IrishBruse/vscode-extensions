@@ -19,6 +19,7 @@ import {
 } from "../acp/config/mergedAgents";
 import { AcpSessionBridge } from "../acp/session/acpSessionBridge";
 import { readCachedComposerSeed } from "../acp/session/sessionConfigOptionsCache";
+import { openPlanMarkdownInEditor } from "../platform/openPlanMarkdown";
 import { openWorkspacePathTarget } from "../platform/openWorkspacePathTarget";
 import { formatPathWithTilde } from "../platform/pathDisplay";
 import { resolveUserHomeDir } from "../platform/resolveUserHomeDir";
@@ -30,6 +31,7 @@ import type {
     ExtensionToWebviewMessage,
 } from "../protocol/extensionHostMessages";
 import { tryParseWebviewMessage } from "../protocol/extensionHostMessages";
+import { liveClockIntervalMs } from "../protocol/liveClock";
 import { setActiveAgentName } from "./acpUiActiveAgent";
 import { openOrRevealAcpUiEditor } from "./acpUiPanel";
 import {
@@ -93,6 +95,7 @@ export class AcpUiSessionController {
     private persistModelConfig = false;
     private deferredSessionTitleWrite: string | undefined;
     private lastPostedSessionTitle: string | undefined;
+    private liveClockTimer: ReturnType<typeof setInterval> | undefined;
     private readonly disposables: Array<{ dispose(): void }> = [];
 
     constructor(private readonly options: SessionControllerOptions) {
@@ -154,6 +157,7 @@ export class AcpUiSessionController {
     }
 
     dispose(): void {
+        this.stopLiveClock();
         this.disposeBridge();
         clearAcpUiSessionConnection(this.sessionId);
         for (const disposable of this.disposables) {
@@ -325,6 +329,23 @@ export class AcpUiSessionController {
             type: "contentWidthRatio",
             ratio: readContentWidthRatioFromSettings(),
         });
+    }
+
+    private startLiveClock(): void {
+        if (this.liveClockTimer !== undefined) {
+            return;
+        }
+        this.liveClockTimer = setInterval(() => {
+            this.post({ type: "clock", nowMs: Date.now() });
+        }, liveClockIntervalMs);
+    }
+
+    private stopLiveClock(): void {
+        if (this.liveClockTimer === undefined) {
+            return;
+        }
+        clearInterval(this.liveClockTimer);
+        this.liveClockTimer = undefined;
     }
 
     private post(message: ExtensionToWebviewMessage): void {
@@ -586,6 +607,15 @@ export class AcpUiSessionController {
             return;
         }
 
+        if (parsed.type === "liveClock") {
+            if (parsed.active) {
+                this.startLiveClock();
+            } else {
+                this.stopLiveClock();
+            }
+            return;
+        }
+
         if (parsed.type === "tabActivity") {
             setAcpUiCustomEditorTabActivity(this.documentUri, parsed.indicator, parsed.animate);
             return;
@@ -749,6 +779,19 @@ export class AcpUiSessionController {
         }
         if (parsed.type === "cursorCreatePlanResponse") {
             this.bridge?.handleCursorCreatePlanResponse(parsed);
+            return;
+        }
+        if (parsed.type === "openPlanFile") {
+            try {
+                await openPlanMarkdownInEditor({
+                    requestId: parsed.requestId,
+                    plan: parsed.plan,
+                    ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+                });
+            } catch (err: unknown) {
+                const detail = err instanceof Error ? err.message : String(err);
+                void window.showErrorMessage(`Could not open plan.md: ${detail}`);
+            }
         }
     }
 }
