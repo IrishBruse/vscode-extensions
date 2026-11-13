@@ -41,7 +41,7 @@ The same message includes a short diff when the tool call has one.
 When the permission `toolCall` includes content (for example a `diff`), it also posts `updateToolCall` with `diffRows` or text so the tool row can show a preview while you decide.
 Execute-style tools still get a command subtitle when the shell line can be resolved.
 
-[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L1776-L1787) stores `permissionPrompt` state.
+[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L2007-L2018) stores `permissionPrompt` state.
 [PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L43-L144) renders the title, the path, the summary, and the diff.
 [permissionTitleParts](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/permissionTitle.ts#L14-L38) turns a backtick path into a link.
 
