@@ -1,14 +1,7 @@
 import {
     ConfigurationTarget,
-    commands,
-    type Event,
-    EventEmitter,
     type ExtensionContext,
     RelativePattern,
-    ThemeIcon,
-    type TreeDataProvider,
-    TreeItem,
-    TreeItemCollapsibleState,
     window,
     workspace,
 } from "vscode";
@@ -24,26 +17,18 @@ import {
     initializeAcpUiActiveAgent,
     setActiveAgentName,
 } from "./acpUiActiveAgent";
-import { getActiveAcpSessionUri } from "./acpUiPanel";
 import { resolveSessionsDirectoryUri } from "./acpUiSessionJsonl";
-import { listAcpUiSessions, refreshAcpUiSessionsFromDisk } from "./acpUiSessionsStore";
-import { getAcpUiSessionConnection } from "./acpUiSessionConnection";
+import { refreshAcpUiSessionsFromDisk } from "./acpUiSessionsStore";
 import {
-    type AcpUiSetupNode,
-    type AcpUiSetupOpenChat,
-    buildAcpUiSetupTree,
     cmdAddAcpClient,
     manualClientsAfterAdd,
     manualClientsAfterEdit,
     manualClientsAfterRemove,
     parseClientArgsInput,
-    setupClientsFromConfigs,
 } from "./acpUiSetupTree";
 
-const viewIdAcpUiSessions = "acpUiSessionsView";
 const agentsSettingKey = "ib-acp-ui.agents";
 
-const cmdFocusAcpUiSessions = "ib-acp-ui.focusAcpUiSessions";
 const cmdRefreshAcpUiSessions = "ib-acp-ui.refreshAcpUiSessions";
 const cmdSelectActiveAgent = "ib-acp-ui.selectActiveAgent";
 const cmdEditAcpClient = "ib-acp-ui.editAcpClient";
@@ -52,38 +37,25 @@ const cmdUninstallSetupClient = "ib-acp-ui.uninstallSetupClient";
 
 let refreshSetupView: (() => void) | undefined;
 
-/** Rebuilds the setup sidebar after a registry install or uninstall. */
+/** Reloads the session index after a registry install or uninstall. */
 export function refreshAcpUiSetupView(): void {
     refreshSetupView?.();
 }
 
-class SetupTreeItem extends TreeItem {
-    constructor(public readonly node: AcpUiSetupNode) {
-        super(
-            node.label,
-            node.collapsible ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.None,
-        );
-        this.id = node.id;
-        this.description = node.description;
-        this.tooltip = node.tooltip;
-        this.contextValue = node.contextValue;
-        if (node.contextValue === "clientSettings" || node.contextValue === "clientRegistry") {
-            this.iconPath = new ThemeIcon("server");
-        } else if (node.id === "action:add-client") {
-            this.iconPath = new ThemeIcon("add");
-        }
-        if (node.commandId !== undefined) {
-            this.command = {
-                title: node.label,
-                command: node.commandId,
-                arguments: node.commandArgs,
-            };
-        }
+function clientRefFromArg(arg: unknown): { clientName?: string; registryId?: string } | undefined {
+    if (arg === null || typeof arg !== "object") {
+        return undefined;
     }
-}
-
-function setupNodeFromArg(arg: unknown): AcpUiSetupNode | undefined {
-    return arg instanceof SetupTreeItem ? arg.node : undefined;
+    const row = arg as Record<string, unknown>;
+    const clientName = typeof row.clientName === "string" ? row.clientName : undefined;
+    const registryId = typeof row.registryId === "string" ? row.registryId : undefined;
+    if (clientName === undefined && registryId === undefined) {
+        return undefined;
+    }
+    return {
+        ...(clientName !== undefined ? { clientName } : {}),
+        ...(registryId !== undefined ? { registryId } : {}),
+    };
 }
 
 function toSettingsEntry(entry: AcpAgentSpawnConfig): Record<string, unknown> {
@@ -121,27 +93,16 @@ async function promptRequired(
     });
 }
 
-export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem> {
-    private changeEvent = new EventEmitter<SetupTreeItem | undefined>();
-    private roots: AcpUiSetupNode[] = [];
-
-    public get onDidChangeTreeData(): Event<SetupTreeItem | undefined> {
-        return this.changeEvent.event;
-    }
-
+export class AcpUiSessionsViewProvider {
     /**
-     * Registers the setup sidebar. Returns a function that refreshes it.
+     * Registers chat commands and the session-file watcher.
+     * Returns a function other features can call after a chat change.
      */
     static activate(context: ExtensionContext): () => void {
         initializeAcpUiActiveAgent(context);
         const provider = new AcpUiSessionsViewProvider();
         const refresh = (): void => provider.refresh();
         refreshSetupView = refresh;
-        refresh();
-        const treeView = window.createTreeView(viewIdAcpUiSessions, {
-            treeDataProvider: provider,
-        });
-        context.subscriptions.push(treeView);
 
         const sessionsDir = resolveSessionsDirectoryUri(context);
         const watcher = workspace.createFileSystemWatcher(
@@ -154,17 +115,14 @@ export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem
         watcher.onDidDelete(onDiskChange);
         watcher.onDidChange(onDiskChange);
         context.subscriptions.push(watcher);
-        context.subscriptions.push(
-            workspace.onDidChangeConfiguration((event) => {
-                if (event.affectsConfiguration(agentsSettingKey)) {
-                    provider.refresh();
-                }
-            }),
-        );
-        context.subscriptions.push(window.onDidChangeActiveTextEditor(() => provider.refresh()));
-        context.subscriptions.push(window.tabGroups.onDidChangeTabs(() => provider.refresh()));
 
-        registerCommandIB(cmdRefreshAcpUiSessions, () => provider.refresh(), context);
+        registerCommandIB(
+            cmdRefreshAcpUiSessions,
+            () => {
+                void refreshAcpUiSessionsFromDisk();
+            },
+            context,
+        );
         registerCommandIB(
             cmdSelectActiveAgent,
             (...args: unknown[]) => {
@@ -188,72 +146,11 @@ export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem
             (item: unknown) => provider.uninstallClient(item),
             context,
         );
-        registerCommandIB(
-            cmdFocusAcpUiSessions,
-            () => commands.executeCommand(`${viewIdAcpUiSessions}.focus`),
-            context,
-        );
-
         return refresh;
     }
 
     refresh(): void {
-        const active = getActiveAgentConfig();
-        this.roots = buildAcpUiSetupTree({
-            clients: setupClientsFromConfigs(
-                getAcpAgentConfigsFromSettings(),
-                getAcpAgentConfigsMerged(),
-                active?.name,
-            ),
-            ...(active !== undefined ? { activeClientName: active.name } : {}),
-            workspacePath: workspace.workspaceFolders?.[0]?.uri.fsPath,
-            ...this.openChatModel(),
-        });
-        this.changeEvent.fire(undefined);
-    }
-
-    getTreeItem(element: SetupTreeItem): TreeItem {
-        return element;
-    }
-
-    async getChildren(element?: SetupTreeItem): Promise<SetupTreeItem[]> {
-        const nodes = element === undefined ? this.roots : element.node.children;
-        return nodes.map((node) => new SetupTreeItem(node));
-    }
-
-    getParent(): undefined {
-        return undefined;
-    }
-
-    private openChatModel(): { openChat?: AcpUiSetupOpenChat } {
-        const uri = getActiveAcpSessionUri();
-        if (uri === undefined) {
-            return {};
-        }
-        const record = listAcpUiSessions().find((row) => row.uri.toString() === uri.toString());
-        if (record === undefined) {
-            return {};
-        }
-        const connection = getAcpUiSessionConnection(record.id);
-        return {
-            openChat: {
-                title: record.title,
-                ...(record.agentName !== undefined ? { agentName: record.agentName } : {}),
-                localSessionId: record.id,
-                ...(record.sessionId !== undefined && record.sessionId.length > 0
-                    ? { runtimeSessionId: record.sessionId }
-                    : {}),
-                filePath: record.uri.fsPath,
-                ...(connection !== undefined
-                    ? {
-                          connection: connection.status,
-                          ...(connection.message !== undefined
-                              ? { connectionError: connection.message }
-                              : {}),
-                      }
-                    : {}),
-            },
-        };
+        void refreshAcpUiSessionsFromDisk();
     }
 
     private async selectClientByName(name: string): Promise<void> {
@@ -321,8 +218,7 @@ export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem
     }
 
     private async editClient(item: unknown): Promise<void> {
-        const node = setupNodeFromArg(item);
-        const name = node?.clientName;
+        const name = clientRefFromArg(item)?.clientName;
         if (name === undefined) {
             window.showErrorMessage("Select a settings client to edit.");
             return;
@@ -358,7 +254,7 @@ export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem
     }
 
     private async removeClient(item: unknown): Promise<void> {
-        const name = setupNodeFromArg(item)?.clientName;
+        const name = clientRefFromArg(item)?.clientName;
         if (name === undefined) {
             window.showErrorMessage("Select a settings client to remove.");
             return;
@@ -376,7 +272,7 @@ export class AcpUiSessionsViewProvider implements TreeDataProvider<SetupTreeItem
     }
 
     private async uninstallClient(item: unknown): Promise<void> {
-        const node = setupNodeFromArg(item);
+        const node = clientRefFromArg(item);
         const registryId = node?.registryId;
         if (registryId === undefined || node?.clientName === undefined) {
             window.showErrorMessage("Select a registry client to uninstall.");

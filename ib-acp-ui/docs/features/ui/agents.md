@@ -8,9 +8,8 @@ Install agents from the official registry (**Browse Agent Registry**), or add ad
 Manual settings override registry installs when the display name matches.
 There are no built-in default agents; install from the registry on first use.
 
-The **Setup** sidebar configures ACP clients and reviews the open chat.
-Add a manual client there.
-Click a client to use it for new chats.
+Add a manual client with **Add ACP client**.
+Choose the client for new chats with **Select Active ACP Agent**.
 That choice is stored in extension state, outside `settings.json`.
 On an open `.acp` editor tab, the title bar shows a **New Chat** split control (`+ ▾`): the plus creates with the active client, and the chevron offers **New Chat with Agent…**.
 The selected client is used for new chats.
@@ -31,12 +30,12 @@ The composer does not switch agents.
 
 [initializeAcpUiActiveAgent](../../../src/extension/acpUiActiveAgent.ts) binds global state.
 [getActiveAgentConfig](../../../src/extension/acpUiActiveAgent.ts) returns the stored name or the first merged agent.
-[setActiveAgentName](../../../src/extension/acpUiActiveAgent.ts) persists the sidebar picker choice.
+[setActiveAgentName](../../../src/extension/acpUiActiveAgent.ts) persists the client chosen for new chats.
 
 [pickAcpAgentConfig](../../../src/extension/acpUiAgentPicker.ts) shows a quick pick over the merged list, with a **Browse Agent Registry** entry.
-[AcpUiSessionsViewProvider](../../../src/extension/acpUiSessionsView.ts#L136-L199) renders the setup sidebar from [buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L211-L260).
-[selectClientByName](../../../src/extension/acpUiSessionsView.ts#L251-L259) sets that client when a row is clicked.
-[selectActiveAgent](../../../src/extension/acpUiSessionsView.ts#L261-L284) updates it from the runtime row.
+[selectClientByName](../../../src/extension/acpUiSessionsView.ts#L156-L164) sets the client for new chats.
+[selectActiveAgent](../../../src/extension/acpUiSessionsView.ts#L166-L189) updates it from **Select Active ACP Agent**.
+[addClient](../../../src/extension/acpUiSessionsView.ts#L191-L218) writes a manual client.
 `.acp` tabs contribute new-chat commands to `editor/title` (`navigation` group with `alt`) so VS Code renders the `+ ▾` split button.
 
 ### Per-session agent binding

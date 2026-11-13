@@ -151,36 +151,11 @@
                 "**/*.acp": true
             }
         },
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "acpUiContainer",
-                    "title": "ACP UI",
-                    "icon": "media/acp-icon.svg"
-                }
-            ]
-        },
-        "views": {
-            "acpUiContainer": [
-                {
-                    "id": "acpUiSessionsView",
-                    "name": "Setup",
-                    "type": "tree",
-                    "icon": "media/acp-icon.svg"
-                }
-            ]
-        },
         "commands": [
             {
                 "command": "ib-acp-ui.openChat",
                 "title": "Open ACP UI",
                 "icon": "$(comment-discussion)",
-                "category": "IrishBruse ACP"
-            },
-            {
-                "command": "ib-acp-ui.focusAcpUiSessions",
-                "title": "Focus ACP UI setup",
-                "shortTitle": "Focus setup",
                 "category": "IrishBruse ACP"
             },
             {
@@ -206,7 +181,7 @@
             },
             {
                 "command": "ib-acp-ui.refreshAcpUiSessions",
-                "title": "Refresh ACP UI setup",
+                "title": "Refresh ACP UI overview",
                 "shortTitle": "Refresh",
                 "icon": "$(refresh)",
                 "category": "IrishBruse ACP"
@@ -296,40 +271,6 @@
                     "when": "activeCustomEditorId == 'ibAcpUi.session'",
                     "group": "1_acp@1"
                 }
-            ],
-            "view/item/context": [
-                {
-                    "command": "ib-acp-ui.editAcpClient",
-                    "when": "view == acpUiSessionsView && viewItem == clientSettings",
-                    "group": "inline"
-                },
-                {
-                    "command": "ib-acp-ui.removeAcpClient",
-                    "when": "view == acpUiSessionsView && viewItem == clientSettings",
-                    "group": "inline"
-                },
-                {
-                    "command": "ib-acp-ui.uninstallSetupClient",
-                    "when": "view == acpUiSessionsView && viewItem == clientRegistry",
-                    "group": "inline"
-                }
-            ],
-            "view/title": [
-                {
-                    "command": "ib-acp-ui.newAcpUiInEditor",
-                    "when": "view == acpUiSessionsView",
-                    "group": "navigation@1"
-                },
-                {
-                    "command": "ib-acp-ui.addAcpClient",
-                    "when": "view == acpUiSessionsView",
-                    "group": "navigation@2"
-                },
-                {
-                    "command": "ib-acp-ui.refreshAcpUiSessions",
-                    "when": "view == acpUiSessionsView",
-                    "group": "navigation@3"
-                }
             ]
         },
         "keybindings": [
@@ -337,7 +278,7 @@
                 "command": "ib-acp-ui.openChat",
                 "key": "ctrl+t",
                 "mac": "cmd+t",
-                "when": "activeCustomEditorId == 'ibAcpUi.session' || focusedView == 'acpUiSessionsView'"
+                "when": "activeCustomEditorId == 'ibAcpUi.session'"
             }
         ]
     },

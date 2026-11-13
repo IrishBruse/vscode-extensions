@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { env, Uri, window, type ExtensionContext } from "vscode";
+import { env, ProgressLocation, Uri, window, type ExtensionContext } from "vscode";
 import { downloadAndInstallBinary } from "../acp/registry/binaryInstall";
 import { platformTargetKey, resolveDistributionSpawn } from "../acp/registry/resolveDistribution";
 import type { AcpRegistryAgent, AcpRegistryBinaryTargetKey } from "../acp/registry/types";
@@ -106,7 +106,7 @@ async function resolveSpawnForAgent(agent: AcpRegistryAgent): Promise<{
 async function installRegistryAgent(agent: AcpRegistryAgent): Promise<void> {
     await window.withProgress(
         {
-            location: { viewId: "acpUiSessionsView" },
+            location: ProgressLocation.Notification,
             title: `Installing ${agent.name}…`,
         },
         async () => {

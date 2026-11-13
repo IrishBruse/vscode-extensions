@@ -99,8 +99,8 @@ export async function disposeAcpUiEditorForSession(sessionId: string): Promise<v
 }
 
 /**
- * Registers ACP UI commands. Pass the setup-sidebar refresh from {@link AcpUiSessionsViewProvider.activate}
- * so a new chat updates the open-chat review.
+ * Registers ACP UI commands. Pass the overview refresh from {@link AcpUiSessionsViewProvider.activate}
+ * so a new chat updates the sidebar.
  */
 export function registerAcpUiPanel(context: ExtensionContext, refreshChatsList: () => void): void {
     refreshChatsListHandler = refreshChatsList;

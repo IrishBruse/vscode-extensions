@@ -16,8 +16,6 @@ You can scroll inside that screen while the agent loads older messages.
 When the older messages arrive, the screen you are looking at stays where it is.
 The live transcript still comes from the agent via `session/load` replay when resume succeeds.
 
-The sidebar is the setup pane for clients, runtime choices, and the chat open in the editor.
-
 The chat UI will also react to more agent-driven updates such as mode changes, config option updates, title sync, and usage meters.
 User message chunks during `session/load` replay already appear in the trace.
 
@@ -65,12 +63,6 @@ The webview keeps the cached screen until replay finishes, then swaps the full t
 [mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L329-L370) copies thought durations from `cache` onto the replayed thoughts.
 [mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L376-L407) copies command durations by `toolCallId`.
 On load failure, the bridge falls back to `session/new` and the cached screen stays if replay produced no items (composer history still comes from `init.history`).
-
-### Setup sidebar
-
-[buildAcpUiSetupTree](../../../src/extension/acpUiSetupTree.ts#L211-L260) builds Clients, Runtime, and Open chat on one level.
-[refresh](../../../src/extension/acpUiSessionsView.ts#L201-L214) fills that tree from merged clients and the active editor.
-The open-chat rows read the active `.acp` tab through [getActiveAcpSessionUri](../../../src/extension/acpUiPanel.ts#L136-L159).
 
 ### Session updates
 

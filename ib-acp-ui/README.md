@@ -48,11 +48,6 @@ Agent plans render as structured plan blocks.
 
 ![ACP UI plan block](docs/Plan.png)
 
-### Setup sidebar
-
-Configure ACP clients under the **ACP UI** activity bar.
-Add a manual client, install one from the registry, and choose which client new chats use.
-The same pane shows the workspace and a review of the chat open in the editor.
 Previous chats stay in editor tabs and session files.
 
 ### Session config
@@ -119,7 +114,6 @@ Fields:
 - **Browse Agent Registry** — install or manage catalog agents
 - **Open ACP UI** — open or focus the chat panel
 - **New ACP UI in Editor** — open chat in an editor tab
-- **Focus ACP UI setup** — focus the setup sidebar
 - **Show ACP RPC Log** — open the protocol output channel
 
 The composer also supports slash commands that the active agent advertises.
