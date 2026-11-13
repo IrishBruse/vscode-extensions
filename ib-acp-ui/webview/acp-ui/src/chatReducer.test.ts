@@ -810,6 +810,34 @@ describe("chatReducer", () => {
     expect(thought.durationMs).toBe(400);
   });
 
+  it("stops a replayed thought clock when load finishes and the agent is idle", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      sessionHistoryLoading: true,
+      visibleTrace: [{ type: "user", text: "hi" }],
+    });
+    state = chatReducer(state, {
+      type: "appendAgentThought",
+      text: "Rebuilding now to verify with logs.",
+    });
+    vi.advanceTimersByTime(155_100);
+    expect(state.replayThoughtStartedAtMs).toBe(Date.parse("2026-01-01T00:00:00.000Z"));
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    expect(state.thoughtStartedAtMs).toBeNull();
+    expect(state.promptInFlight).toBe(false);
+    expect(state.trace).toEqual([
+      {
+        type: "thought",
+        text: "Rebuilding now to verify with logs.",
+        durationMs: 155_100,
+      },
+    ]);
+  });
+
   it("keeps the visible cache when load finishes with no replay", () => {
     let state = createChatStateFromInit({
       type: "init",

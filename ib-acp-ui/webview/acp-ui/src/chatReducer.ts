@@ -577,6 +577,20 @@ function toolStatusIsLive(status: ToolCallStatus | undefined): boolean {
   return status === "pending" || status === "in_progress";
 }
 
+/** Freezes thoughts that were still open when the agent went idle. */
+function settleOpenThoughts(trace: readonly TraceItem[], now = Date.now()): TraceItem[] {
+  return trace.map((item) => {
+    if (item.type !== "thought" || item.durationMs !== undefined || item.startedAtMs === undefined) {
+      return item;
+    }
+    const durationMs = positiveDurationMs(now - item.startedAtMs);
+    if (durationMs === undefined) {
+      return { type: "thought", text: item.text };
+    }
+    return { type: "thought", text: item.text, durationMs };
+  });
+}
+
 function thoughtClockFromTrace(trace: readonly TraceItem[]): number | null {
   const last = trace.at(-1);
   if (
@@ -1668,28 +1682,28 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       }
       return { ...state, sessionTitle: title };
     }
-    case "sessionHistoryLoading":
+    case "sessionHistoryLoading": {
       if (action.loading) {
         return { ...state, sessionHistoryLoading: true };
       }
       if (state.viewportCacheActive && state.replayTrace.length > 0) {
-        const trace = mergeToolDurationsFromCache(
-          mergeThoughtDurationsFromCache(state.replayTrace, state.trace),
-          state.trace,
+        const trace = settleOpenThoughts(
+          mergeToolDurationsFromCache(
+            mergeThoughtDurationsFromCache(state.replayTrace, state.trace),
+            state.trace,
+          ),
         );
+        const toolStartedAtMsById = toolClocksFromTrace(trace);
         return {
           ...state,
           sessionHistoryLoading: false,
           viewportCacheActive: false,
           trace,
           toolIndexById: state.replayToolIndexById,
-          openStreamIndex: state.replayOpenStreamIndex,
-          thoughtStartedAtMs: thoughtClockFromTrace(trace),
-          toolStartedAtMsById: state.replayToolStartedAtMsById,
-          promptInFlight:
-            state.promptInFlight ||
-            thoughtClockFromTrace(trace) !== null ||
-            state.replayToolStartedAtMsById.size > 0,
+          openStreamIndex: null,
+          thoughtStartedAtMs: null,
+          toolStartedAtMsById,
+          promptInFlight: toolStartedAtMsById.size > 0,
           replayTrace: [],
           replayToolIndexById: new Map(),
           replayOpenStreamIndex: null,
@@ -1698,11 +1712,19 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           historyCommit: state.historyCommit + 1,
         };
       }
+      const trace = settleOpenThoughts(state.trace);
+      const toolStartedAtMsById = toolClocksFromTrace(trace);
       return {
         ...state,
         sessionHistoryLoading: false,
         viewportCacheActive: false,
+        trace,
+        openStreamIndex: null,
+        thoughtStartedAtMs: null,
+        toolStartedAtMsById,
+        promptInFlight: toolStartedAtMsById.size > 0,
       };
+    }
     case "appendAgentText":
       return appendAgentText(state, action.text);
     case "appendUserText":

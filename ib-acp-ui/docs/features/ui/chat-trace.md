@@ -57,6 +57,8 @@ A child session from the agent shows the same way, with status Running, Needs ac
 A long prompt starts collapsed.
 
 While a session loads from the agent, a saved last screen is shown when one exists.
+When that load finishes and the agent is idle, Thinking stops.
+A thought that was still open gets its elapsed time and stays on Thought.
 A loading indicator fills the panel only when that cache is empty.
 Scrolling up to the top of the saved screen can show a loading overlay that does not change the transcript height.
 Older history is applied in one step and the current scroll position is kept.
@@ -133,7 +135,8 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 
 [createChatStateFromInit](../../../webview/acp-ui/src/chatReducer.ts#L274-L301) seeds the trace from `init.visibleTrace`.
 While that cache is on screen and history is loading, transcript updates go to a side buffer in [chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L631-L634).
-When loading ends, the buffer replaces the visible trace in one step ([sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L767-L791)).
+When loading ends, the buffer replaces the visible trace in one step ([sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L1685-L1726)).
+[settleOpenThoughts](../../../webview/acp-ui/src/chatReducer.ts#L581-L592) stops an open thought so Thinking does not keep counting after the agent is idle.
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.
 [visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport.
