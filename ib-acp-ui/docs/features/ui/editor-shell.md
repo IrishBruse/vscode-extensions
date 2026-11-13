@@ -15,6 +15,16 @@ The tab name is the chat title stored in that file.
 A background tab shows that title before you open it.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
 
+**Chat** and **Debug** float over the top of the transcript.
+They do not take a row from the conversation.
+Chat shows the conversation.
+Debug replaces that transcript with a larger run view and hides the composer.
+The call list fills the height of the debug view.
+The run view shows the title, the latest request, and the turn and tool counts.
+The line shows the chat and each subagent.
+Each step has a circle that shows the share of its tool kinds.
+The panel on the right lists those calls in the same colors.
+
 Configure where session files are stored with `ib-acp-ui.sessionsDirectory`.
 Empty uses extension global storage.
 Absolute paths and workspace-relative paths are supported.
@@ -38,6 +48,14 @@ The transcript keeps its width and scroll position until the tab is on screen ag
 [syncAcpUiBackgroundTabTitles](../../../src/extension/acpUiBackgroundTabTitles.ts#L57-L96) reads that same title for every open `.acp` tab.
 [customLabelTemplate](../../../src/extension/acpUiEditorTabLabel.ts#L8-L14) stores it in `workbench.editor.customLabels.patterns` so the tab shows the title before the editor opens.
 The chat UI and the markdown renderer load as later chunks from `media/acp-ui/chunks/`.
+
+### Debug view
+
+[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L511-L532) switches the transcript between Chat and Debug.
+The switch floats over the transcript, and Debug hides the composer.
+[buildChatDebug](../../../webview/acp-ui/src/chatDebugModel.ts#L255-L353) puts the chat and each subagent on the line, and keeps the tools on that step.
+[chatDebugShare](../../../webview/acp-ui/src/chatDebugModel.ts#L185-L194) counts the tool kinds for the share circle.
+[ChatDebugView](../../../webview/acp-ui/src/components/acp/debug/ChatDebugView.tsx#L66-L144) draws that circle and lists the calls in a panel that fills the height of the view.
 
 ### Commands and keybindings
 

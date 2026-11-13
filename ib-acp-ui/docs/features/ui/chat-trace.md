@@ -3,6 +3,13 @@
 ## User facing
 
 The chat trace is the scrolling conversation panel above the composer.
+**Chat** and **Debug** float over the top of that panel.
+They do not take a row from the conversation.
+Debug replaces the conversation with a run view and hides the composer.
+The call list fills the height of the debug view.
+The line shows the chat and each subagent.
+Each step has a circle that shows the share of its tool kinds.
+The panel lists those calls in the same colors.
 It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and TODO lists.
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
 A thought block uses quieter text.

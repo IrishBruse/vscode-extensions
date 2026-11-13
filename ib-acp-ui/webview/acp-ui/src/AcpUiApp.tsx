@@ -45,6 +45,7 @@ import { PermissionDialog } from "./components/acp/dialogs/PermissionDialog/Perm
 import { SubagentFocus } from "./components/acp/trace/SubagentFocus/SubagentFocus";
 import { TaskFocus } from "./components/acp/trace/SubagentFocus/TaskFocus";
 import { subagentStatusLabel } from "./components/acp/trace/SubagentSessionBlock/subagentStatus";
+import { ChatDebugView } from "./components/acp/debug/ChatDebugView";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
 import { collectPathsFromDataTransfer, dataTransferLooksLikePathDrop } from "./droppedFilePaths";
@@ -125,6 +126,7 @@ export function AcpUiApp({
       replayed ?? createChatStateFromInit(initPayload),
   );
   const [expandAllToolOutputs, setExpandAllToolOutputs] = useState(false);
+  const [debugView, setDebugView] = useState(false);
   const [showThinkingBlocks, setShowThinkingBlocks] = useState(true);
   const [contentWidthRatio, setContentWidthRatio] = useState(init.contentWidthRatio ?? 1);
   const traceRef = useRef<HTMLElement | null>(null);
@@ -506,13 +508,44 @@ export function AcpUiApp({
         onDragOver={onShellDragOver}
         onDrop={onShellDrop}
       >
+        <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!debugView}
+            onClick={() => {
+              setDebugView(false);
+            }}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={debugView}
+            onClick={() => {
+              setDebugView(true);
+            }}
+          >
+            Debug
+          </button>
+        </div>
         <main
           ref={traceRef}
-          className="agent-trace"
+          className={debugView ? "agent-trace agent-trace--debug" : "agent-trace"}
           role="log"
-          aria-label="Conversation"
+          aria-label={debugView ? "Debug view" : "Conversation"}
           onScroll={onTraceScroll}
         >
+          {debugView ? (
+            <ChatDebugView
+              trace={state.trace}
+              title={state.sessionTitle}
+              agentName={state.acpAgentSelection?.currentName}
+              childTraces={state.subagentActivity}
+            />
+          ) : (
+          <>
           {state.sessionHistoryLoading && state.trace.length > 0 && earlierOverlay ? (
             <div className="session-history-loader-anchor">
               <SessionHistoryLoader overlay />
@@ -607,7 +640,13 @@ export function AcpUiApp({
             )}
           </div>
           <div className="agent-trace-follow-gap" aria-hidden="true" />
+          </>
+          )}
         </main>
+        {!debugView ||
+        permission !== null ||
+        askQuestion !== null ||
+        createPlan !== null ? (
         <div className="acp-ui-composer-stack">
           <div className="acp-ui-content-column">
             {permission !== null ? (
@@ -688,6 +727,7 @@ export function AcpUiApp({
                 }}
               />
             ) : null}
+            {debugView ? null : (
             <AcpUiComposer
               initialHistory={init.history}
               workspaceFiles={init.workspaceFiles}
@@ -732,8 +772,10 @@ export function AcpUiApp({
               onOpenImage={setViewerImageSrc}
               appendDroppedPathsRef={appendDroppedPathsRef}
             />
+            )}
           </div>
         </div>
+        ) : null}
       </div>
       {viewerImageSrc !== null ? (
         <ImageViewer src={viewerImageSrc} onClose={() => setViewerImageSrc(null)} />

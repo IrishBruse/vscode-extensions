@@ -5,6 +5,10 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Debug hides the composer, the call list fills that view, and Chat and Debug float over the transcript.
+- **Change**: Debug colors each tool kind and shows a circle of how the calls split across those kinds.
+- **Change**: Debug puts the chat and each subagent on the line, and keeps the other tools in the panel.
+- **Add**: Debug in the chat shows the run as steps on a line, in the same colors as the chat.
 - **Change**: A permission request shows the agent title, and a path in that title opens the file.
 - **Remove**: The Setup sidebar is gone, and clients are added and chosen from commands.
 - **Fix**: Opening a chat no longer leaves Thinking counting after the agent is idle.

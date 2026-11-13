@@ -4,6 +4,7 @@ const STORY_MODULES = [
   "../src/components/acp/trace/AgentMarkdown/AgentMarkdown.stories.tsx",
   "../src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.stories.tsx",
   "../src/components/acp/composer/ChatComposer/ChatComposer.stories.tsx",
+  "../src/components/acp/debug/ChatDebugView.stories.tsx",
   "../src/components/acp/session/ChatHeader/ChatHeader.stories.tsx",
   "../src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.stories.tsx",
   "../src/components/acp/dialogs/CursorAskQuestionDialog/CursorAskQuestionDialog.stories.tsx",

@@ -48,6 +48,13 @@ Agent plans render as structured plan blocks.
 
 ![ACP UI plan block](docs/Plan.png)
 
+### Debug view
+
+**Chat** and **Debug** float over the transcript.
+Debug hides the composer and shows the chat and each subagent on a line.
+The call list fills the height of that view.
+Each step has a circle that shows the share of its tool kinds.
+The panel lists those calls in the same colors.
 Previous chats stay in editor tabs and session files.
 
 ### Session config

@@ -16,6 +16,8 @@ You can scroll inside that screen while the agent loads older messages.
 When the older messages arrive, the screen you are looking at stays where it is.
 The live transcript still comes from the agent via `session/load` replay when resume succeeds.
 
+**Debug** in the chat replaces the transcript with a run view of that same conversation.
+
 The chat UI will also react to more agent-driven updates such as mode changes, config option updates, title sync, and usage meters.
 User message chunks during `session/load` replay already appear in the trace.
 
@@ -63,6 +65,11 @@ The webview keeps the cached screen until replay finishes, then swaps the full t
 [mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L329-L370) copies thought durations from `cache` onto the replayed thoughts.
 [mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L376-L407) copies command durations by `toolCallId`.
 On load failure, the bridge falls back to `session/new` and the cached screen stays if replay produced no items (composer history still comes from `init.history`).
+
+### Debug view
+
+[buildChatDebug](../../../webview/acp-ui/src/chatDebugModel.ts#L255-L353) turns the live trace into the chat and its subagents.
+[ChatDebugView](../../../webview/acp-ui/src/components/acp/debug/ChatDebugView.tsx#L66-L144) shows those steps in the chat when Debug is selected.
 
 ### Session updates
 
