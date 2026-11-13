@@ -144,6 +144,14 @@
   flex-shrink: 0;
 }
 
+.composer-follow-up-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-4);
+  max-height: 8.5rem;
+  overflow: auto;
+}
+
 .composer-follow-up-bar {
   display: flex;
   align-items: center;

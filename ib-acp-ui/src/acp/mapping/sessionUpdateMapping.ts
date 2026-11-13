@@ -16,7 +16,11 @@ import {
     taskToolFieldsFromRaw,
     type TaskToolFields,
 } from "./taskToolPresentation";
-import { computeToolCallDiffRows } from "./toolCallDiffLines";
+import {
+    computeToolCallDiffRows,
+    previewDiffRows,
+    windowToolCallDiffRows,
+} from "./toolCallDiffLines";
 
 function durationMsFromUpdatePayload(value: unknown): number | undefined {
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -143,11 +147,53 @@ export function toolCallExecuteCommandSubtitle(call: {
  * Webview messages for a pending `session/request_permission`: dialog plus optional tool row update
  * (diff preview, content, subtitle) from the permission `toolCall`.
  */
+function permissionSummary(
+    content: string | undefined,
+    detail: string | undefined,
+): string | undefined {
+    if (content === undefined) {
+        return undefined;
+    }
+    let text = content.trim();
+    if (text.length === 0) {
+        return undefined;
+    }
+    if (detail !== undefined && detail.length > 0) {
+        if (text === detail) {
+            return undefined;
+        }
+        if (text.startsWith(`${detail}\n`)) {
+            text = text.slice(detail.length).trim();
+        }
+    }
+    if (text.length === 0) {
+        return undefined;
+    }
+    const lines = text.split("\n").slice(0, 6).join("\n");
+    if (lines.length <= 400) {
+        return lines;
+    }
+    return `${lines.slice(0, 400).trimEnd()}…`;
+}
+
 export function extensionMessagesForPermissionRequest(
     requestId: string,
     params: acp.RequestPermissionRequest,
 ): ExtensionToWebviewMessage[] {
     const toolCall = params.toolCall;
+    const parts = toolCallUpdateToDisplayParts(toolCall);
+    const commandSubtitle = toolCallExecuteCommandSubtitle(toolCall);
+    const pathOrSearchSubtitle = toolCallUpdateSubtitleHint(toolCall);
+    const subtitle =
+        commandSubtitle ??
+        (pathOrSearchSubtitle !== undefined && pathOrSearchSubtitle.trim().length > 0
+            ? pathOrSearchSubtitle.trim()
+            : undefined);
+    const summary = permissionSummary(parts.contentText, subtitle);
+    const previewRows =
+        parts.diffRows !== undefined && parts.diffRows.length > 0
+            ? previewDiffRows(windowToolCallDiffRows(parts.diffRows), 12)
+            : [];
     const messages: ExtensionToWebviewMessage[] = [
         {
             type: "permissionRequest",
@@ -158,6 +204,9 @@ export function extensionMessagesForPermissionRequest(
                 String(toolCall.kind).toLowerCase() === "edit"
                     ? "Write File"
                     : (toolCall.title ?? "Tool"),
+            ...(subtitle !== undefined ? { detail: subtitle } : {}),
+            ...(summary !== undefined ? { summary } : {}),
+            ...(previewRows.length > 0 ? { diffRows: previewRows } : {}),
             options: params.options.map((o) => ({
                 optionId: o.optionId,
                 name: o.name,
@@ -169,14 +218,6 @@ export function extensionMessagesForPermissionRequest(
         return messages;
     }
     const toolCallId = canonicalToolCallId(rawToolCallId);
-    const parts = toolCallUpdateToDisplayParts(toolCall);
-    const commandSubtitle = toolCallExecuteCommandSubtitle(toolCall);
-    const pathOrSearchSubtitle = toolCallUpdateSubtitleHint(toolCall);
-    const subtitle =
-        commandSubtitle ??
-        (pathOrSearchSubtitle !== undefined && pathOrSearchSubtitle.trim().length > 0
-            ? pathOrSearchSubtitle.trim()
-            : undefined);
     const kindFromUpdate =
         toolCall.kind !== undefined && toolCall.kind !== null && String(toolCall.kind).length > 0
             ? String(toolCall.kind)

@@ -3,7 +3,9 @@
 ## User facing
 
 When an agent needs approval before running a tool, ACP UI shows a permission dialog above the composer.
-The dialog names the tool (for example a shell command or file write) and lists the options the agent provided.
+The dialog names the tool, then shows the file path or command.
+A file write also shows the line counts and a short diff when the agent included the change.
+The dialog lists the options the agent provided.
 Pick an option to continue, or dismiss to cancel.
 Allow always is remembered for that tool kind for this chat.
 A later request of the same kind is approved without asking again.
@@ -29,14 +31,16 @@ Dispose cancels all pending waiters.
 
 ### Webview dialog
 
-[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts) builds `permissionRequest` messages.
+[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts#L179-L247) builds `permissionRequest` messages.
+[permissionSummary](../../../src/acp/mapping/sessionUpdateMapping.ts#L150-L177) keeps the line counts after the path.
+The same message includes a short diff when the tool call has one.
 When the permission `toolCall` includes content (for example a `diff`), it also posts `updateToolCall` with `diffRows` or text so the tool row can show a preview while you decide.
 Execute-style tools still get a command subtitle when the shell line can be resolved.
 
-[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L707-L718) stores `permissionPrompt` state.
-[PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L18-L68) renders the modal strip.
+[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L1731-L1742) stores `permissionPrompt` state.
+[PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L19-L103) renders the path, the summary, and the diff.
 
-[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L643-L660) wires button handlers to `postPermissionResponse`.
+[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L614-L634) wires button handlers to `postPermissionResponse`.
 [acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L714) forwards responses to the bridge.
 
 Protocol: [tool calls](../../acp/protocol/v1/tool-calls.mdx).

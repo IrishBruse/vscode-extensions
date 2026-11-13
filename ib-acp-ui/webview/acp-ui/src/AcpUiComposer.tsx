@@ -27,8 +27,17 @@ import {
   hasRunningTool,
   resolveFollowUpEnter,
   steerShouldStopAfterTool,
-  type FollowUpMode,
+  type QueuedFollowUp,
 } from "./components/acp/composer/ChatComposer/composerFollowUp";
+import {
+  historyCaretAtStart,
+  historyCaretOnLastLine,
+  recallAfterDraftEdit,
+  recallNewerDraft,
+  recallOlderDraft,
+  undoToStashedDraft,
+  type HistoryRecall,
+} from "./components/acp/composer/ChatComposer/composerHistory";
 import { appendFileMentionsToDraft } from "./droppedFilePaths";
 import {
   clipboardHasImages,
@@ -108,20 +117,16 @@ export function AcpUiComposer({
 }: AcpUiComposerProps): ReactElement {
   const [draft, setDraft] = useState("");
   const [history, setHistory] = useState<string[]>(initialHistory ?? []);
-  const [historyBrowse, setHistoryBrowse] = useState<{
-    pointer: number;
-    restore: string;
-  } | null>(null);
+  const [historyRecall, setHistoryRecall] = useState<HistoryRecall | null>(null);
   const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [composerSuggestionIndex, setComposerSuggestionIndex] = useState(0);
   const [composerAutocompleteDismissed, setComposerAutocompleteDismissed] = useState(false);
   const [pendingImages, setPendingImages] = useState<AcpUiPromptImage[]>([]);
-  const [queuedFollowUp, setQueuedFollowUp] = useState<{
-    body: string;
-    images: AcpUiPromptImage[];
-    mode: FollowUpMode;
-  } | null>(null);
+  const [queuedFollowUps, setQueuedFollowUps] = useState<QueuedFollowUp[]>([]);
+  const queueIdRef = useRef(1);
   const steerSawRunningToolRef = useRef(false);
+  const awaitNextFlightRef = useRef(false);
+  const flushingQueueIdRef = useRef<number | null>(null);
   const files = workspaceFiles ?? emptyWorkspaceFiles;
   const workspaceText =
     workspaceLabel !== undefined && workspaceLabel.length > 0
@@ -165,41 +170,69 @@ export function AcpUiComposer({
 
   const onDraftChange = useCallback((value: string): void => {
     setDraft(value);
-    setHistoryBrowse((browse) => (browse !== null ? null : browse));
+    setHistoryRecall((recall) => recallAfterDraftEdit(recall, value, history));
     setComposerSuggestionIndex(0);
     setComposerAutocompleteDismissed(false);
-  }, []);
+  }, [history]);
+
+  const releaseComposerDraft = useCallback((): void => {
+    const recall = historyRecall;
+    const current = draft;
+    if (recall !== null && recall.stashedDraft !== current) {
+      setDraft(recall.stashedDraft);
+    } else {
+      setDraft("");
+    }
+    setHistoryRecall(null);
+    setPendingImages([]);
+  }, [draft, historyRecall]);
 
   const onDismissAutocomplete = useCallback((): void => {
     setComposerSuggestionIndex(0);
     setComposerAutocompleteDismissed(true);
   }, []);
 
-  const onDismissFollowUp = useCallback((): void => {
-    setQueuedFollowUp(null);
-    steerSawRunningToolRef.current = false;
-  }, []);
+  const stopTurn = useCallback((): void => {
+    dispatch({ type: "stopTurn" });
+    postCancel();
+  }, [dispatch, postCancel]);
 
-  const onEditFollowUp = useCallback((): void => {
-    if (queuedFollowUp === null) {
+  const onDismissFollowUp = useCallback((id: number): void => {
+    if (queuedFollowUps[0]?.id === id) {
+      steerSawRunningToolRef.current = false;
+    }
+    setQueuedFollowUps((items) => items.filter((item) => item.id !== id));
+  }, [queuedFollowUps]);
+
+  const onEditFollowUp = useCallback((id: number): void => {
+    const item = queuedFollowUps.find((entry) => entry.id === id);
+    if (item === undefined) {
       return;
     }
-    setDraft(queuedFollowUp.body);
-    setPendingImages(queuedFollowUp.images);
-    setQueuedFollowUp(null);
-    steerSawRunningToolRef.current = false;
-    setHistoryBrowse(null);
+    const currentDraft = draft;
+    const currentImages = pendingImages;
+    const composerHasContent = currentDraft.trim().length > 0 || currentImages.length > 0;
+    if (queuedFollowUps[0]?.id === id) {
+      steerSawRunningToolRef.current = false;
+    }
+    setQueuedFollowUps((items) => {
+      if (!composerHasContent) {
+        return items.filter((entry) => entry.id !== id);
+      }
+      return items.map((entry) =>
+        entry.id === id ? { ...entry, body: currentDraft, images: currentImages } : entry,
+      );
+    });
+    setDraft(item.body);
+    setPendingImages(item.images);
+    setHistoryRecall((recall) => recallAfterDraftEdit(recall, item.body, history));
     setComposerAutocompleteDismissed(false);
     requestAnimationFrame(() => {
       composerTextareaRef.current?.focus();
     });
-  }, [queuedFollowUp]);
+  }, [draft, history, pendingImages, queuedFollowUps]);
 
-  const deliverPrompt = useCallback((body: string, images: AcpUiPromptImage[]): void => {
-    setDraft("");
-    setHistoryBrowse(null);
-    setQueuedFollowUp(null);
-    steerSawRunningToolRef.current = false;
+  const publishPrompt = useCallback((body: string, images: AcpUiPromptImage[]): void => {
     setHistory((prev) => {
       const next =
         prev.length > 0 && prev[prev.length - 1] === body ? prev : [...prev.slice(-49), body];
@@ -213,7 +246,6 @@ export function AcpUiComposer({
       ...(images.length > 0 ? { imageCount: images.length, images } : {}),
     });
     postSend(body, images.length > 0 ? images : undefined);
-    setPendingImages([]);
   }, [dispatch, postSaveHistory, postSend, stickToBottomRef]);
 
   const submit = (): void => {
@@ -227,17 +259,16 @@ export function AcpUiComposer({
     }
     const asCommand = body.toLowerCase();
     if (asCommand === "/clear" || asCommand === "/new") {
-      setDraft("");
-      setHistoryBrowse(null);
-      setQueuedFollowUp(null);
+      releaseComposerDraft();
+      setQueuedFollowUps([]);
+      steerSawRunningToolRef.current = false;
       stickToBottomRef.current = true;
       dispatch({ type: "sessionReset" });
       postResetSession();
       return;
     }
     if (asCommand === "/show-thinking") {
-      setDraft("");
-      setHistoryBrowse(null);
+      releaseComposerDraft();
       onToggleShowThinking();
       return;
     }
@@ -251,12 +282,12 @@ export function AcpUiComposer({
         return;
       }
       const nextTitle = match[1]!;
-      setDraft("");
-      setHistoryBrowse(null);
+      releaseComposerDraft();
       postRenameSession(nextTitle);
       return;
     }
-    deliverPrompt(body, images);
+    releaseComposerDraft();
+    publishPrompt(body, images);
   };
 
   const handleComposerSend = (): void => {
@@ -274,55 +305,77 @@ export function AcpUiComposer({
     const action = resolveFollowUpEnter({
       promptInFlight,
       hasContent,
-      queuedMode: queuedFollowUp?.mode ?? null,
+      queuedMode: queuedFollowUps[0]?.mode ?? null,
     });
     if (action === "send-now") {
       submit();
       return;
     }
     if (action === "enqueue") {
-      setQueuedFollowUp({ body: draft, images: pendingImages, mode: "queue" });
-      setDraft("");
-      setPendingImages([]);
-      setHistoryBrowse(null);
-      steerSawRunningToolRef.current = false;
+      const id = queueIdRef.current;
+      queueIdRef.current += 1;
+      setQueuedFollowUps((items) => [
+        ...items,
+        { id, body: draft, images: pendingImages, mode: "queue" },
+      ]);
+      releaseComposerDraft();
       return;
     }
     if (action === "steer") {
-      setQueuedFollowUp((current) =>
-        current === null ? current : { ...current, mode: "steer" },
+      setQueuedFollowUps((items) =>
+        items.map((item, index) => (index === 0 ? { ...item, mode: "steer" } : item)),
       );
       return;
     }
-    if (action === "interrupt" && queuedFollowUp !== null) {
-      deliverPrompt(queuedFollowUp.body, queuedFollowUp.images);
+    const head = queuedFollowUps[0];
+    if (action === "interrupt" && head !== undefined) {
+      steerSawRunningToolRef.current = false;
+      setQueuedFollowUps((items) => items.slice(1));
+      publishPrompt(head.body, head.images);
     }
   };
 
   useEffect(() => {
-    if (queuedFollowUp === null) {
+    if (promptInFlight) {
+      awaitNextFlightRef.current = false;
+    }
+  }, [promptInFlight]);
+
+  useEffect(() => {
+    const head = queuedFollowUps[0];
+    if (head === undefined) {
       steerSawRunningToolRef.current = false;
+      flushingQueueIdRef.current = null;
+      return;
+    }
+    if (flushingQueueIdRef.current === head.id) {
       return;
     }
     const toolRunning = hasRunningTool(
       trace.flatMap((item) => (item.type === "tool" ? [item.status] : [])),
     );
-    if (queuedFollowUp.mode === "steer" && toolRunning) {
+    if (head.mode === "steer" && toolRunning) {
       steerSawRunningToolRef.current = true;
     }
-    const turnFinished = !promptInFlight;
     const stopAfterTool =
-      queuedFollowUp.mode === "steer" &&
+      head.mode === "steer" &&
       steerShouldStopAfterTool({
         sawRunningTool: steerSawRunningToolRef.current,
         toolRunning,
         promptInFlight,
       });
+    const turnFinished = !promptInFlight && !awaitNextFlightRef.current;
     if (!turnFinished && !stopAfterTool) {
       return;
     }
-    deliverPrompt(queuedFollowUp.body, queuedFollowUp.images);
-  }, [deliverPrompt, queuedFollowUp, promptInFlight, trace]);
+    if (turnFinished) {
+      awaitNextFlightRef.current = true;
+    }
+    flushingQueueIdRef.current = head.id;
+    steerSawRunningToolRef.current = false;
+    setQueuedFollowUps((items) => items.filter((item) => item.id !== head.id));
+    publishPrompt(head.body, head.images);
+  }, [publishPrompt, queuedFollowUps, promptInFlight, trace]);
 
   const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     const target = event.currentTarget;
@@ -372,10 +425,12 @@ export function AcpUiComposer({
         shiftKey: event.shiftKey,
         hasSelection,
         promptInFlight,
+        thoughtRunning: thoughtStartedAtMs !== null,
+        commandRunning: runningBashStartedAtMs(trace) !== undefined,
       })
     ) {
       event.preventDefault();
-      postCancel();
+      stopTurn();
       return;
     }
 
@@ -409,49 +464,62 @@ export function AcpUiComposer({
           const nextDraft =
             draft.slice(0, tokenStart) + selected.insertText + right.slice(consumed.length);
           setDraft(nextDraft);
-          setHistoryBrowse(null);
+          setHistoryRecall((recall) => recallAfterDraftEdit(recall, nextDraft, history));
           setComposerSuggestionIndex(0);
           return;
         }
       }
     }
 
-    if (event.key === "ArrowUp" && !mod) {
-      if (historyBrowse !== null) {
+    const undoRecall =
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      !event.altKey &&
+      event.key.toLowerCase() === "z";
+    if (undoRecall) {
+      const restored = undoToStashedDraft(draft, historyRecall);
+      if (restored !== null) {
         event.preventDefault();
-        if (historyBrowse.pointer > 0) {
-          const nextPointer = historyBrowse.pointer - 1;
-          setHistoryBrowse({
-            pointer: nextPointer,
-            restore: historyBrowse.restore,
-          });
-          setDraft(history[nextPointer] ?? "");
-        }
-        return;
-      }
-      if (history.length > 0 && textareaAtFirstLineFirstColumn(start, end)) {
-        event.preventDefault();
-        const lastIdx = history.length - 1;
-        setHistoryBrowse({ pointer: lastIdx, restore: draft });
-        setDraft(history[lastIdx] ?? "");
+        setDraft(restored.draft);
+        setHistoryRecall(restored.recall);
+        setComposerSuggestionIndex(0);
+        setComposerAutocompleteDismissed(false);
         return;
       }
     }
 
-    if (event.key === "ArrowDown" && !mod && historyBrowse !== null) {
-      event.preventDefault();
-      if (historyBrowse.pointer < history.length - 1) {
-        const nextPointer = historyBrowse.pointer + 1;
-        setHistoryBrowse({
-          pointer: nextPointer,
-          restore: historyBrowse.restore,
-        });
-        setDraft(history[nextPointer] ?? "");
-      } else {
-        setHistoryBrowse(null);
-        setDraft(historyBrowse.restore);
+    if (event.key === "ArrowUp" && !mod) {
+      const recalled = recallOlderDraft({
+        draft,
+        history,
+        recall: historyRecall,
+        caretAtStart: historyCaretAtStart(start, end),
+      });
+      if (recalled !== null) {
+        event.preventDefault();
+        setDraft(recalled.draft);
+        setHistoryRecall(recalled.recall);
+        setComposerSuggestionIndex(0);
+        setComposerAutocompleteDismissed(false);
+        return;
       }
-      return;
+    }
+
+    if (event.key === "ArrowDown" && !mod) {
+      const recalled = recallNewerDraft({
+        draft,
+        history,
+        recall: historyRecall,
+        caretOnLastLine: historyCaretOnLastLine(draft, start, end),
+      });
+      if (recalled !== null) {
+        event.preventDefault();
+        setDraft(recalled.draft);
+        setHistoryRecall(recalled.recall);
+        setComposerSuggestionIndex(0);
+        setComposerAutocompleteDismissed(false);
+        return;
+      }
     }
 
     if (event.key === "Enter" && !event.shiftKey) {
@@ -490,13 +558,14 @@ export function AcpUiComposer({
     appendDroppedPathsRef.current = (paths: string[]): void => {
       const root =
         workspaceLabel !== undefined && workspaceLabel.length > 0 ? workspaceLabel : undefined;
-      setDraft((current) => appendFileMentionsToDraft(current, paths, root));
-      setHistoryBrowse(null);
+      const next = appendFileMentionsToDraft(draft, paths, root);
+      setDraft(next);
+      setHistoryRecall((recall) => recallAfterDraftEdit(recall, next, history));
       requestAnimationFrame(() => {
         composerTextareaRef.current?.focus();
       });
     };
-  }, [appendDroppedPathsRef, workspaceLabel]);
+  }, [appendDroppedPathsRef, draft, history, workspaceLabel]);
 
   return (
     <ChatComposer
@@ -525,10 +594,10 @@ export function AcpUiComposer({
         postSetSessionConfigOption(configId, value);
       }}
       onSubmit={handleComposerSend}
-      followUp={queuedFollowUp}
+      followUps={queuedFollowUps}
       onDismissFollowUp={onDismissFollowUp}
       onEditFollowUp={onEditFollowUp}
-      onCancel={postCancel}
+      onCancel={stopTurn}
       onKeyDown={onComposerKeyDown}
       onPaste={onComposerPaste}
       activity={activity}
@@ -542,11 +611,4 @@ export function AcpUiComposer({
       composerInputRef={composerTextareaRef}
     />
   );
-}
-
-function textareaAtFirstLineFirstColumn(selectionStart: number, selectionEnd: number): boolean {
-  if (selectionStart !== selectionEnd) {
-    return false;
-  }
-  return selectionStart === 0;
 }

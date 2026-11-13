@@ -584,8 +584,22 @@ describe("chatReducer", () => {
       ],
     });
     expect(state.thoughtStartedAtMs).toBe(startedAtMs);
+    expect(state.promptInFlight).toBe(true);
     const thought = state.trace[0];
     expect(thought).toEqual({ type: "thought", text: "Still thinking.", startedAtMs });
+  });
+
+  it("keeps Cancel available when a thought starts without a local submit", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "appendAgentThought", text: "Thinking…" });
+    expect(state.promptInFlight).toBe(true);
+    expect(state.thoughtStartedAtMs).toBe(Date.now());
+
+    state = chatReducer(state, { type: "stopTurn" });
+    expect(state.promptInFlight).toBe(false);
+    expect(state.thoughtStartedAtMs).toBeNull();
   });
 
   it("marks the agent disconnected, keeps the error, and logs the message in the trace", () => {

@@ -29,6 +29,14 @@ describe("AgentThoughtBlock markdown", () => {
     expect(html).not.toContain("<pre");
   });
 
+  it("does not render a fenced code block", async () => {
+    const html = await renderThought("See\n\n```ts\nconst hidden = 1;\n```\n\nDone");
+    expect(html).toContain("See");
+    expect(html).toContain("Done");
+    expect(html).not.toContain("hidden");
+    expect(html).not.toContain("<pre");
+  });
+
   it("shows the body on the three-line preview until it is opened", async () => {
     const html = await renderThought("Done.");
     expect(html).toContain("agent-thought-chunk-body");

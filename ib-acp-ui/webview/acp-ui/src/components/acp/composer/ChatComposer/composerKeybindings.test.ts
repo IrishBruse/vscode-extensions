@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  canCancelTurn,
   shouldCancelRunOnCtrlC,
   shouldCycleSessionModeOnShiftTab,
   shouldOpenNewChatOnCtrlT,
@@ -97,6 +98,27 @@ describe("shouldCancelRunOnCtrlC", () => {
         promptInFlight: true,
       }),
     ).toBe(true);
+  });
+
+  it("cancels while a thought or command is running", () => {
+    expect(
+      shouldCancelRunOnCtrlC({
+        key: "c",
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        hasSelection: false,
+        promptInFlight: false,
+        thoughtRunning: true,
+      }),
+    ).toBe(true);
+    expect(
+      canCancelTurn({ promptInFlight: false, thoughtRunning: false, commandRunning: true }),
+    ).toBe(true);
+    expect(
+      canCancelTurn({ promptInFlight: false, thoughtRunning: false, commandRunning: false }),
+    ).toBe(false);
   });
 
   it("does not cancel when text is selected", () => {

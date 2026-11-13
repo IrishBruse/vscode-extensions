@@ -36,13 +36,14 @@ import {
 } from "../../../../../../../src/acp/session/sessionModeIndicator";
 import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../../../../../src/protocol/extensionHostMessages";
 import { buildComposerAutocompleteState, wrapIndex } from "./composerAutocomplete";
+import { canCancelTurn } from "./composerKeybindings";
 import { ConfigOptionControls, ComposerConfigLoading } from "../ConfigOptionControls/ConfigOptionControls";
 import { SessionModeIndicator } from "../SessionModeIndicator/SessionModeIndicator";
 import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 import { promptImageSrc } from "../../../../pastedImages";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
 import { useLiveNow } from "../../../../liveClock";
-import type { FollowUpMode } from "./composerFollowUp";
+import { type FollowUpMode, type QueuedFollowUp } from "./composerFollowUp";
 
 export type ChatComposerProps = {
   /** Workspace path shown in the composer status slot. */
@@ -71,14 +72,10 @@ export type ChatComposerProps = {
   onPickSessionModel: (modelId: string) => void;
   onPickSessionConfigOption: (configId: string, value: string | boolean) => void;
   onSubmit: () => void;
-  /** Draft held until the running turn can take it. */
-  followUp?: {
-    body: string;
-    images: AcpUiPromptImage[];
-    mode: FollowUpMode;
-  } | null;
-  onDismissFollowUp?: () => void;
-  onEditFollowUp?: () => void;
+  /** Drafts held until the running turn can take them, in send order. */
+  followUps?: QueuedFollowUp[];
+  onDismissFollowUp?: (id: number) => void;
+  onEditFollowUp?: (id: number) => void;
   onCancel: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   /** Paste handler on the textarea; captures image clips as attachments. */
@@ -101,6 +98,16 @@ export type ChatComposerProps = {
   /** Focus target after external inserts (e.g. file drop). */
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
+
+function followUpSummaryText(followUp: QueuedFollowUp): string {
+  if (followUp.body.trim().length > 0) {
+    return followUp.body.replace(/\s+/g, " ").trim();
+  }
+  if (followUp.images.length === 1) {
+    return "1 image";
+  }
+  return `${followUp.images.length} images`;
+}
 
 function sendFollowUpLabel(
   promptInFlight: boolean,
@@ -228,7 +235,7 @@ export function ChatComposer({
   onPickSessionModel,
   onPickSessionConfigOption,
   onSubmit,
-  followUp = null,
+  followUps = [],
   onDismissFollowUp,
   onEditFollowUp,
   onCancel,
@@ -364,52 +371,51 @@ export function ChatComposer({
     onPickSessionConfigOption(configId, value);
   };
 
-  const followUpSummary =
-    followUp === null
-      ? ""
-      : followUp.body.trim().length > 0
-        ? followUp.body.replace(/\s+/g, " ").trim()
-        : followUp.images.length === 1
-          ? "1 image"
-          : `${followUp.images.length} images`;
   return (
     <div className="composer-stack">
-      {followUp !== null ? (
-        <div className="composer-follow-up-bar" role="status">
-          <span className="composer-follow-up-label">
-            {followUp.mode === "queue" ? "Queued" : "Steering"}
-          </span>
-          <span className="composer-follow-up-text" title={followUpSummary}>
-            {followUpSummary}
-          </span>
-          <div className="composer-follow-up-actions">
-            <button
-              type="button"
-              className="composer-follow-up-action"
-              aria-label="Edit queued message"
-              onClick={() => onEditFollowUp?.()}
-            >
-              <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M11.5 1.5a1.2 1.2 0 0 1 1.7 1.7l-9 9L2 13.5l1.3-2.2 9-9zM12.3 2.3 4 10.6l-.7 1.2 1.2-.7 8.3-8.3-1.5-1.5z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="composer-follow-up-action"
-              aria-label="Remove queued message"
-              onClick={() => onDismissFollowUp?.()}
-            >
-              <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M3.7 3.7a.9.9 0 0 1 1.3 0L8 6.7l3-3a.9.9 0 1 1 1.3 1.3L9.3 8l3 3a.9.9 0 1 1-1.3 1.3L8 9.3l-3 3a.9.9 0 1 1-1.3-1.3L6.7 8l-3-3a.9.9 0 0 1 0-1.3z"
-                />
-              </svg>
-            </button>
-          </div>
+      {followUps.length > 0 ? (
+        <div className="composer-follow-up-list">
+          {followUps.map((followUp) => {
+            const followUpSummary = followUpSummaryText(followUp);
+            return (
+              <div key={followUp.id} className="composer-follow-up-bar" role="status">
+                <span className="composer-follow-up-label">
+                  {followUp.mode === "queue" ? "Queued" : "Steering"}
+                </span>
+                <span className="composer-follow-up-text" title={followUpSummary}>
+                  {followUpSummary}
+                </span>
+                <div className="composer-follow-up-actions">
+                  <button
+                    type="button"
+                    className="composer-follow-up-action"
+                    aria-label={`Edit queued message: ${followUpSummary}`}
+                    onClick={() => onEditFollowUp?.(followUp.id)}
+                  >
+                    <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25a1.75 1.75 0 0 1 .445-.758l8.61-8.61Z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="composer-follow-up-action"
+                    aria-label={`Remove queued message: ${followUpSummary}`}
+                    onClick={() => onDismissFollowUp?.(followUp.id)}
+                  >
+                    <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M3.7 3.7a.9.9 0 0 1 1.3 0L8 6.7l3-3a.9.9 0 1 1 1.3 1.3L9.3 8l3 3a.9.9 0 1 1-1.3 1.3L8 9.3l-3 3a.9.9 0 1 1-1.3-1.3L6.7 8l-3-3a.9.9 0 0 1 0-1.3z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : null}
       {pendingImages.length > 0 ? (
@@ -535,7 +541,7 @@ export function ChatComposer({
           className="composer-input"
           placeholder={composerPlaceholder}
           aria-label="Agent input"
-          title="Enter to send. Shift+Enter for newline. Shift+Tab to cycle mode. Arrow up and down for prompt history."
+          title="Enter to send. Shift+Enter for newline. Shift+Tab to cycle mode. Arrow up and down for prompt history. Arrow down or Ctrl+Z restores the text you had before Arrow up."
           rows={2}
           value={draft}
           disabled={textareaDisabled}
@@ -655,7 +661,13 @@ export function ChatComposer({
         <button
           type="button"
           className="composer-cancel"
-          disabled={!promptInFlight}
+          disabled={
+            !canCancelTurn({
+              promptInFlight,
+              thoughtRunning: thoughtStartedAtMs !== undefined,
+              commandRunning: commandStartedAtMs !== undefined,
+            })
+          }
           onClick={() => onCancel()}
         >
           Cancel
@@ -669,7 +681,7 @@ export function ChatComposer({
           {sendFollowUpLabel(
             promptInFlight,
             draft.trim().length > 0 || pendingImages.length > 0,
-            followUp?.mode ?? null,
+            followUps[0]?.mode ?? null,
           )}
         </button>
       </div>

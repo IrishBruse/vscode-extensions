@@ -5,6 +5,13 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A permission request shows the path or command, and a short diff for a file write.
+- **Fix**: Switching editor tabs keeps the chat in place.
+- **Fix**: Cancel stays available while the agent is thinking or running a tool.
+- **Change**: The edit control on a queued message uses a solid pencil.
+- **Change**: A thought block does not show fenced code blocks.
+- **Add**: The composer queues more than one message while the agent is running.
+- **Fix**: Arrow Up keeps the current composer text, Arrow Down puts it back, and Ctrl+Z restores it after an edit.
 - **Change**: A tool path shows the full path.
 - **Change**: A grep line shows the pattern, the path, and the match count.
 - **Change**: The plan dialog covers the chat.

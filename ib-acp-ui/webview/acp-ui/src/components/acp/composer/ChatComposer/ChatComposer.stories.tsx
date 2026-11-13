@@ -131,7 +131,10 @@ export const FollowUpQueued: Story = {
     ...baseProps,
     promptInFlight: true,
     draft: "",
-    followUp: { body: "Also check the failing test.", images: [], mode: "queue" },
+    followUps: [
+      { id: 1, body: "Also check the failing test.", images: [], mode: "queue" },
+      { id: 2, body: "Then update the changelog.", images: [], mode: "queue" },
+    ],
   },
 };
 

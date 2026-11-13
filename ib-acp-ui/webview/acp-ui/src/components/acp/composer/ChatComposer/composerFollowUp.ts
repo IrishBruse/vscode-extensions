@@ -1,13 +1,22 @@
+import type { AcpUiPromptImage } from "../../../../../../../src/protocol/extensionHostMessages";
+
 export type FollowUpMode = "queue" | "steer";
+
+export type QueuedFollowUp = {
+  id: number;
+  body: string;
+  images: AcpUiPromptImage[];
+  mode: FollowUpMode;
+};
 
 export type FollowUpEnterAction = "send-now" | "ignore" | "enqueue" | "steer" | "interrupt";
 
 /**
  * Enter while the agent is idle sends now.
- * The first Enter during a turn queues the draft for the end of that turn.
- * The next Enter marks that message as steering.
- * The Enter after that interrupts the current turn.
- * A new draft replaces the queued message and starts again at queue.
+ * Enter during a turn appends the draft to the queue.
+ * Enter with an empty composer marks the next queued message as steering.
+ * The Enter after that interrupts the current turn and sends that message.
+ * Messages behind it stay in the queue.
  */
 export function resolveFollowUpEnter(input: {
   promptInFlight: boolean;
@@ -15,6 +24,9 @@ export function resolveFollowUpEnter(input: {
   queuedMode: FollowUpMode | null;
 }): FollowUpEnterAction {
   if (!input.promptInFlight) {
+    if (input.queuedMode !== null && input.hasContent) {
+      return "enqueue";
+    }
     return input.hasContent ? "send-now" : "ignore";
   }
   if (input.hasContent) {

@@ -22,17 +22,26 @@ Paths with spaces or quotes are inserted as quoted mentions.
 Drag files from the Explorer or your file manager onto the chat to insert `@` path mentions.
 
 Arrow Up recalls previous prompts from local session history when the caret is at the start of the first line.
-Arrow Down walks forward through recalled entries.
+That press keeps the text that was in the composer.
+Arrow Down walks forward through recalled entries and then puts that text back.
+If you edit a recalled prompt, Arrow Down on the last line puts that text back.
+Ctrl+Z or Cmd+Z puts that text back at any time.
 History is stored in the `.acp` session file (up to 55 entries) and restored on reopen.
 
 Keyboard shortcuts while the composer is focused:
 
 - Enter sends, Shift+Enter inserts a newline.
-  While the agent is running, the first Enter queues the message for the end of that turn.
-  The next Enter marks it as steering, so it sends after the current tool finishes and does not stop that tool.
-  The next Enter interrupts the current message and sends now.
+  While the agent is running, Enter adds the draft to the queue.
+  Each later draft is added behind the ones already waiting.
+  The queue sends one message at a time, in order, when the turn ends.
+  Enter with an empty composer marks the next queued message as steering, so it sends after the current tool finishes and does not stop that tool.
+  The next Enter interrupts the current message and sends that queued message now.
+  The messages behind it stay in the queue.
+  Each queued line has edit and remove.
 - Shift+Tab cycles session mode when the agent exposes a mode option
-- Ctrl+C / Cmd+C cancels an in-flight prompt when supported
+- Ctrl+C / Cmd+C cancels the current turn when the agent is thinking, running a tool, or answering.
+- Cancel does the same thing.
+  It stays available for that whole turn.
 - Ctrl+T / Cmd+T opens a new chat (when the Setup view or ACP UI editor is focused)
 
 Planned: send images, audio, and structured file references in prompts when the agent advertises multimodal `promptCapabilities`.
@@ -82,7 +91,10 @@ When a turn ends with token counts and no context window has arrived, [prompt](.
 [updateSessionHistory](../../../src/extension/acpUiSessionJsonl.ts) persists composer history to the session JSONL file.
 [maxUserMessageHistoryEntries](../../../src/extension/acpUiSessionJsonlFormat.ts#L16) caps history at 55 entries.
 
-[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L487-L523) handles Arrow Up and Arrow Down recall.
+[recallOlderDraft](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerHistory.ts#L32-L67) keeps the current composer text when Arrow Up recalls history.
+[recallNewerDraft](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerHistory.ts#L73-L94) walks forward and then puts that text back.
+[undoToStashedDraft](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerHistory.ts#L115-L123) puts that text back on Ctrl+Z or Cmd+Z.
+[AcpUiComposer](../../../webview/acp-ui/src/AcpUiComposer.tsx#L467-L515) handles those keys.
 [shouldDeferJsonlHistoryReplay](../../../src/extension/acpUiSessionJsonlFormat.ts#L294) skips duplicate replay when agent load already restored user chunks.
 
 Task: covered by [sessions](../acp/sessions.md).
@@ -98,9 +110,11 @@ Task: covered by [sessions](../acp/sessions.md).
 ### Keyboard bindings
 
 [shouldCycleSessionModeOnShiftTab](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L16-L30) gates Shift+Tab mode cycling.
-[shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L32-L46) gates Ctrl+C cancel.
+[canCancelTurn](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L26-L32) keeps Cancel available while the agent is thinking, running a tool, or answering.
+[shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L34-L58) gates Ctrl+C cancel.
 [shouldOpenNewChatOnCtrlT](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L1-L14) gates Ctrl+T new chat.
-[resolveFollowUpEnter](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerFollowUp.ts#L12-L30) queues, steers, or interrupts a follow-up while a turn is running.
+[resolveFollowUpEnter](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerFollowUp.ts#L21-L42) appends a draft to the queue, then steers or interrupts the next queued message.
+[ChatComposer](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L376-L418) shows each queued message on its own line.
 
 ### Multimodal prompts
 

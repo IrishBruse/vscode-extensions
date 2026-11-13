@@ -18,6 +18,7 @@ import type {
   WorkspacePathOpenTarget,
 } from "../../../src/protocol/extensionHostMessages";
 import { anchoredScrollTop } from "./anchoredScroll";
+import { webviewLayoutIsMeasurable, webviewWidthIsMeasurable } from "./webviewLayout";
 import {
   activityTraceForTool,
   type ChatAction,
@@ -130,6 +131,7 @@ export function AcpUiApp({
   const traceContentRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const scrollSnapshotRef = useRef({ scrollHeight: 0, scrollTop: 0 });
+  const layoutHeldRef = useRef(false);
   const historyCommitSeenRef = useRef(state.historyCommit);
   const suppressStickToBottomRef = useRef(false);
   const lastSavedVisibleTraceRef = useRef("");
@@ -150,20 +152,51 @@ export function AcpUiApp({
   const openAgentSeenRef = useRef(openAgentKey);
   const appendDroppedPathsRef = useRef<(paths: string[]) => void>(() => {});
 
+  const traceLayoutIsLive = useCallback((): boolean => {
+    const el = traceRef.current;
+    if (el === null) {
+      return false;
+    }
+    return webviewLayoutIsMeasurable({
+      visibilityState: document.visibilityState,
+      clientWidth: el.clientWidth,
+      clientHeight: el.clientHeight,
+    });
+  }, []);
+
   const scrollTraceToBottomIfPinned = useCallback((): void => {
     if (suppressStickToBottomRef.current) {
       suppressStickToBottomRef.current = false;
       return;
     }
     const el = traceRef.current;
-    if (el !== null && stickToBottomRef.current) {
+    if (el !== null && stickToBottomRef.current && traceLayoutIsLive()) {
       el.scrollTop = el.scrollHeight;
     }
-  }, []);
+  }, [traceLayoutIsLive]);
+
+  const restoreTraceScroll = useCallback((): void => {
+    const el = traceRef.current;
+    if (el === null) {
+      return;
+    }
+    if (!traceLayoutIsLive()) {
+      layoutHeldRef.current = true;
+      return;
+    }
+    if (layoutHeldRef.current) {
+      layoutHeldRef.current = false;
+      el.scrollTop = stickToBottomRef.current
+        ? el.scrollHeight
+        : scrollSnapshotRef.current.scrollTop;
+      return;
+    }
+    scrollTraceToBottomIfPinned();
+  }, [scrollTraceToBottomIfPinned, traceLayoutIsLive]);
 
   const onTraceScroll = useCallback((): void => {
     const el = traceRef.current;
-    if (el === null) {
+    if (el === null || !traceLayoutIsLive()) {
       return;
     }
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -175,7 +208,7 @@ export function AcpUiApp({
       earlierOverlayRef.current = showEarlier;
       setEarlierOverlay(showEarlier);
     }
-  }, []);
+  }, [traceLayoutIsLive]);
 
   extensionDispatchRef.current = (message: ExtensionMessageAfterInit) => {
     if (message.type === "vscodeThemeVariables") {
@@ -202,7 +235,10 @@ export function AcpUiApp({
 
   useLayoutEffect(() => {
     const el = traceRef.current;
-    if (el === null) {
+    if (el === null || !traceLayoutIsLive()) {
+      layoutHeldRef.current = true;
+      historyCommitSeenRef.current = state.historyCommit;
+      openAgentSeenRef.current = openAgentKey;
       return;
     }
     const swapped = state.historyCommit !== historyCommitSeenRef.current;
@@ -229,7 +265,7 @@ export function AcpUiApp({
       scrollTraceToBottomIfPinned();
     }
     scrollSnapshotRef.current = { scrollHeight: el.scrollHeight, scrollTop: el.scrollTop };
-  }, [state.trace, state.subagentActivity, state.historyCommit, openAgentKey, scrollTraceToBottomIfPinned]);
+  }, [state.trace, state.subagentActivity, state.historyCommit, openAgentKey, scrollTraceToBottomIfPinned, traceLayoutIsLive]);
 
   useLayoutEffect(() => {
     const root = document.getElementById("root");
@@ -238,6 +274,14 @@ export function AcpUiApp({
     }
     const narrowMaxPx = 800;
     const syncNarrow = (): void => {
+      if (
+        !webviewWidthIsMeasurable({
+          visibilityState: document.visibilityState,
+          clientWidth: root.clientWidth,
+        })
+      ) {
+        return;
+      }
       root.classList.toggle("agent-root--narrow", root.clientWidth <= narrowMaxPx);
     };
     syncNarrow();
@@ -299,7 +343,7 @@ export function AcpUiApp({
       return;
     }
     const observer = new ResizeObserver(() => {
-      scrollTraceToBottomIfPinned();
+      restoreTraceScroll();
     });
     observer.observe(content);
     const trace = traceRef.current;
@@ -309,7 +353,7 @@ export function AcpUiApp({
     return () => {
       observer.disconnect();
     };
-  }, [scrollTraceToBottomIfPinned]);
+  }, [restoreTraceScroll]);
 
   useEffect(() => {
     const onDocumentKeyDown = (event: globalThis.KeyboardEvent): void => {
@@ -569,6 +613,9 @@ export function AcpUiApp({
             {permission !== null ? (
               <PermissionDialog
                 toolTitle={permission.toolTitle}
+                detail={permission.detail}
+                summary={permission.summary}
+                diffRows={permission.diffRows}
                 options={permission.options}
                 onSelect={(optionId) => {
                   postPermissionResponse({

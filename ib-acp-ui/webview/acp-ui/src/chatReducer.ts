@@ -87,6 +87,9 @@ export type AcpAgentSelectionState = {
 export type PermissionPromptState = {
   requestId: string;
   toolTitle: string;
+  detail?: string;
+  summary?: string;
+  diffRows?: ToolCallDiffRow[];
   options: { optionId: string; name: string }[];
 };
 
@@ -169,7 +172,8 @@ export type ChatAction =
     }
   | { type: "clearPermissionPrompt" }
   | { type: "clearAskQuestionPrompt" }
-  | { type: "clearCreatePlanPrompt" };
+  | { type: "clearCreatePlanPrompt" }
+  | { type: "stopTurn" };
 
 const EDIT_TOOL_DISPLAY_TITLE = "Write File";
 
@@ -566,6 +570,10 @@ function toolClocksFromTrace(trace: readonly TraceItem[]): Map<string, number> {
   return clocks;
 }
 
+function toolStatusIsLive(status: ToolCallStatus | undefined): boolean {
+  return status === "pending" || status === "in_progress";
+}
+
 function thoughtClockFromTrace(trace: readonly TraceItem[]): number | null {
   const last = trace.at(-1);
   if (
@@ -581,12 +589,15 @@ function thoughtClockFromTrace(trace: readonly TraceItem[]): number | null {
 
 export function createChatStateFromInit(payload: InitPayload): ChatState {
   const seeded = traceFromVisibleCache(payload.visibleTrace);
+  const thoughtStartedAtMs = thoughtClockFromTrace(seeded.trace);
+  const toolStartedAtMsById = toolClocksFromTrace(seeded.trace);
   const base: ChatState = {
     ...createInitialChatState(),
     trace: seeded.trace,
     toolIndexById: seeded.toolIndexById,
-    thoughtStartedAtMs: thoughtClockFromTrace(seeded.trace),
-    toolStartedAtMsById: toolClocksFromTrace(seeded.trace),
+    thoughtStartedAtMs,
+    toolStartedAtMsById,
+    promptInFlight: thoughtStartedAtMs !== null || toolStartedAtMsById.size > 0,
     sessionHistoryLoading: payload.sessionHistoryLoading === true,
     viewportCacheActive: seeded.trace.length > 0 && payload.sessionHistoryLoading === true,
     acpAgentSelection: buildAcpAgentSelectionFromInit(payload),
@@ -725,6 +736,7 @@ function appendAgentThought(
         ...state,
         trace,
         thoughtStartedAtMs: startedAtMs ?? null,
+        promptInFlight: startedAtMs !== undefined ? true : state.promptInFlight,
       };
     }
   }
@@ -743,6 +755,7 @@ function appendAgentThought(
     trace,
     openStreamIndex: trace.length - 1,
     thoughtStartedAtMs: startedAtMs ?? null,
+    promptInFlight: startedAtMs !== undefined ? true : state.promptInFlight,
   };
 }
 
@@ -867,6 +880,7 @@ function appendToolCall(
     toolIndexById,
     toolStartedAtMsById,
     openStreamIndex: null,
+    promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
   };
 }
 
@@ -953,7 +967,13 @@ function updateToolCall(
     };
     const toolIndexById = new Map(state.toolIndexById);
     rememberToolIndex(toolIndexById, id, idx);
-    return { ...state, trace, toolIndexById, toolStartedAtMsById: clock.toolStartedAtMsById };
+    return {
+      ...state,
+      trace,
+      toolIndexById,
+      toolStartedAtMsById: clock.toolStartedAtMsById,
+      promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
+    };
   }
   state = stateAfterLeavingOpenThoughtStream(state);
   const mergedContent = content;
@@ -1003,6 +1023,7 @@ function updateToolCall(
     toolIndexById,
     toolStartedAtMsById,
     openStreamIndex: null,
+    promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
   };
 }
 
@@ -1644,6 +1665,10 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           openStreamIndex: state.replayOpenStreamIndex,
           thoughtStartedAtMs: thoughtClockFromTrace(trace),
           toolStartedAtMsById: state.replayToolStartedAtMsById,
+          promptInFlight:
+            state.promptInFlight ||
+            thoughtClockFromTrace(trace) !== null ||
+            state.replayToolStartedAtMsById.size > 0,
           replayTrace: [],
           replayToolIndexById: new Map(),
           replayOpenStreamIndex: null,
@@ -1709,6 +1734,9 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         permissionPrompt: {
           requestId: action.requestId,
           toolTitle: action.toolTitle,
+          ...(action.detail !== undefined ? { detail: action.detail } : {}),
+          ...(action.summary !== undefined ? { summary: action.summary } : {}),
+          ...(action.diffRows !== undefined ? { diffRows: action.diffRows } : {}),
           options: action.options,
         },
       };
@@ -1766,6 +1794,13 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         promptInFlight: false,
         errorText: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
+      };
+    }
+    case "stopTurn": {
+      const base = finalizeOpenThoughtDuration(state);
+      return {
+        ...base,
+        promptInFlight: false,
       };
     }
     case "turnComplete": {

@@ -9,6 +9,8 @@ Create a chat from the Setup view **+**, from the `.acp` editor tab **New Chat**
 `Ctrl+T` / `Cmd+T` opens a new chat when the Setup view or an ACP UI editor tab is focused.
 
 Each chat opens as an editor tab with the ACP UI webview.
+Switching away from a chat tab and back keeps the scroll position.
+The chat does not jump or go blank while the webview has no size.
 Each chat is one `<uuid>.acp` file.
 The tab name is the chat title stored in that file.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
@@ -33,6 +35,8 @@ The manifest starts the extension with `onStartupFinished` in [package.json](../
 [AcpUiCustomEditorProvider.resolveCustomTextEditor](../../../src/extension/acpUiCustomEditorProvider.ts#L70-L80) hosts the webview and creates an [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts#L66) per document.
 
 [getAcpUiWebviewHtml](../../../src/extension/acpUiWebviewShell.ts#L11-L43) paints the connecting state in HTML and loads `main.js` as a module.
+[webviewLayoutIsMeasurable](../../../webview/acp-ui/src/webviewLayout.ts#L3-L14) ignores a hidden or zero-size webview.
+The transcript keeps its width and scroll position until the tab is on screen again.
 [publishSessionTitle](../../../src/extension/acpUiSessionController.ts#L351-L362) reads the title from the `.acp` header and applies it to the editor tab and the composer.
 The chat UI and the markdown renderer load as later chunks from `media/acp-ui/chunks/`.
 

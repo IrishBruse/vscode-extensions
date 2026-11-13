@@ -12,7 +12,7 @@
 
 .ib-permission-dialog {
   pointer-events: auto;
-  max-width: 520px;
+  max-width: min(640px, 100%);
   width: 100%;
   padding: var(--acp-ui-space-12) var(--acp-ui-space-16) var(--acp-ui-space-16);
   border-radius: var(--vscode-cornerRadius-large, 8px);
@@ -34,8 +34,51 @@
 .ib-permission-tool {
   font-size: var(--acp-ui-font-size-body);
   line-height: var(--acp-ui-line-height-heading);
-  margin-bottom: var(--acp-ui-space-12);
+  margin-bottom: var(--acp-ui-space-4);
   word-break: break-word;
+}
+
+.ib-permission-detail {
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-small);
+  line-height: var(--acp-ui-line-height-body);
+  color: var(--acp-ui-text-primary);
+  margin-bottom: var(--acp-ui-space-4);
+  word-break: break-word;
+}
+
+.ib-permission-summary {
+  font-size: var(--acp-ui-font-size-small);
+  line-height: var(--acp-ui-line-height-body);
+  color: var(--acp-ui-text-secondary);
+  margin-bottom: var(--acp-ui-space-8);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ib-permission-diff {
+  max-height: 9rem;
+  overflow: auto;
+  margin-bottom: 0;
+  border-radius: var(--vscode-cornerRadius-small, 4px);
+  background: var(--vscode-editor-background, transparent);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+  line-height: 1.4;
+}
+
+.ib-permission-diff-line {
+  padding: 0 var(--acp-ui-space-8);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ib-permission-diff-line--removed {
+  background: var(--vscode-diffEditor-removedLineBackground, transparent);
+}
+
+.ib-permission-diff-line--added {
+  background: var(--vscode-diffEditor-insertedLineBackground, transparent);
 }
 
 .ib-permission-plan {
@@ -49,6 +92,7 @@
   flex-wrap: wrap;
   gap: var(--acp-ui-space-8);
   justify-content: flex-end;
+  margin-top: var(--acp-ui-space-12);
 }
 
 .ib-permission-button {

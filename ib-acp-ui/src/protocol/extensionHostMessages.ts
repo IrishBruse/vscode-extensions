@@ -240,6 +240,12 @@ export type ExtensionToWebviewMessage =
           type: "permissionRequest";
           requestId: string;
           toolTitle: string;
+          /** File path, command, or other target for this request. */
+          detail?: string;
+          /** Short description of the change, such as line counts. */
+          summary?: string;
+          /** Short diff preview when the agent included the change. */
+          diffRows?: ToolCallDiffRow[];
           options: { optionId: string; name: string }[];
       }
     | {

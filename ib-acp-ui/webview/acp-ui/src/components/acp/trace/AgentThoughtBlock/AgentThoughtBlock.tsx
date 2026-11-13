@@ -8,6 +8,7 @@ import {
 } from "react";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
 import { useLiveNow } from "../../../../liveClock";
+import { omitFencedCodeBlocks } from "./thoughtMarkdown";
 import "./AgentThoughtBlock.css";
 
 const AgentMarkdown = lazy(() =>
@@ -81,6 +82,7 @@ export function AgentThoughtBlock({
     setExpanded(false);
   }, [collapseNonce]);
 
+  const visibleText = omitFencedCodeBlocks(text);
   const rootClass = [
     "agent-thought-chunk",
     expanded ? "agent-thought-chunk--open" : "",
@@ -100,8 +102,8 @@ export function AgentThoughtBlock({
         }}
       />
       <div className="agent-thought-chunk-body">
-        <Suspense fallback={<div className="agent-markdown-pending">{text}</div>}>
-          <AgentMarkdown text={text} />
+        <Suspense fallback={<div className="agent-markdown-pending">{visibleText}</div>}>
+          <AgentMarkdown text={visibleText} />
         </Suspense>
       </div>
     </div>

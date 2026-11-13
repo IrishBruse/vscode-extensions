@@ -360,7 +360,15 @@ describe("sessionUpdateToWebviewMessages", () => {
             },
             options: [{ optionId: "allow", name: "Allow", kind: "allow_once" }],
         });
-        expect(messages[0]?.type).toBe("permissionRequest");
+        expect(messages[0]).toMatchObject({
+            type: "permissionRequest",
+            toolTitle: "Write File",
+            detail: "docs/test.md",
+            summary: "1 line(s) before -> 1 line(s) after",
+        });
+        if (messages[0]?.type === "permissionRequest") {
+            expect(messages[0].diffRows?.some((row) => row.kind === "added")).toBe(true);
+        }
         const update = messages.find((m) => m.type === "updateToolCall");
         expect(update).toBeDefined();
         if (update?.type !== "updateToolCall") {

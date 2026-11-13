@@ -6,6 +6,7 @@ The chat trace is the scrolling conversation panel above the composer.
 It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and TODO lists.
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
 A thought block uses quieter text.
+A thought block does not show fenced code blocks.
 The open body shows three lines and stays on the newest text.
 You can scroll that window to earlier lines while the text stays the same.
 Click a thought heading to hide or show that block.
@@ -87,7 +88,8 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
 - User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
   [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.
-- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L31-L110) is a disclosure.
+- Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L59-L111) is a disclosure.
+  [omitFencedCodeBlocks](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/thoughtMarkdown.ts#L2-L20) drops fenced code blocks, including a fence that is still open.
   The heading stays open until it is clicked.
   It says Thinking while the thought is running and Thought once it finishes, with the elapsed time when known.
   The body uses description text, `max-height: 3lh`, and sets `scrollTop` to `scrollHeight` when it opens and on each text change.

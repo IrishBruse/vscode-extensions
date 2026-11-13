@@ -26,6 +26,23 @@ describe("resolveFollowUpEnter", () => {
     ).toBe("enqueue");
   });
 
+  it("appends another draft behind the queued message", () => {
+    expect(
+      resolveFollowUpEnter({
+        promptInFlight: true,
+        hasContent: true,
+        queuedMode: "queue",
+      }),
+    ).toBe("enqueue");
+    expect(
+      resolveFollowUpEnter({
+        promptInFlight: true,
+        hasContent: true,
+        queuedMode: "steer",
+      }),
+    ).toBe("enqueue");
+  });
+
   it("marks the queued message as steering on the next enter", () => {
     expect(
       resolveFollowUpEnter({

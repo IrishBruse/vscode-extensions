@@ -23,6 +23,14 @@ export function shouldCycleSessionModeOnShiftTab(args: {
   return args.key === "Tab" && args.shiftKey && !args.ctrlKey && !args.metaKey && !args.altKey;
 }
 
+export function canCancelTurn(input: {
+  promptInFlight: boolean;
+  thoughtRunning: boolean;
+  commandRunning: boolean;
+}): boolean {
+  return input.promptInFlight || input.thoughtRunning || input.commandRunning;
+}
+
 export function shouldCancelRunOnCtrlC(args: {
   key: string;
   ctrlKey: boolean;
@@ -31,6 +39,8 @@ export function shouldCancelRunOnCtrlC(args: {
   shiftKey: boolean;
   hasSelection: boolean;
   promptInFlight: boolean;
+  thoughtRunning?: boolean;
+  commandRunning?: boolean;
 }): boolean {
   return (
     args.key.toLowerCase() === "c" &&
@@ -39,6 +49,10 @@ export function shouldCancelRunOnCtrlC(args: {
     !args.altKey &&
     !args.shiftKey &&
     !args.hasSelection &&
-    args.promptInFlight
+    canCancelTurn({
+      promptInFlight: args.promptInFlight,
+      thoughtRunning: args.thoughtRunning === true,
+      commandRunning: args.commandRunning === true,
+    })
   );
 }
