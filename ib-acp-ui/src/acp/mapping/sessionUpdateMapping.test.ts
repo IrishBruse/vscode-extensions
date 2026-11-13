@@ -47,6 +47,61 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendAgentThought", text: "hmm", durationMs: 890 }]);
     });
 
+    it("keeps the bash working directory separate from the command", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "tool_call",
+            toolCallId: "bash-cwd",
+            title: "Terminal",
+            kind: "execute",
+            status: "pending",
+            rawInput: {
+                command: "echo test",
+                working_directory: "/home/econn/foo/bar",
+            },
+        });
+        expect(messages).toEqual([
+            {
+                type: "appendToolCall",
+                toolCallId: "bash-cwd",
+                title: "Terminal",
+                kind: "execute",
+                status: "pending",
+                subtitle: "echo test",
+                cwd: "/home/econn/foo/bar",
+            },
+        ]);
+    });
+
+    it("uses the first location as the bash working directory", () => {
+        const tracking = createToolCallKindTracking();
+        sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call",
+                toolCallId: "bash-loc",
+                title: "Terminal",
+                kind: "execute",
+                status: "pending",
+                rawInput: { command: "echo test" },
+            },
+            tracking,
+        );
+        const messages = sessionUpdateToWebviewMessages(
+            {
+                sessionUpdate: "tool_call_update",
+                toolCallId: "bash-loc",
+                status: "completed",
+                locations: [{ path: "/home/econn/foo/bar" }],
+                rawOutput: { exitCode: 0, stdout: "test\n" },
+            },
+            tracking,
+        );
+        expect(messages[0]).toMatchObject({
+            type: "updateToolCall",
+            cwd: "/home/econn/foo/bar",
+            content: "test",
+        });
+    });
+
     it("omits exit 0 from shell rawOutput content", () => {
         const tracking = createToolCallKindTracking();
         sessionUpdateToWebviewMessages(

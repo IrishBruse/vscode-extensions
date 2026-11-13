@@ -43,6 +43,8 @@ export type TraceToolItem = {
   kind: string | undefined;
   /** Dim terminal-style line (paths, args, preview); from ACP at tool start. */
   subtitle: string | undefined;
+  /** Working directory for a bash tool. */
+  cwd?: string;
   status: ToolCallStatus;
   content: string | undefined;
   /** Structured diff when the agent sent `diff` content (preferred over plain `content`). */
@@ -539,6 +541,7 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
         title: item.title,
         kind: item.kind,
         subtitle: item.subtitle,
+        ...(item.cwd !== undefined && item.cwd.length > 0 ? { cwd: item.cwd } : {}),
         status: item.status,
         content: item.content,
         diffRows: item.diffRows,
@@ -776,6 +779,14 @@ function rememberToolIndex(
   }
 }
 
+function mergeToolCwd(previous: string | undefined, incoming: string | undefined): string | undefined {
+  if (incoming !== undefined && incoming.trim().length > 0) {
+    return incoming.trim();
+  }
+  const prior = previous?.trim() ?? "";
+  return prior.length > 0 ? prior : undefined;
+}
+
 function appendToolCall(
   state: ChatState,
   toolCallId: string,
@@ -785,6 +796,7 @@ function appendToolCall(
   subtitle: string | undefined,
   durationMs: number | undefined,
   content: string | undefined,
+  cwd: string | undefined,
 ): ChatState {
   state = stateAfterLeavingOpenThoughtStream(state);
   const id = canonicalToolCallId(toolCallId);
@@ -817,6 +829,7 @@ function appendToolCall(
         resolvedDuration,
       );
       const { startedAtMs: _previousStart, ...existingWithoutClock } = existing;
+      const mergedCwd = mergeToolCwd(existing.cwd, cwd);
       const trace = state.trace.slice();
       trace[existingIdx] = {
         ...existingWithoutClock,
@@ -824,6 +837,7 @@ function appendToolCall(
         kind: mergedKind,
         status: mergedStatus,
         subtitle: mergedSubtitle,
+        ...(mergedCwd !== undefined ? { cwd: mergedCwd } : {}),
         content: mergedContent,
         detailVisible:
           (mergedContent !== undefined && mergedContent.trim().length > 0) ||
@@ -857,12 +871,14 @@ function appendToolCall(
     knownStart,
     resolvedDuration,
   );
+  const newCwd = mergeToolCwd(undefined, cwd);
   const newItem: TraceToolItem = {
     type: "tool",
     toolCallId: id,
     title: toolDisplayTitle(kind, title),
     kind,
     subtitle,
+    ...(newCwd !== undefined ? { cwd: newCwd } : {}),
     status: newStatus,
     content: content !== undefined && content.trim().length > 0 ? content : undefined,
     diffRows: undefined,
@@ -913,6 +929,7 @@ function updateToolCall(
   diffRows: ToolCallDiffRow[] | undefined,
   kind: string | undefined,
   durationMs: number | undefined,
+  cwd: string | undefined,
 ): ChatState {
   const id = canonicalToolCallId(toolCallId);
   const idx = resolveToolIndexByCallId(state.toolIndexById, toolCallId);
@@ -951,6 +968,7 @@ function updateToolCall(
       resolvedDuration,
     );
     const { startedAtMs: _previousStart, ...itemWithoutClock } = item;
+    const mergedCwd = mergeToolCwd(item.cwd, cwd);
     const trace = state.trace.slice();
     trace[idx] = {
       ...itemWithoutClock,
@@ -960,6 +978,7 @@ function updateToolCall(
       diffRows: mergedDiffRows,
       detailVisible,
       subtitle: mergedSubtitle,
+      ...(mergedCwd !== undefined ? { cwd: mergedCwd } : {}),
       kind: inferredKind,
       title: mergedTitle,
       ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
@@ -1000,12 +1019,14 @@ function updateToolCall(
     knownStart,
     resolvedDuration,
   );
+  const newCwd = mergeToolCwd(undefined, cwd);
   const newItem: TraceToolItem = {
     type: "tool",
     toolCallId: id,
     title: toolDisplayTitle(inferredKind, ""),
     kind: inferredKind,
     subtitle: mergeToolSubtitle(undefined, subtitle),
+    ...(newCwd !== undefined ? { cwd: newCwd } : {}),
     status,
     content: mergedContent,
     diffRows: mergedDiffRows,
@@ -1700,6 +1721,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.subtitle,
         action.durationMs,
         action.content,
+        action.cwd,
       );
     case "updateToolCall":
       return updateToolCall(
@@ -1711,6 +1733,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.diffRows,
         action.kind,
         action.durationMs,
+        action.cwd,
       );
     case "slashCommands":
       return { ...state, slashCommands: action.commands };

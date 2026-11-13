@@ -6,6 +6,21 @@
   min-width: 0;
 }
 
+.tool-call-compact-execute-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  min-width: 0;
+  color: var(--vscode-foreground);
+}
+
+.tool-call-compact-execute-cwd {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tool-call-compact-execute-command {
   display: grid;
   grid-template-columns: var(--acp-ui-trace-content-indent) minmax(0, 1fr);
@@ -36,7 +51,7 @@
 
 .tool-call-compact-execute-toggle {
   display: inline-flex;
-  margin: 4px 0 0 var(--acp-ui-trace-content-indent);
+  margin: 4px 0 0 0;
   padding: 0;
   border: none;
   background: none;
@@ -53,11 +68,10 @@
 }
 
 .tool-call-compact-execute-output {
-  margin: 4px 0 0 var(--acp-ui-trace-content-indent);
-  padding: 0 16px 0 10px;
-  border-left: 5px solid var(--vscode-textBlockQuote-border, #007acc80);
-  border-radius: 2px;
-  background-color: transparent;
+  margin: 4px 0 0 0;
+  padding: var(--acp-ui-space-6) var(--acp-ui-space-8);
+  border-radius: var(--acp-ui-radius-sm);
+  background-color: var(--vscode-input-background, var(--acp-ui-surface-panel));
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -68,7 +82,7 @@
 
 .tool-call-compact-execute-running {
   margin-top: 2px;
-  padding-left: var(--acp-ui-trace-content-indent);
+  padding-left: 0;
   color: var(--vscode-foreground);
   font-style: italic;
 }

@@ -5,6 +5,10 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A bash command shows the working directory and the elapsed time above the command.
+- **Fix**: A background chat tab shows the title stored in the `.acp` file before you open it.
+- **Change**: Command output uses the composer background with a small corner radius, and Show output stays under that text when it is open.
+- **Change**: Command output has no left bar and no left indent.
 - **Change**: A permission request shows the path or command, and a short diff for a file write.
 - **Fix**: Switching editor tabs keeps the chat in place.
 - **Fix**: Cancel stays available while the agent is thinking or running a tool.

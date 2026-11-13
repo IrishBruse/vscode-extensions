@@ -13,6 +13,7 @@ Switching away from a chat tab and back keeps the scroll position.
 The chat does not jump or go blank while the webview has no size.
 Each chat is one `<uuid>.acp` file.
 The tab name is the chat title stored in that file.
+A background tab shows that title before you open it.
 The editor title **…** menu includes switching between the visual UI and the raw JSONL text editor.
 
 The Setup sidebar configures ACP clients, shows runtime choices that live outside VS Code settings, and reviews the chat open in the editor.
@@ -38,6 +39,8 @@ The manifest starts the extension with `onStartupFinished` in [package.json](../
 [webviewLayoutIsMeasurable](../../../webview/acp-ui/src/webviewLayout.ts#L3-L14) ignores a hidden or zero-size webview.
 The transcript keeps its width and scroll position until the tab is on screen again.
 [publishSessionTitle](../../../src/extension/acpUiSessionController.ts#L351-L362) reads the title from the `.acp` header and applies it to the editor tab and the composer.
+[syncAcpUiBackgroundTabTitles](../../../src/extension/acpUiBackgroundTabTitles.ts#L57-L96) reads that same title for every open `.acp` tab.
+[customLabelTemplate](../../../src/extension/acpUiEditorTabLabel.ts#L8-L14) stores it in `workbench.editor.customLabels.patterns` so the tab shows the title before the editor opens.
 The chat UI and the markdown renderer load as later chunks from `media/acp-ui/chunks/`.
 
 ### Setup tree view

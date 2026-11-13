@@ -12,6 +12,7 @@ const executeItem: TraceToolItem = {
   title: "Terminal",
   kind: "execute",
   subtitle: "npm run build:webview",
+  cwd: "~/foo/bar",
   status: "completed",
   content: `$ npm run build:webview\n${lines.join("\n")}`,
   diffRows: undefined,

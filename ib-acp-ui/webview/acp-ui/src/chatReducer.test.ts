@@ -80,6 +80,32 @@ describe("chatReducer", () => {
     expect(thought.durationMs).toBe(200);
   });
 
+  it("keeps a bash working directory when a later update omits it", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "exec1",
+      title: "Run",
+      kind: "execute",
+      status: "pending",
+      subtitle: "echo test",
+      cwd: "/home/econn/foo/bar",
+    });
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "exec1",
+      status: "completed",
+      content: "test",
+    });
+    const tool = state.trace[0];
+    expect(tool?.type).toBe("tool");
+    if (tool?.type !== "tool") {
+      return;
+    }
+    expect(tool.cwd).toBe("/home/econn/foo/bar");
+    expect(tool.subtitle).toBe("echo test");
+  });
+
   it("measures command duration client-side when the agent omits durationMs", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));

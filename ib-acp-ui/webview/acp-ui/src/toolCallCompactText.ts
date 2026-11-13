@@ -652,6 +652,20 @@ export function executeCommandText(item: TraceToolItem): string {
   return detail;
 }
 
+/** Bash prompt path: the command directory, or the workspace folder, as `~/…` when it is under home. */
+export function executeWorkingDirectoryLabel(cwd: string | undefined): string {
+  const raw = cwd?.trim() ?? "";
+  const source = raw.length === 0 || raw === "." ? compactToolWorkspaceRoot : raw;
+  if (source.length === 0) {
+    return "";
+  }
+  const expanded = expandCompactHome(source);
+  if (compactToolPathHome.length === 0) {
+    return expanded;
+  }
+  return formatPathWithTilde(expanded, compactToolPathHome);
+}
+
 /** Terminal output lines with a leading echoed command line stripped when present. */
 export function executeOutputContentLines(item: TraceToolItem): string[] {
   const content = item.content?.trim();

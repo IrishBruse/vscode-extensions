@@ -34,11 +34,16 @@ A markdown file path on a tool line opens that file in the editor.
 Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
 A long diff shows a short window around the edits.
+A bash command shows the working directory and the elapsed time, then the command under `$`.
+For example, `~/foo/bar 2.1s` and then `$ echo test`.
 A bash command keeps its line breaks under the `$`.
-While that command runs, the line shows `Running for 3.8s` and the clock keeps counting.
-Its output uses that same blue bar under the line.
+While that command runs, the directory line shows `Running for 3.8s` and the clock keeps counting.
+Its output starts at the left edge.
+It has no side bar.
+The output uses the composer background with a small corner radius.
 A short result shows in that block.
 A long result stays closed until you click Show output.
+After you open it, Show output stays under the output.
 
 A TODO list shows the agent plan.
 Each item has a mark for pending, in progress, complete, or cancelled.
@@ -113,13 +118,17 @@ After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/a
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.
   A markdown `file://` path is decoded by [filesystemPathFromFileUri](../../../src/platform/fileUriPath.ts#L6-L28) and opened with the default text editor by [openWorkspacePathTarget](../../../src/platform/openWorkspacePathTarget.ts#L13-L21), including a plan file outside the workspace.
-  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L34-L118).
+  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L29-L133).
+  The working directory and elapsed time sit on the first line.
+  [executeWorkingDirectoryLabel](../../../webview/acp-ui/src/toolCallCompactText.ts#L656-L667) shows that directory as `~/…` when it is under the home directory, and uses the workspace folder when the command has no directory.
   The command keeps its line breaks under the `$`.
-  [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L15-L28) counts while the command runs.
-  [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) feeds the same clock to the composer.
-  [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L647-L676) keeps a long result closed.
-  Show output opens that result behind the same blue bar from [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L55-L67).
-  Command lines show a compact duration when known (`$ ls 117ms`).
+  [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L17-L22) counts while the command runs.
+  [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L298-L310) feeds the same clock to the composer.
+  [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L693-L722) keeps a long result closed.
+  Show output opens that result in [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L70-L81).
+  That block uses the composer background, a small corner radius, and no side bar.
+  While the result is open, the control stays under the output.
+  The directory line shows a compact duration when known (`~/foo/bar 117ms`).
   Summaries come from [toolCallCompactText.ts](../../../webview/acp-ui/src/toolCallCompactText.ts).
 
 [createChatStateFromInit](../../../webview/acp-ui/src/chatReducer.ts#L274-L301) seeds the trace from `init.visibleTrace`.

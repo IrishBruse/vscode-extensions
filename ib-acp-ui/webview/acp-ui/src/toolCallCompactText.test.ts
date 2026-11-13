@@ -8,6 +8,7 @@ import {
   compactToolGroupSummaryParts,
   diffLineStats,
   executeOutputPreview,
+  executeWorkingDirectoryLabel,
   isCompactGroupableTool,
   setCompactToolPathHome,
   setCompactToolWorkspaceRoot,
@@ -29,6 +30,17 @@ function toolItem(
     ...overrides,
   };
 }
+
+describe("executeWorkingDirectoryLabel", () => {
+  it("shows the command directory under home as a tilde path", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("/home/econn/foo/bar");
+    expect(executeWorkingDirectoryLabel("/home/econn/foo/bar")).toBe("~/foo/bar");
+    expect(executeWorkingDirectoryLabel(undefined)).toBe("~/foo/bar");
+    expect(executeWorkingDirectoryLabel("/tmp/work")).toBe("/tmp/work");
+    setCompactToolWorkspaceRoot("");
+  });
+});
 
 describe("toolCallDetailKind", () => {
   it("always shows a write as a diff when diff rows exist", () => {

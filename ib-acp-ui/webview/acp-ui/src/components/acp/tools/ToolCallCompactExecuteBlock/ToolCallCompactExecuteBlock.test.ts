@@ -69,8 +69,26 @@ describe("ToolCallCompactExecuteBlock", () => {
     const html = await renderBlock(executeItem(lines.join("\n"), "git status"), true);
     expect(html).toContain("Hide output");
     expect(html).toContain('aria-label="Command output"');
+    expect(html.indexOf('aria-label="Command output"')).toBeLessThan(html.indexOf("Hide output"));
     expect(html).toContain("line 1");
     expect(html).toContain("line 8");
+  });
+
+  it("shows the working directory and elapsed time above the command", async () => {
+    const html = await renderBlock({
+      ...executeItem("", "echo test"),
+      cwd: "~/foo/bar",
+      durationMs: 2100,
+    });
+    const pathAt = html.indexOf("~/foo/bar");
+    const timeAt = html.indexOf("2.1s");
+    const commandAt = html.indexOf("echo");
+    expect(pathAt).toBeGreaterThanOrEqual(0);
+    expect(timeAt).toBeGreaterThan(pathAt);
+    expect(commandAt).toBeGreaterThan(timeAt);
+    expect(html.indexOf("tool-call-compact-execute-cwd")).toBeLessThan(
+      html.indexOf("tool-call-compact-execute-command"),
+    );
   });
 
   it("keeps line breaks in the command", async () => {
@@ -80,14 +98,17 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).toContain(">from</span>");
   });
 
-  it("paints command output with the quote bar", () => {
+  it("shows command output without a left bar", () => {
     const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
     const rule = css.match(/\.tool-call-compact-execute-output\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(rule).toContain("padding: 0 16px 0 10px");
-    expect(rule).toContain("border-left: 5px solid");
-    expect(rule).toContain("background-color: transparent");
+    expect(rule).toContain("margin: 4px 0 0 0");
+    expect(rule).toContain("border-radius: var(--acp-ui-radius-sm)");
+    expect(rule).toContain(
+      "background-color: var(--vscode-input-background, var(--acp-ui-surface-panel))",
+    );
+    expect(rule).not.toContain("border-left");
     expect(rule).not.toContain("--vscode-textBlockQuote-background");
-    expect(rule).toContain("--vscode-textBlockQuote-border");
+    expect(rule).not.toContain("--vscode-textBlockQuote-border");
     const commandRule =
       css.match(/\.tool-call-compact-execute-command-text\s*\{[^}]*\}/)?.[0] ?? "";
     expect(commandRule).toContain("white-space: pre-wrap");

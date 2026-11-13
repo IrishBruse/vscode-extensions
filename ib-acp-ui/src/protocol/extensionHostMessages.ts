@@ -221,6 +221,8 @@ export type ExtensionToWebviewMessage =
           kind?: string;
           status?: ToolCallStatus;
           subtitle?: string;
+          /** Working directory for an execute tool. */
+          cwd?: string;
           /** Task prompt when the tool is a Cursor subagent task. */
           content?: string;
           durationMs?: number;
@@ -231,6 +233,8 @@ export type ExtensionToWebviewMessage =
           status: ToolCallStatus;
           content?: string;
           subtitle?: string;
+          /** Working directory for an execute tool. */
+          cwd?: string;
           diffRows?: ToolCallDiffRow[];
           /** From ACP `tool_call_update` when the agent omits an initial `tool_call` (e.g. Gemini CLI). */
           kind?: string;

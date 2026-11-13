@@ -189,6 +189,7 @@ export function extensionMessagesForPermissionRequest(
         (pathOrSearchSubtitle !== undefined && pathOrSearchSubtitle.trim().length > 0
             ? pathOrSearchSubtitle.trim()
             : undefined);
+    const cwd = shellWorkingDirectory(toolCall);
     const summary = permissionSummary(parts.contentText, subtitle);
     const previewRows =
         parts.diffRows !== undefined && parts.diffRows.length > 0
@@ -241,9 +242,75 @@ export function extensionMessagesForPermissionRequest(
             ...(parts.contentText !== undefined ? { content: parts.contentText } : {}),
             ...(hasDiffRows ? { diffRows: parts.diffRows } : {}),
             ...(subtitle !== undefined ? { subtitle } : {}),
+            ...(cwd !== undefined ? { cwd } : {}),
         });
     }
     return messages;
+}
+
+function trimmedPath(value: unknown): string | undefined {
+    if (typeof value !== "string") {
+        return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+const shellCwdKeys = ["working_directory", "workingDirectory", "cwd", "workdir"] as const;
+
+function shellCwdFromRecord(record: Record<string, unknown>, depth: number): string | undefined {
+    for (const key of shellCwdKeys) {
+        const cwd = trimmedPath(record[key]);
+        if (cwd !== undefined) {
+            return cwd;
+        }
+    }
+    if (depth <= 0) {
+        return undefined;
+    }
+    const nested = record._meta;
+    if (nested !== null && typeof nested === "object" && !Array.isArray(nested)) {
+        return shellCwdFromRecord(nested as Record<string, unknown>, depth - 1);
+    }
+    return undefined;
+}
+
+function shellCwdFromRaw(raw: unknown): string | undefined {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+        return undefined;
+    }
+    return shellCwdFromRecord(raw as Record<string, unknown>, 1);
+}
+
+function isShellKind(kind: string | null | undefined): boolean {
+    return kind === "execute" || kind === "terminal";
+}
+
+/** Working directory for a bash tool, from raw input or the first location. */
+function shellWorkingDirectory(
+    call: {
+        kind?: string | null;
+        rawInput?: unknown;
+        rawOutput?: unknown;
+        locations?: ReadonlyArray<{ path?: string | null }> | null;
+    },
+    pendingKind?: string,
+): string | undefined {
+    const kind =
+        call.kind !== undefined && call.kind !== null && String(call.kind).length > 0
+            ? String(call.kind)
+            : pendingKind;
+    const fromRaw = shellCwdFromRaw(call.rawInput) ?? shellCwdFromRaw(call.rawOutput);
+    if (
+        fromRaw !== undefined &&
+        (isShellKind(kind) || extractShellCommandLine(call.rawInput) !== undefined)
+    ) {
+        return fromRaw;
+    }
+    if (!isShellKind(kind)) {
+        return undefined;
+    }
+    return trimmedPath(call.locations?.[0]?.path);
 }
 
 function extractShellCommandLine(raw: unknown): string | undefined {
@@ -951,6 +1018,7 @@ export function sessionUpdateToWebviewMessages(
                         ? task.subagentType
                         : undefined
                     : toolCallSubtitleFromToolCall(update);
+            const cwd = task !== undefined ? undefined : shellWorkingDirectory(update);
             const durationMs = durationMsFromUpdatePayload(update);
             const prompt = task !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
             return withSessionLinks(toolCallId, update.content, [
@@ -961,6 +1029,7 @@ export function sessionUpdateToWebviewMessages(
                     kind: update.kind,
                     status: update.status ?? undefined,
                     ...(subtitle !== undefined ? { subtitle } : {}),
+                    ...(cwd !== undefined ? { cwd } : {}),
                     ...(prompt.length > 0 ? { content: prompt } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
                 },
@@ -1019,6 +1088,7 @@ export function sessionUpdateToWebviewMessages(
             const subtitleHint = toolCallUpdateSubtitleHint(update, {
                 pendingKind,
             });
+            const cwd = shellWorkingDirectory(update, pendingKind);
             const kindFromUpdate =
                 update.kind !== undefined && update.kind !== null && String(update.kind).length > 0
                     ? String(update.kind)
@@ -1038,6 +1108,7 @@ export function sessionUpdateToWebviewMessages(
                         ? { diffRows: parts.diffRows }
                         : {}),
                     ...(subtitleHint !== undefined ? { subtitle: subtitleHint } : {}),
+                    ...(cwd !== undefined ? { cwd } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
                 },
             ]);

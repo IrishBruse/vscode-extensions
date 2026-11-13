@@ -3,6 +3,7 @@ import {
     initializeAcpUiInstalledAgents,
     whenInstalledAgentsReady,
 } from "./extension/acpUiInstalledAgents";
+import { registerAcpUiBackgroundTabTitles } from "./extension/acpUiBackgroundTabTitles";
 import { registerAcpUiCustomEditorProvider } from "./extension/acpUiCustomEditorProvider";
 import { registerAcpUiPanel } from "./extension/acpUiPanel";
 import { initializeAcpUiRegistryCatalog } from "./extension/acpUiRegistryCatalog";
@@ -25,6 +26,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     registerAcpUiRegistryCommands(context);
     const refreshChatsList = AcpUiSessionsViewProvider.activate(context);
     registerAcpUiCustomEditorProvider(context);
+    registerAcpUiBackgroundTabTitles(context);
     registerAcpUiPanel(context, refreshChatsList);
 }
 

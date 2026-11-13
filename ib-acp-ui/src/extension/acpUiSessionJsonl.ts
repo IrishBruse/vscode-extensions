@@ -264,6 +264,12 @@ function openSessionTextDocument(uri: Uri) {
     return workspace.textDocuments.find((doc) => doc.uri.toString() === key);
 }
 
+export async function readSessionTitleAtUri(uri: Uri): Promise<string | undefined> {
+    const document = await readSessionDocumentAtUri(uri);
+    const title = document?.title.trim() ?? "";
+    return title.length > 0 ? title : undefined;
+}
+
 async function readSessionDocumentAtUri(uri: Uri): Promise<AcpUiSessionDocument | null> {
     const open = openSessionTextDocument(uri);
     if (open !== undefined) {

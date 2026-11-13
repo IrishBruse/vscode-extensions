@@ -11,18 +11,20 @@ import {
   compactExecutePreviewLineCount,
   executeCommandText,
   executeOutputPreview,
+  executeWorkingDirectoryLabel,
 } from "../../../../toolCallCompactText";
 
 function BashRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
   const nowMs = useLiveNow(true);
   const seconds = formatThoughtSeconds(Math.max(0, nowMs - startedAtMs));
   const label = seconds.length > 0 ? `Running for ${seconds}` : "Running";
-  return <span className="tool-call-compact-execute-duration"> {label}</span>;
+  return <span className="tool-call-compact-execute-duration">{label}</span>;
 }
 
 /**
- * Compact terminal tool: the command keeps its line breaks under `$`.
- * Output sits in a separate block. A long result opens from Show output.
+ * Compact terminal tool.
+ * The working directory and elapsed time sit on the first line, then the command under `$`.
+ * Output sits in a separate block. A long result opens from Show output, and that control stays under the text.
  */
 export function ToolCallCompactExecuteBlock({
   item,
@@ -52,6 +54,13 @@ export function ToolCallCompactExecuteBlock({
   const durationLabel =
     item.durationMs !== undefined ? formatCompactDurationMs(item.durationMs) : "";
   const showRunTimer = inProgress && item.startedAtMs !== undefined;
+  const cwdLabel = executeWorkingDirectoryLabel(item.cwd);
+  const duration =
+    showRunTimer && item.startedAtMs !== undefined ? (
+      <BashRunTimer startedAtMs={item.startedAtMs} />
+    ) : durationLabel.length > 0 ? (
+      <span className="tool-call-compact-execute-duration">{durationLabel}</span>
+    ) : null;
   const toggleOutput = (): void => {
     if (expanded) {
       setLocalExpanded(false);
@@ -75,33 +84,46 @@ export function ToolCallCompactExecuteBlock({
       role="status"
       aria-label="Terminal command"
     >
+      {cwdLabel.length > 0 || duration !== null ? (
+        <div className="tool-call-compact-execute-meta">
+          {cwdLabel.length > 0 ? (
+            <span className="tool-call-compact-execute-cwd">{cwdLabel}</span>
+          ) : null}
+          {duration}
+        </div>
+      ) : null}
       <div className="tool-call-compact-execute-command">
         <span className="tool-call-compact-execute-prompt" aria-hidden="true">
           $
         </span>
         <span className="tool-call-compact-execute-command-text">
           {command.length > 0 ? <ShellCommandHighlight command={command} /> : "Terminal"}
-          {showRunTimer && item.startedAtMs !== undefined ? (
-            <BashRunTimer startedAtMs={item.startedAtMs} />
-          ) : durationLabel.length > 0 ? (
-            <span className="tool-call-compact-execute-duration"> {durationLabel}</span>
-          ) : null}
         </span>
       </div>
-      {canToggle ? (
+      {canToggle && !expanded ? (
         <button
           type="button"
           className="tool-call-compact-execute-toggle"
-          aria-expanded={expanded}
+          aria-expanded={false}
           onClick={toggleOutput}
         >
-          {expanded ? "Hide output" : "Show output"}
+          Show output
         </button>
       ) : null}
       {previewLines.length > 0 ? (
         <pre className="tool-call-compact-execute-output" aria-label="Command output">
           {previewLines.join("\n")}
         </pre>
+      ) : null}
+      {canToggle && expanded ? (
+        <button
+          type="button"
+          className="tool-call-compact-execute-toggle"
+          aria-expanded={true}
+          onClick={toggleOutput}
+        >
+          Hide output
+        </button>
       ) : null}
       {inProgress && !showRunTimer && previewLines.length === 0 ? (
         <div className="tool-call-compact-execute-running">Running…</div>

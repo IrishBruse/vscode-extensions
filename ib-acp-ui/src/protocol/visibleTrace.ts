@@ -29,6 +29,7 @@ export type AcpUiVisibleTraceItem =
           title: string;
           kind?: string;
           subtitle?: string;
+          cwd?: string;
           status: ToolCallStatus;
           content?: string;
           diffRows?: ToolCallDiffRow[];
@@ -235,6 +236,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
     }
     const kind = optionalString(value.kind);
     const subtitle = optionalString(value.subtitle);
+    const cwd = optionalString(value.cwd)?.trim();
     const content = optionalString(value.content);
     const diffRows = parseDiffRows(value.diffRows);
     const detailVisible = value.detailVisible === true;
@@ -248,6 +250,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
         status: value.status as ToolCallStatus,
         ...(kind !== undefined ? { kind } : {}),
         ...(subtitle !== undefined ? { subtitle } : {}),
+        ...(cwd !== undefined && cwd.length > 0 ? { cwd } : {}),
         ...(content !== undefined ? { content } : {}),
         ...(diffRows !== undefined ? { diffRows } : {}),
         ...(detailVisible ? { detailVisible } : {}),
