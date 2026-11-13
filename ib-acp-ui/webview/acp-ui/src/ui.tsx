@@ -55,7 +55,11 @@ export function mountChatView(
   postSetSessionAgent?: (agentName: string) => void,
   postOpenSession?: (sessionId: string) => void,
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void,
-  postSaveVisibleTrace?: (items: TraceItem[]) => void,
+  postSaveVisibleTrace?: (
+    items: TraceItem[],
+    thoughtDurations: number[],
+    bashDurations: ChatState["bashDurations"],
+  ) => void,
   postTabActivity?: (indicator: AgentTabIndicator | null, animate: boolean) => void,
   postOpenPlan?: (payload: { requestId: string; name?: string; plan: string }) => void,
 ): ChatView {

@@ -28,7 +28,10 @@ import type {
     ToolCallStatus,
 } from "../../../src/protocol/extensionHostMessages";
 import {
+  normalizeBashDurations,
+  normalizeThoughtDurations,
   positiveDurationMs,
+  type AcpUiBashDuration,
   type AcpUiVisibleTraceItem,
 } from "../../../src/protocol/visibleTrace";
 import type { AcpUiTokenUsage } from "./tokenUsage";
@@ -128,6 +131,10 @@ export type ChatState = {
   historyCommit: number;
   /** Increments when the on-screen trace should be persisted to the session file cache. */
   visibleTraceCacheEpoch: number;
+  /** Client-measured thought times for the whole chat, in thought order. Zero means unknown. */
+  thoughtDurations: number[];
+  /** Client-measured bash elapsed times for the whole chat, keyed by tool call id. */
+  bashDurations: AcpUiBashDuration[];
   /** Live transcript for each child subagent, keyed by child session id. */
   subagentActivity: Map<string, SubagentActivity>;
   /** Child session id for a Cursor task tool, keyed by tool call id. */
@@ -265,6 +272,8 @@ export function createInitialChatState(): ChatState {
     replayToolStartedAtMsById: new Map(),
     historyCommit: 0,
     visibleTraceCacheEpoch: 0,
+    thoughtDurations: [],
+    bashDurations: [],
     subagentActivity: new Map(),
     subagentSessionByToolId: new Map(),
     acpAgentSelection: null,
@@ -424,51 +433,183 @@ function finalizeOpenThoughtDuration(state: ChatState): ChatState {
   return { ...state, trace, thoughtStartedAtMs: null };
 }
 
+type CachedThoughtTime = {
+  text: string;
+  durationMs?: number;
+  startedAtMs?: number;
+};
+
+/** One duration per thought in `trace`. Zero means that thought has no saved time yet. */
+export function thoughtDurationsFromTrace(trace: readonly TraceItem[]): number[] {
+  const durations: number[] = [];
+  for (const item of trace) {
+    if (item.type !== "thought") {
+      continue;
+    }
+    durations.push(positiveDurationMs(item.durationMs) ?? 0);
+  }
+  return normalizeThoughtDurations(durations);
+}
+
 /**
- * Copies UI-only thought metadata (durationMs) from a cached visible-trace onto
- * the authoritative agent-replay transcript by thought order.
+ * Keeps the longer list and prefers a positive time from `latest` on the shared tail.
+ */
+export function mergeThoughtDurationLists(
+  stored: readonly number[],
+  latest: readonly number[],
+): number[] {
+  if (latest.length === 0) {
+    return stored.slice();
+  }
+  if (stored.length === 0) {
+    return latest.slice();
+  }
+  const length = Math.max(stored.length, latest.length);
+  const out: number[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const latestIndex = index - (length - latest.length);
+    const storedIndex = index - (length - stored.length);
+    const fromLatest =
+      latestIndex >= 0 ? positiveDurationMs(latest[latestIndex]) : undefined;
+    const fromStored =
+      storedIndex >= 0 ? positiveDurationMs(stored[storedIndex]) : undefined;
+    out.push(fromLatest ?? fromStored ?? 0);
+  }
+  return normalizeThoughtDurations(out);
+}
+
+function thoughtIndexes(trace: readonly TraceItem[]): number[] {
+  const indexes: number[] = [];
+  for (let index = 0; index < trace.length; index += 1) {
+    if (trace[index]?.type === "thought") {
+      indexes.push(index);
+    }
+  }
+  return indexes;
+}
+
+function thoughtWithCachedTime(item: TraceItem, cached: CachedThoughtTime): TraceItem {
+  if (item.type !== "thought") {
+    return item;
+  }
+  if (cached.durationMs !== undefined) {
+    return { type: "thought", text: item.text, durationMs: cached.durationMs };
+  }
+  if (cached.startedAtMs !== undefined) {
+    return { type: "thought", text: item.text, startedAtMs: cached.startedAtMs };
+  }
+  return item;
+}
+
+/**
+ * Copies saved thought times onto the agent transcript.
+ * The same thought text wins first. Remaining times align with the end of the transcript,
+ * because the saved screen is the tail of the chat.
  */
 export function mergeThoughtDurationsFromCache(
   authoritative: readonly TraceItem[],
   metadataSource: readonly TraceItem[],
 ): TraceItem[] {
-  const cachedThoughts: { durationMs?: number; startedAtMs?: number }[] = [];
+  const cachedThoughts: CachedThoughtTime[] = [];
   for (const item of metadataSource) {
     if (item.type !== "thought") {
       continue;
     }
     const durationMs = positiveDurationMs(item.durationMs);
     const startedAtMs = positiveDurationMs(item.startedAtMs);
-    if (durationMs === undefined && startedAtMs === undefined) {
-      cachedThoughts.push({});
-      continue;
-    }
     cachedThoughts.push({
+      text: item.text,
       ...(durationMs !== undefined ? { durationMs } : {}),
       ...(startedAtMs !== undefined ? { startedAtMs } : {}),
     });
   }
-  if (cachedThoughts.length === 0) {
+  if (!cachedThoughts.some((item) => item.durationMs !== undefined || item.startedAtMs !== undefined)) {
     return authoritative.slice();
   }
-  let thoughtIndex = 0;
-  return authoritative.map((item) => {
-    if (item.type !== "thought") {
-      return item;
+  const indexes = thoughtIndexes(authoritative);
+  if (indexes.length === 0) {
+    return authoritative.slice();
+  }
+  const next = authoritative.slice();
+  const used = new Set<number>();
+  const consumed = new Set<number>();
+  for (let cacheIndex = cachedThoughts.length - 1; cacheIndex >= 0; cacheIndex -= 1) {
+    const cached = cachedThoughts[cacheIndex];
+    if (cached === undefined || (cached.durationMs === undefined && cached.startedAtMs === undefined)) {
+      continue;
     }
-    const cached = cachedThoughts[thoughtIndex];
-    thoughtIndex += 1;
-    if (cached === undefined) {
-      return item;
+    for (let thoughtPos = indexes.length - 1; thoughtPos >= 0; thoughtPos -= 1) {
+      if (used.has(thoughtPos)) {
+        continue;
+      }
+      const traceIndex = indexes[thoughtPos];
+      const item = traceIndex === undefined ? undefined : next[traceIndex];
+      if (item?.type !== "thought" || item.text !== cached.text) {
+        continue;
+      }
+      used.add(thoughtPos);
+      consumed.add(cacheIndex);
+      next[traceIndex] = thoughtWithCachedTime(item, cached);
+      break;
     }
-    if (cached.durationMs !== undefined) {
-      return { type: "thought", text: item.text, durationMs: cached.durationMs };
+  }
+  const offset = indexes.length - cachedThoughts.length;
+  for (let cacheIndex = 0; cacheIndex < cachedThoughts.length; cacheIndex += 1) {
+    if (consumed.has(cacheIndex)) {
+      continue;
     }
-    if (cached.startedAtMs !== undefined) {
-      return { type: "thought", text: item.text, startedAtMs: cached.startedAtMs };
+    const cached = cachedThoughts[cacheIndex];
+    if (cached === undefined || (cached.durationMs === undefined && cached.startedAtMs === undefined)) {
+      continue;
     }
-    return item;
-  });
+    const thoughtPos = offset + cacheIndex;
+    if (thoughtPos < 0 || thoughtPos >= indexes.length || used.has(thoughtPos)) {
+      continue;
+    }
+    const traceIndex = indexes[thoughtPos];
+    const item = traceIndex === undefined ? undefined : next[traceIndex];
+    if (item === undefined) {
+      continue;
+    }
+    used.add(thoughtPos);
+    next[traceIndex] = thoughtWithCachedTime(item, cached);
+  }
+  return next;
+}
+
+/**
+ * Copies a saved duration list onto thoughts, in order from the start.
+ * When the replay has fewer thoughts, the later saved times are the ones that remain.
+ * Zero does not clear a time already on the thought.
+ */
+export function applyThoughtDurationList(
+  authoritative: readonly TraceItem[],
+  durations: readonly number[],
+): TraceItem[] {
+  const saved = normalizeThoughtDurations(durations);
+  if (saved.length === 0) {
+    return authoritative.slice();
+  }
+  const indexes = thoughtIndexes(authoritative);
+  if (indexes.length === 0) {
+    return authoritative.slice();
+  }
+  const savedStart = saved.length > indexes.length ? saved.length - indexes.length : 0;
+  const next = authoritative.slice();
+  const count = Math.min(saved.length, indexes.length);
+  for (let index = 0; index < count; index += 1) {
+    const durationMs = positiveDurationMs(saved[savedStart + index]);
+    if (durationMs === undefined) {
+      continue;
+    }
+    const traceIndex = indexes[index];
+    const item = traceIndex === undefined ? undefined : next[traceIndex];
+    if (item?.type !== "thought") {
+      continue;
+    }
+    next[traceIndex] = { type: "thought", text: item.text, durationMs };
+  }
+  return next;
 }
 
 /**
@@ -497,14 +638,73 @@ export function mergeToolDurationsFromCache(
     if (item.type !== "tool") {
       return item;
     }
-    if (positiveDurationMs(item.durationMs) !== undefined) {
-      return item;
-    }
     const cached = cachedById.get(canonicalToolCallId(item.toolCallId));
-    if (cached === undefined) {
+    const existing = positiveDurationMs(item.durationMs);
+    const durationMs = isBashToolKind(item.kind) ? (cached ?? existing) : (existing ?? cached);
+    if (durationMs === undefined || durationMs === item.durationMs) {
       return item;
     }
-    return { ...item, durationMs: cached };
+    return { ...item, durationMs };
+  });
+}
+
+/** Saved bash elapsed times from the current trace, one row per command. */
+export function bashDurationsFromTrace(trace: readonly TraceItem[]): AcpUiBashDuration[] {
+  const rows: AcpUiBashDuration[] = [];
+  for (const item of trace) {
+    if (item.type !== "tool" || !isBashToolKind(item.kind)) {
+      continue;
+    }
+    const durationMs = positiveDurationMs(item.durationMs);
+    if (durationMs === undefined) {
+      continue;
+    }
+    rows.push({ toolCallId: canonicalToolCallId(item.toolCallId), durationMs });
+  }
+  return normalizeBashDurations(rows);
+}
+
+/** Keeps every command id and prefers the time from `latest` when both lists have it. */
+export function mergeBashDurationLists(
+  stored: readonly AcpUiBashDuration[],
+  latest: readonly AcpUiBashDuration[],
+): AcpUiBashDuration[] {
+  const byId = new Map<string, number>();
+  for (const row of normalizeBashDurations(stored)) {
+    byId.set(canonicalToolCallId(row.toolCallId), row.durationMs);
+  }
+  for (const row of normalizeBashDurations(latest)) {
+    byId.set(canonicalToolCallId(row.toolCallId), row.durationMs);
+  }
+  return normalizeBashDurations(
+    [...byId.entries()].map(([toolCallId, durationMs]) => ({ toolCallId, durationMs })),
+  );
+}
+
+/**
+ * Copies saved bash times onto the agent transcript by tool call id.
+ * A saved time replaces a shorter clock measured while the transcript replays.
+ */
+export function applyBashDurations(
+  authoritative: readonly TraceItem[],
+  durations: readonly AcpUiBashDuration[],
+): TraceItem[] {
+  const saved = normalizeBashDurations(durations);
+  if (saved.length === 0) {
+    return authoritative.slice();
+  }
+  const byId = new Map(
+    saved.map((row) => [canonicalToolCallId(row.toolCallId), row.durationMs] as const),
+  );
+  return authoritative.map((item) => {
+    if (item.type !== "tool" || !isBashToolKind(item.kind)) {
+      return item;
+    }
+    const durationMs = byId.get(canonicalToolCallId(item.toolCallId));
+    if (durationMs === undefined || durationMs === item.durationMs) {
+      return item;
+    }
+    return { ...item, durationMs };
   });
 }
 
@@ -614,6 +814,8 @@ export function createChatStateFromInit(payload: InitPayload): ChatState {
     toolIndexById: seeded.toolIndexById,
     thoughtStartedAtMs,
     toolStartedAtMsById,
+    thoughtDurations: normalizeThoughtDurations(payload.thoughtDurations),
+    bashDurations: normalizeBashDurations(payload.bashDurations),
     promptInFlight: thoughtStartedAtMs !== null || toolStartedAtMsById.size > 0,
     sessionHistoryLoading: payload.sessionHistoryLoading === true,
     viewportCacheActive: seeded.trace.length > 0 && payload.sessionHistoryLoading === true,
@@ -1091,6 +1293,8 @@ function applySessionReset(state: ChatState): ChatState {
     replayOpenStreamIndex: null,
     replayThoughtStartedAtMs: null,
     replayToolStartedAtMsById: new Map(),
+    thoughtDurations: [],
+    bashDurations: [],
     composerPicksLocked: false,
     thoughtStartedAtMs: null,
     tokenUsage: null,
@@ -1684,12 +1888,29 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
     case "sessionHistoryLoading": {
       if (action.loading) {
-        return { ...state, sessionHistoryLoading: true };
+        return {
+          ...state,
+          sessionHistoryLoading: true,
+          thoughtDurations: mergeThoughtDurationLists(
+            state.thoughtDurations,
+            thoughtDurationsFromTrace(state.trace),
+          ),
+          bashDurations: mergeBashDurationLists(
+            state.bashDurations,
+            bashDurationsFromTrace(state.trace),
+          ),
+        };
       }
       if (state.viewportCacheActive && state.replayTrace.length > 0) {
         const trace = settleOpenThoughts(
           mergeToolDurationsFromCache(
-            mergeThoughtDurationsFromCache(state.replayTrace, state.trace),
+            applyBashDurations(
+              mergeThoughtDurationsFromCache(
+                applyThoughtDurationList(state.replayTrace, state.thoughtDurations),
+                state.trace,
+              ),
+              state.bashDurations,
+            ),
             state.trace,
           ),
         );
@@ -1699,6 +1920,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           sessionHistoryLoading: false,
           viewportCacheActive: false,
           trace,
+          thoughtDurations: thoughtDurationsFromTrace(trace),
+          bashDurations: bashDurationsFromTrace(trace),
           toolIndexById: state.replayToolIndexById,
           openStreamIndex: null,
           thoughtStartedAtMs: null,
@@ -1710,19 +1933,27 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           replayThoughtStartedAtMs: null,
           replayToolStartedAtMsById: new Map(),
           historyCommit: state.historyCommit + 1,
+          visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
         };
       }
       const trace = settleOpenThoughts(state.trace);
       const toolStartedAtMsById = toolClocksFromTrace(trace);
+      const thoughtDurations = thoughtDurationsFromTrace(trace);
+      const bashDurations = bashDurationsFromTrace(trace);
       return {
         ...state,
         sessionHistoryLoading: false,
         viewportCacheActive: false,
         trace,
+        thoughtDurations,
+        bashDurations,
         openStreamIndex: null,
         thoughtStartedAtMs: null,
         toolStartedAtMsById,
         promptInFlight: toolStartedAtMsById.size > 0,
+        ...(thoughtDurations.length > 0 || bashDurations.length > 0
+          ? { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) }
+          : {}),
       };
     }
     case "appendAgentText":

@@ -1,8 +1,13 @@
 import type { AcpUiSessionConfigOption } from "../acp/session/sessionConfigOptions";
 import { type AgentTabIndicator, isAgentTabIndicator } from "./agentTabTitle";
 import type { AcpUiSessionModelSelection } from "../acp/session/sessionModels";
-import type { AcpUiVisibleTraceItem } from "./visibleTrace";
-import { normalizeVisibleTrace } from "./visibleTrace";
+import {
+    type AcpUiBashDuration,
+    type AcpUiVisibleTraceItem,
+    normalizeBashDurations,
+    normalizeThoughtDurations,
+    normalizeVisibleTrace,
+} from "./visibleTrace";
 
 /** Base64 image attached to a prompt from the composer. */
 export type AcpUiPromptImage = {
@@ -117,8 +122,13 @@ export type WebviewToExtensionMessage =
     | { type: "openPlanFile"; requestId: string; name?: string; plan: string }
     /** Persists composer Arrow Up / Down user message history for this session. */
     | { type: "saveHistory"; entries: string[] }
-    /** Persists the viewport transcript tail on the session file `cache` key. */
-    | { type: "saveVisibleTrace"; items: AcpUiVisibleTraceItem[] }
+    /** Persists the viewport transcript tail, thought times, and bash times on the session file. */
+    | {
+          type: "saveVisibleTrace";
+          items: AcpUiVisibleTraceItem[];
+          thoughtDurations?: number[];
+          bashDurations?: AcpUiBashDuration[];
+      }
     /** Open a new chat with the default agent (extension host handles creation). */
     | { type: "openNewChat" }
     /** Bind this chat to a different ACP agent while the transcript is still empty. */
@@ -180,6 +190,10 @@ export type ExtensionToWebviewMessage =
           sessionHistoryLoading?: boolean;
           /** Last on-screen transcript slice, restored before `session/load` finishes. */
           visibleTrace?: AcpUiVisibleTraceItem[];
+          /** Client-measured thought times for the whole chat, in thought order. */
+          thoughtDurations?: number[];
+          /** Client-measured bash elapsed times for the whole chat, keyed by tool call id. */
+          bashDurations?: AcpUiBashDuration[];
           /** Fraction of panel width for transcript and composer (1 = full width). */
           contentWidthRatio?: number;
       }
@@ -532,7 +546,18 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
         return { type: "saveHistory", entries };
     }
     if (messageType === "saveVisibleTrace" && Array.isArray(record.items)) {
-        return { type: "saveVisibleTrace", items: normalizeVisibleTrace(record.items) };
+        const thoughtDurations = Array.isArray(record.thoughtDurations)
+            ? normalizeThoughtDurations(record.thoughtDurations)
+            : undefined;
+        const bashDurations = Array.isArray(record.bashDurations)
+            ? normalizeBashDurations(record.bashDurations)
+            : undefined;
+        return {
+            type: "saveVisibleTrace",
+            items: normalizeVisibleTrace(record.items),
+            ...(thoughtDurations !== undefined ? { thoughtDurations } : {}),
+            ...(bashDurations !== undefined ? { bashDurations } : {}),
+        };
     }
     if (
         messageType === "setSessionAgent" &&

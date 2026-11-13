@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { isAbsolute } from "node:path";
 import { type ExtensionContext, FileType, Range, Uri, WorkspaceEdit, workspace } from "vscode";
-import { type AcpUiVisibleTraceItem, normalizeVisibleTrace } from "../protocol/visibleTrace";
+import {
+    type AcpUiVisibleTraceItem,
+    normalizeBashDurations,
+    normalizeThoughtDurations,
+    normalizeVisibleTrace,
+} from "../protocol/visibleTrace";
 import type { PermissionGrant } from "../acp/session/permissionMemory";
 import {
     ACP_UI_SESSION_FILE_SUFFIX,
@@ -144,14 +149,36 @@ export async function clearSessionModelConfig(sessionFileUri: Uri): Promise<void
     });
 }
 
-export async function writeSessionCache(sessionFileUri: Uri, items: unknown): Promise<void> {
+export async function writeSessionCache(
+    sessionFileUri: Uri,
+    items: unknown,
+    thoughtDurations?: readonly number[],
+    bashDurations?: unknown,
+): Promise<void> {
     const normalized = normalizeVisibleTrace(items);
+    const durations =
+        thoughtDurations === undefined ? undefined : normalizeThoughtDurations(thoughtDurations);
+    const bash = bashDurations === undefined ? undefined : normalizeBashDurations(bashDurations);
     await mutateSessionDocument(sessionFileUri, (current) => {
         const next: AcpUiSessionDocument = { ...current };
         if (normalized.length === 0) {
             delete next.cache;
         } else {
             next.cache = normalized;
+        }
+        if (durations !== undefined) {
+            if (durations.length === 0) {
+                delete next.thoughtDurations;
+            } else {
+                next.thoughtDurations = durations;
+            }
+        }
+        if (bash !== undefined) {
+            if (bash.length === 0) {
+                delete next.bashDurations;
+            } else {
+                next.bashDurations = bash;
+            }
         }
         return next;
     });
@@ -270,7 +297,7 @@ export async function readSessionTitleAtUri(uri: Uri): Promise<string | undefine
     return title.length > 0 ? title : undefined;
 }
 
-async function readSessionDocumentAtUri(uri: Uri): Promise<AcpUiSessionDocument | null> {
+export async function readSessionDocumentAtUri(uri: Uri): Promise<AcpUiSessionDocument | null> {
     const open = openSessionTextDocument(uri);
     if (open !== undefined) {
         return parseSessionDocument(open.getText());

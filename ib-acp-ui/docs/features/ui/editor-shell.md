@@ -51,7 +51,7 @@ The chat UI and the markdown renderer load as later chunks from `media/acp-ui/ch
 
 ### Debug view
 
-[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L511-L532) switches the transcript between Chat and Debug.
+[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L519-L540) switches the transcript between Chat and Debug.
 The switch floats over the transcript, and Debug hides the composer.
 [buildChatDebug](../../../webview/acp-ui/src/chatDebugModel.ts#L255-L353) puts the chat and each subagent on the line, and keeps the tools on that step.
 [chatDebugShare](../../../webview/acp-ui/src/chatDebugModel.ts#L185-L194) counts the tool kinds for the share circle.

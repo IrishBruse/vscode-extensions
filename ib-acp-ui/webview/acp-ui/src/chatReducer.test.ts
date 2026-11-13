@@ -4,6 +4,7 @@ import {
   createChatStateFromInit,
   createInitialChatState,
   joinThoughtChunks,
+  mergeThoughtDurationsFromCache,
   replayChatState,
   runningBashStartedAtMs,
 } from "./chatReducer";
@@ -721,6 +722,52 @@ describe("chatReducer", () => {
     });
   });
 
+  it("keeps a cached thought time on that thought when earlier replay thoughts exist", () => {
+    const cached = [
+      { type: "thought" as const, text: "Planning the change.", durationMs: 3200 },
+    ];
+    const replay = [
+      { type: "thought" as const, text: "Earlier." },
+      { type: "agent" as const, text: "ok" },
+      { type: "thought" as const, text: "Planning the change." },
+    ];
+    expect(mergeThoughtDurationsFromCache(replay, cached)).toEqual([
+      { type: "thought", text: "Earlier." },
+      { type: "agent", text: "ok" },
+      { type: "thought", text: "Planning the change.", durationMs: 3200 },
+    ]);
+  });
+
+  it("restores saved thought times onto the agent transcript when load finishes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const cached = [
+      { type: "thought" as const, text: "Planning the change.", durationMs: 3200 },
+    ];
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      sessionHistoryLoading: true,
+      visibleTrace: cached,
+      thoughtDurations: [900, 0, 3200],
+    });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Earlier." });
+    state = chatReducer(state, { type: "appendAgentText", text: "ok" });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Skipped." });
+    state = chatReducer(state, { type: "appendAgentText", text: "next" });
+    state = chatReducer(state, { type: "appendAgentThought", text: "Planning the change." });
+    vi.advanceTimersByTime(40);
+    state = chatReducer(state, { type: "appendAgentText", text: "Done" });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    expect(state.trace.filter((item) => item.type === "thought")).toEqual([
+      { type: "thought", text: "Earlier.", durationMs: 900 },
+      { type: "thought", text: "Skipped." },
+      { type: "thought", text: "Planning the change.", durationMs: 3200 },
+    ]);
+    expect(state.thoughtDurations).toEqual([900, 0, 3200]);
+  });
+
   it("merges cached thought durations onto agent replay when load finishes", () => {
     const cached = [
       { type: "user" as const, text: "hi" },
@@ -788,6 +835,71 @@ describe("chatReducer", () => {
       return;
     }
     expect(tool.durationMs).toBe(117);
+  });
+
+  it("keeps saved bash times when replay measures a shorter clock", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const cached = [
+      {
+        type: "tool" as const,
+        toolCallId: "exec-late",
+        title: "Terminal",
+        kind: "execute",
+        status: "completed" as const,
+        subtitle: "echo late",
+        durationMs: 2100,
+      },
+    ];
+    let state = createChatStateFromInit({
+      type: "init",
+      sessionId: "s1",
+      title: "Chat",
+      sessionHistoryLoading: true,
+      visibleTrace: cached,
+      bashDurations: [
+        { toolCallId: "exec-early", durationMs: 4500 },
+        { toolCallId: "exec-late", durationMs: 2100 },
+      ],
+    });
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "exec-early",
+      title: "Terminal",
+      kind: "execute",
+      status: "pending",
+      subtitle: "echo early",
+    });
+    vi.advanceTimersByTime(40);
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "exec-early",
+      status: "completed",
+    });
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "exec-late",
+      title: "Terminal",
+      kind: "execute",
+      status: "pending",
+      subtitle: "echo late",
+    });
+    vi.advanceTimersByTime(40);
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "exec-late",
+      status: "completed",
+    });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    const tools = state.trace.filter((item) => item.type === "tool");
+    expect(tools).toEqual([
+      expect.objectContaining({ toolCallId: "exec-early", durationMs: 4500 }),
+      expect.objectContaining({ toolCallId: "exec-late", durationMs: 2100 }),
+    ]);
+    expect(state.bashDurations).toEqual([
+      { toolCallId: "exec-early", durationMs: 4500 },
+      { toolCallId: "exec-late", durationMs: 2100 },
+    ]);
   });
 
   it("ignores non-positive agent thought durations so client timing can run", () => {

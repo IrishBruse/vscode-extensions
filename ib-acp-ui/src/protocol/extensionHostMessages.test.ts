@@ -75,6 +75,34 @@ describe("tryParseWebviewMessage", () => {
         expect(tryParseWebviewMessage({ type: "liveClock", active: "yes" })).toBeNull();
     });
 
+    it("parses a visible-trace save with thought durations", () => {
+        expect(
+            tryParseWebviewMessage({
+                type: "saveVisibleTrace",
+                items: [{ type: "thought", text: "Planning.", durationMs: 3200 }],
+                thoughtDurations: [900, 0, 3200],
+            }),
+        ).toEqual({
+            type: "saveVisibleTrace",
+            items: [{ type: "thought", text: "Planning.", durationMs: 3200 }],
+            thoughtDurations: [900, 0, 3200],
+        });
+    });
+
+    it("parses a visible-trace save with bash durations", () => {
+        expect(
+            tryParseWebviewMessage({
+                type: "saveVisibleTrace",
+                items: [],
+                bashDurations: [{ toolCallId: "exec1", durationMs: 2100 }],
+            }),
+        ).toEqual({
+            type: "saveVisibleTrace",
+            items: [],
+            bashDurations: [{ toolCallId: "exec1", durationMs: 2100 }],
+        });
+    });
+
     it("drops invalid image lists", () => {
         expect(tryParseWebviewMessage({ type: "send", body: "hi", images: "nope" })).toEqual({
             type: "send",

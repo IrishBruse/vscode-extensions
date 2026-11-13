@@ -45,7 +45,7 @@ Execute-style tools still get a command subtitle when the shell line can be reso
 [PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L43-L144) renders the title, the path, the summary, and the diff.
 [permissionTitleParts](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/permissionTitle.ts#L14-L38) turns a backtick path into a link.
 
-[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L653-L675) wires button handlers to `postPermissionResponse` and opens a path link.
-[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L772) forwards responses to the bridge.
+[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L661-L683) wires button handlers to `postPermissionResponse` and opens a path link.
+[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L783) forwards responses to the bridge.
 
 Protocol: [tool calls](../../acp/protocol/v1/tool-calls.mdx).

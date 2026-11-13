@@ -66,6 +66,9 @@ A long prompt starts collapsed.
 While a session loads from the agent, a saved last screen is shown when one exists.
 When that load finishes and the agent is idle, Thinking stops.
 A thought that was still open gets its elapsed time and stays on Thought.
+That time stays when the agent shows the full conversation.
+Earlier thought times stay when the chat file has them.
+A bash command keeps its elapsed time the same way.
 A loading indicator fills the panel only when that cache is empty.
 Scrolling up to the top of the saved screen can show a loading overlay that does not change the transcript height.
 Older history is applied in one step and the current scroll position is kept.
@@ -93,7 +96,12 @@ Permission requests that carry edit diffs also update that row before you approv
 
 [joinThoughtChunks](../../../webview/acp-ui/src/chatReducer.ts) concatenates consecutive thought chunks without inserting spaces.
 Client-measured thought and command durations (and other UI-only fields) are written to the `cache` array in the `.acp` session file.
-After `session/load` replay, [mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L307-L335) and [mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L341-L372) copy those durations back onto the authoritative transcript.
+[thoughtDurationsFromTrace](../../../webview/acp-ui/src/chatReducer.ts#L443-L452) also writes one duration per thought, in order, to `thoughtDurations` on that file.
+[bashDurationsFromTrace](../../../webview/acp-ui/src/chatReducer.ts#L652-L665) writes each bash elapsed time to `bashDurations` on that file, keyed by tool call id.
+After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/src/chatReducer.ts#L585-L613) copies thought times onto the agent transcript from the start.
+[mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L509-L578) then copies a saved screen time onto the replayed thought with the same text.
+[applyBashDurations](../../../webview/acp-ui/src/chatReducer.ts#L688-L709) copies saved bash times by tool call id, including commands that are above the saved screen.
+[mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L619-L649) copies command durations by `toolCallId` and keeps a saved bash time over a shorter replay clock.
 
 ### Trace rendering
 

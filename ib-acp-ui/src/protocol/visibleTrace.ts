@@ -1,4 +1,13 @@
 export const maxVisibleTraceItems = 40;
+/** One entry per thought, in order. A zero holds the slot when that thought has no saved time. */
+export const maxThoughtDurations = 2000;
+/** One saved bash elapsed time per command, keyed by tool call id. */
+export const maxBashDurations = 2000;
+
+export type AcpUiBashDuration = {
+    toolCallId: string;
+    durationMs: number;
+};
 
 type ToolCallStatus = "pending" | "in_progress" | "completed" | "failed";
 
@@ -259,6 +268,50 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
             ? { startedAtMs }
             : {}),
     };
+}
+
+/**
+ * Keeps a thought-duration list aligned with thought order.
+ * Zero means that thought had no saved time. Entries after the cap are dropped from the front.
+ */
+export function normalizeThoughtDurations(entries: unknown): number[] {
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+    const out: number[] = [];
+    for (const entry of entries) {
+        out.push(positiveDurationMs(entry) ?? 0);
+    }
+    const capped =
+        out.length > maxThoughtDurations ? out.slice(out.length - maxThoughtDurations) : out;
+    return capped.some((duration) => duration > 0) ? capped : [];
+}
+
+/**
+ * Keeps bash elapsed times keyed by tool call id.
+ * A later row for the same id replaces the earlier one. Rows past the cap drop from the front.
+ */
+export function normalizeBashDurations(entries: unknown): AcpUiBashDuration[] {
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+    const byId = new Map<string, number>();
+    for (const entry of entries) {
+        if (!isRecord(entry) || typeof entry.toolCallId !== "string") {
+            continue;
+        }
+        const toolCallId = entry.toolCallId.trim();
+        const durationMs = positiveDurationMs(entry.durationMs);
+        if (toolCallId.length === 0 || durationMs === undefined) {
+            continue;
+        }
+        byId.set(toolCallId, durationMs);
+    }
+    const rows = [...byId.entries()].map(([toolCallId, durationMs]) => ({
+        toolCallId,
+        durationMs,
+    }));
+    return rows.length > maxBashDurations ? rows.slice(rows.length - maxBashDurations) : rows;
 }
 
 /**

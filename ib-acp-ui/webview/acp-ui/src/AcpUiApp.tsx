@@ -21,12 +21,14 @@ import { anchoredScrollTop } from "./anchoredScroll";
 import { webviewLayoutIsMeasurable, webviewWidthIsMeasurable } from "./webviewLayout";
 import {
   activityTraceForTool,
+  bashDurationsFromTrace,
   type ChatAction,
   chatReducer,
   createChatStateFromInit,
   type ChatState,
   type ExtensionMessageAfterInit,
   type InitPayload,
+  thoughtDurationsFromTrace,
   type TraceItem,
 } from "./chatReducer";
 import { visibleTraceTail, type VisibleTraceRow } from "./visibleTraceTail";
@@ -60,7 +62,11 @@ export type AcpUiAppProps = {
   postSetSessionModel: (modelId: string) => void;
   postSetSessionConfigOption: (configId: string, value: string | boolean) => void;
   postSaveHistory: (entries: string[]) => void;
-  postSaveVisibleTrace?: (items: TraceItem[]) => void;
+  postSaveVisibleTrace?: (
+    items: TraceItem[],
+    thoughtDurations: number[],
+    bashDurations: ChatState["bashDurations"],
+  ) => void;
   postTabActivity?: (indicator: AgentTabIndicator | null, animate: boolean) => void;
   postOpenNewChat?: () => void;
   postSetSessionAgent?: (agentName: string) => void;
@@ -319,14 +325,16 @@ export function AcpUiApp({
         }
       }
       const items = visibleTraceTail(state.trace, rows, el?.clientHeight ?? 0);
-      const serialized = JSON.stringify(items);
+      const thoughtDurations = thoughtDurationsFromTrace(state.trace);
+      const bashDurations = bashDurationsFromTrace(state.trace);
+      const serialized = JSON.stringify({ items, thoughtDurations, bashDurations });
       if (serialized === lastSavedVisibleTraceRef.current) {
         savedVisibleTraceCacheEpochRef.current = epoch;
         return;
       }
       lastSavedVisibleTraceRef.current = serialized;
       savedVisibleTraceCacheEpochRef.current = epoch;
-      postSaveVisibleTrace(items);
+      postSaveVisibleTrace(items, thoughtDurations, bashDurations);
     }, 400);
     return () => {
       window.clearTimeout(handle);

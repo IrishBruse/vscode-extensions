@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
-import { normalizeVisibleTrace } from "../protocol/visibleTrace";
+import {
+    normalizeBashDurations,
+    normalizeThoughtDurations,
+    normalizeVisibleTrace,
+} from "../protocol/visibleTrace";
 import {
     ACP_UI_SESSION_SCHEMA,
     applySavedModelConfig,
@@ -83,6 +87,42 @@ describe("serializeSessionDocument", () => {
         };
         const text = serializeSessionDocument(document);
         expect(parseSessionDocument(text)).toEqual(document);
+    });
+
+    it("stores thought durations in thought order and drops a list with no times", () => {
+        const document = {
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            thoughtDurations: [900, 0, 3200],
+        };
+        expect(parseSessionDocument(serializeSessionDocument(document))).toEqual(document);
+        expect(normalizeThoughtDurations([0, 0, -1])).toEqual([]);
+        expect(normalizeThoughtDurations(["nope", 40])).toEqual([0, 40]);
+    });
+
+    it("stores bash durations by tool call id and drops empty rows", () => {
+        const document = {
+            schema: ACP_UI_SESSION_SCHEMA,
+            id: "id-1",
+            title: "Chat",
+            createdAt: 1,
+            updatedAt: 2,
+            history: [],
+            bashDurations: [{ toolCallId: "exec1", durationMs: 2100 }],
+        };
+        expect(parseSessionDocument(serializeSessionDocument(document))).toEqual(document);
+        expect(
+            normalizeBashDurations([
+                { toolCallId: "exec1", durationMs: 100 },
+                { toolCallId: " ", durationMs: 5 },
+                { toolCallId: "exec1", durationMs: 2100 },
+                { toolCallId: "exec2", durationMs: 0 },
+            ]),
+        ).toEqual([{ toolCallId: "exec1", durationMs: 2100 }]);
     });
 
     it("does not keep a jsonl visible-trace version in cache", () => {

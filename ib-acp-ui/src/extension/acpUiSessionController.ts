@@ -305,6 +305,12 @@ export class AcpUiSessionController {
             title: header.title,
             ...(shouldDeferJsonlHistoryReplay(header) ? { sessionHistoryLoading: true } : {}),
             ...(visibleTrace.length > 0 ? { visibleTrace } : {}),
+            ...(header.thoughtDurations !== undefined && header.thoughtDurations.length > 0
+                ? { thoughtDurations: header.thoughtDurations }
+                : {}),
+            ...(header.bashDurations !== undefined && header.bashDurations.length > 0
+                ? { bashDurations: header.bashDurations }
+                : {}),
             ...(Object.keys(vscodeThemeVariables).length > 0 ? { vscodeThemeVariables } : {}),
             workspaceLabel,
             ...(folder !== undefined ? { workspaceRoot: folder.uri.fsPath } : {}),
@@ -667,7 +673,12 @@ export class AcpUiSessionController {
         }
 
         if (parsed.type === "saveVisibleTrace") {
-            void writeSessionCache(this.documentUri, parsed.items);
+            void writeSessionCache(
+                this.documentUri,
+                parsed.items,
+                parsed.thoughtDurations,
+                parsed.bashDurations,
+            );
             return;
         }
 

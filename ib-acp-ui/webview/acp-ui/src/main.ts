@@ -147,8 +147,8 @@ async function mountView(): Promise<void> {
         ...(options?.target === "auto" ? { target: "auto" } : {}),
       });
     },
-    (items) => {
-      host.post({ type: "saveVisibleTrace", items });
+    (items, thoughtDurations, bashDurations) => {
+      host.post({ type: "saveVisibleTrace", items, thoughtDurations, bashDurations });
     },
     (indicator, animate) => {
       host.post({ type: "tabActivity", indicator, animate });

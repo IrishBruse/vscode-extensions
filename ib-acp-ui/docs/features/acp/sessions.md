@@ -15,6 +15,8 @@ Reopening shows that screen immediately, instead of a conversation loader.
 You can scroll inside that screen while the agent loads older messages.
 When the older messages arrive, the screen you are looking at stays where it is.
 The live transcript still comes from the agent via `session/load` replay when resume succeeds.
+A thought keeps the time it took on that full transcript.
+A bash command keeps its elapsed time on that full transcript.
 
 **Debug** in the chat replaces the transcript with a run view of that same conversation.
 
@@ -57,13 +59,17 @@ The last model id and config values are `modelConfig` on the session document.
 Reopening the chat seeds the composer from that snapshot and applies it again after the agent connects.
 Resetting the chat or switching clients clears it.
 The last on-screen transcript, including UI-only fields such as thought and tool `durationMs`, is the `cache` array on the session document.
-[writeSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L147-L158) stores that array, capped at the last screen.
-[readSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L82-L85) sends the items on `init`.
+`thoughtDurations` on that document stores one client-measured thought time per thought, in order.
+`bashDurations` stores each bash elapsed time with its tool call id.
+[writeSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L152-L185) stores the screen and both time lists.
+[readSessionCache](../../../src/extension/acpUiSessionJsonl.ts#L87-L90) sends the screen on `init`, and the controller sends both time lists with it.
 There is no sibling `.jsonl` file and no `acpUi/visibleTrace` schema.
 When `session/load` succeeds, agent replay is authoritative for the transcript text.
 The webview keeps the cached screen until replay finishes, then swaps the full transcript in without moving the scroll position.
-[mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L329-L370) copies thought durations from `cache` onto the replayed thoughts.
-[mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L376-L407) copies command durations by `toolCallId`.
+[applyThoughtDurationList](../../../webview/acp-ui/src/chatReducer.ts#L585-L613) copies `thoughtDurations` onto the replayed thoughts from the start.
+[mergeThoughtDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L509-L578) copies a time from `cache` onto the replayed thought with the same text.
+[applyBashDurations](../../../webview/acp-ui/src/chatReducer.ts#L688-L709) copies `bashDurations` onto the replayed commands by tool call id.
+[mergeToolDurationsFromCache](../../../webview/acp-ui/src/chatReducer.ts#L619-L649) copies command durations by `toolCallId` and keeps a saved bash time over a shorter replay clock.
 On load failure, the bridge falls back to `session/new` and the cached screen stays if replay produced no items (composer history still comes from `init.history`).
 
 ### Debug view
