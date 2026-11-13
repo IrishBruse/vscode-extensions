@@ -355,6 +355,41 @@ describe("chatReducer", () => {
     expect(state.visibleTraceCacheEpoch).toBe(1);
   });
 
+  it("keeps an image on a read and fills one in later without replacing it", () => {
+    let state = createInitialChatState();
+    const image = { data: "QUJD", mimeType: "image/png" };
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "read-img",
+      title: "Read",
+      kind: "read",
+      status: "in_progress",
+      subtitle: ".tmp/shot.png",
+    });
+    state = chatReducer(state, {
+      type: "toolImage",
+      toolCallId: "read-img",
+      image,
+    });
+    state = chatReducer(state, {
+      type: "toolImage",
+      toolCallId: "read-img",
+      image: { data: "OTHER", mimeType: "image/png" },
+    });
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "read-img",
+      status: "completed",
+      image: { data: "FROMAGENT", mimeType: "image/png" },
+    });
+    expect(state.trace[0]).toMatchObject({
+      type: "tool",
+      subtitle: ".tmp/shot.png",
+      status: "completed",
+      image: { data: "FROMAGENT", mimeType: "image/png" },
+    });
+  });
+
   it("does not bump visibleTraceCacheEpoch while a turn is streaming", () => {
     let state = createInitialChatState();
     state = chatReducer(state, { type: "submit", body: "hi" });

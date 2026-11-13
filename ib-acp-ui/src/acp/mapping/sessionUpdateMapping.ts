@@ -1,5 +1,7 @@
 import type * as acp from "@agentclientprotocol/sdk";
+import { maxToolImageDataChars } from "../../platform/imageFilePath";
 import type {
+    AcpUiPromptImage,
     ExtensionToWebviewMessage,
     SubagentActivityEvent,
     SubagentWorkState,
@@ -67,7 +69,68 @@ function formatContentBlockForTool(block: acp.ContentBlock): string | undefined 
         const t = block.text.trim();
         return t.length > 0 ? t : undefined;
     }
+    if (block.type === "image") {
+        return undefined;
+    }
     return `[${block.type}]`;
+}
+
+function promptImageFromRecord(value: unknown): AcpUiPromptImage | undefined {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return undefined;
+    }
+    const record = value as Record<string, unknown>;
+    if (record.type !== "image") {
+        return undefined;
+    }
+    if (typeof record.data !== "string" || record.data.length === 0) {
+        return undefined;
+    }
+    if (record.data.length > maxToolImageDataChars) {
+        return undefined;
+    }
+    if (typeof record.mimeType !== "string" || !record.mimeType.startsWith("image/")) {
+        return undefined;
+    }
+    return { data: record.data, mimeType: record.mimeType };
+}
+
+/** First image block on a tool result. Walks content arrays a few levels deep. */
+function imageFromUnknown(value: unknown, depth = 0): AcpUiPromptImage | undefined {
+    if (depth > 4 || value === null || typeof value !== "object") {
+        return undefined;
+    }
+    const direct = promptImageFromRecord(value);
+    if (direct !== undefined) {
+        return direct;
+    }
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const found = imageFromUnknown(item, depth + 1);
+            if (found !== undefined) {
+                return found;
+            }
+        }
+        return undefined;
+    }
+    const record = value as Record<string, unknown>;
+    for (const key of ["content", "rawOutput"]) {
+        if (!(key in record)) {
+            continue;
+        }
+        const found = imageFromUnknown(record[key], depth + 1);
+        if (found !== undefined) {
+            return found;
+        }
+    }
+    return undefined;
+}
+
+function imageFromToolFields(
+    content: acp.ToolCallContent[] | null | undefined,
+    rawOutput: unknown,
+): AcpUiPromptImage | undefined {
+    return imageFromUnknown(content) ?? imageFromUnknown(rawOutput);
 }
 
 function formatDiffPieceAsFullText(piece: acp.ToolCallContent & { type: "diff" }): string {
@@ -455,10 +518,12 @@ function formatRawToolOutput(raw: unknown): string | undefined {
 function toolCallUpdateToDisplayParts(update: acp.ToolCallUpdate): {
     contentText: string | undefined;
     diffRows: ToolCallDiffRow[] | undefined;
+    image: AcpUiPromptImage | undefined;
 } {
     let diffRows: ToolCallDiffRow[] | undefined;
     const segments: string[] = [];
     let hadTerminalPiece = false;
+    const image = imageFromToolFields(update.content, update.rawOutput);
     if (update.content !== undefined && update.content !== null && update.content.length > 0) {
         for (const piece of update.content) {
             if (piece.type === "diff") {
@@ -495,14 +560,19 @@ function toolCallUpdateToDisplayParts(update: acp.ToolCallUpdate): {
         return {
             contentText,
             diffRows,
+            image,
         };
     }
     if (diffRows !== undefined && diffRows.length > 0) {
-        return { contentText: undefined, diffRows };
+        return { contentText: undefined, diffRows, image };
+    }
+    if (image !== undefined) {
+        return { contentText: undefined, diffRows: undefined, image };
     }
     return {
         contentText: formatRawToolOutput(update.rawOutput),
         diffRows: undefined,
+        image: undefined,
     };
 }
 
@@ -1028,6 +1098,10 @@ export function sessionUpdateToWebviewMessages(
             const cwd = task !== undefined ? undefined : shellWorkingDirectory(update);
             const durationMs = durationMsFromUpdatePayload(update);
             const prompt = task !== undefined ? clipToolDisplayText(task.prompt).trim() : "";
+            const image =
+                task !== undefined
+                    ? undefined
+                    : imageFromToolFields(update.content, update.rawOutput);
             return withSessionLinks(toolCallId, update.content, [
                 {
                     type: "appendToolCall",
@@ -1039,6 +1113,7 @@ export function sessionUpdateToWebviewMessages(
                     ...(cwd !== undefined ? { cwd } : {}),
                     ...(prompt.length > 0 ? { content: prompt } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
+                    ...(image !== undefined ? { image } : {}),
                 },
             ]);
         }
@@ -1114,6 +1189,7 @@ export function sessionUpdateToWebviewMessages(
                     ...(parts.diffRows !== undefined && parts.diffRows.length > 0
                         ? { diffRows: parts.diffRows }
                         : {}),
+                    ...(parts.image !== undefined ? { image: parts.image } : {}),
                     ...(subtitleHint !== undefined ? { subtitle: subtitleHint } : {}),
                     ...(cwd !== undefined ? { cwd } : {}),
                     ...(durationMs !== undefined ? { durationMs } : {}),
@@ -1264,6 +1340,7 @@ const subagentActivityTypes = new Set<SubagentActivityEvent["type"]>([
     "appendAgentThought",
     "appendToolCall",
     "updateToolCall",
+    "toolImage",
     "appendPlan",
 ]);
 

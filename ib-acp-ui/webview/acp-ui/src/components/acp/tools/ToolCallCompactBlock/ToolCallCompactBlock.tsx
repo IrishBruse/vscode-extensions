@@ -16,7 +16,9 @@ import {
   previewDiffRows,
   windowToolCallDiffRows,
 } from "../../../../../../../src/acp/mapping/toolCallDiffLines";
+import type { AcpUiPromptImage } from "../../../../../../../src/protocol/extensionHostMessages";
 import type { TraceToolItem } from "../../../../chatReducer";
+import { promptImageSrc } from "../../../../pastedImages";
 import {
   type CompactToolDetailParts,
   compactGroupHiddenDetailCount,
@@ -235,34 +237,76 @@ function CompactEditLine({
   );
 }
 
+function CompactImagePreview({
+  image,
+  onOpenImage,
+}: {
+  image: AcpUiPromptImage;
+  onOpenImage: ((src: string) => void) | undefined;
+}): ReactElement {
+  const src = promptImageSrc(image);
+  return (
+    <button
+      type="button"
+      className="tool-call-compact-image"
+      aria-label="View image"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenImage?.(src);
+      }}
+    >
+      <img src={src} alt="" />
+    </button>
+  );
+}
+
 function CompactDetailLine({
   item,
   onOpenWorkspacePath,
+  onOpenImage,
 }: {
   item: TraceToolItem;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
-  if (compactToolShowsDiffStats(item)) {
-    return <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />;
-  }
-  return (
+  const text = compactToolShowsDiffStats(item) ? (
+    <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />
+  ) : (
     <CompactVerbDetail
       parts={compactToolDetailParts(item)}
       onOpenWorkspacePath={onOpenWorkspacePath}
     />
+  );
+  if (item.image === undefined) {
+    return text;
+  }
+  return (
+    <>
+      {text}
+      <CompactImagePreview image={item.image} onOpenImage={onOpenImage} />
+    </>
   );
 }
 
 function CompactGroupSummary({
   items,
   onOpenWorkspacePath,
+  onOpenImage,
 }: {
   items: TraceToolItem[];
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
   const parts = compactToolGroupSummaryParts(items);
   if (parts === null) {
-    return <CompactDetailLine item={items[0]!} onOpenWorkspacePath={onOpenWorkspacePath} />;
+    return (
+      <CompactDetailLine
+        item={items[0]!}
+        onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenImage={onOpenImage}
+      />
+    );
   }
   return (
     <>
@@ -309,11 +353,13 @@ function CompactToolEntry({
   expandAllToolOutputs,
   onCollapseExpandAll,
   onOpenWorkspacePath,
+  onOpenImage,
 }: {
   item: TraceToolItem;
   expandAllToolOutputs: boolean;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
   const detailKind = toolCallDetailKind(item);
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -341,7 +387,13 @@ function CompactToolEntry({
       toggle();
     }
   };
-  const line = <CompactDetailLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />;
+  const line = (
+    <CompactDetailLine
+      item={item}
+      onOpenWorkspacePath={onOpenWorkspacePath}
+      onOpenImage={onOpenImage}
+    />
+  );
   return (
     <>
       {detailKind === "expandable" ? (
@@ -395,6 +447,7 @@ export function ToolCallCompactBlock({
   expandAllToolOutputs,
   onCollapseExpandAll,
   onOpenWorkspacePath,
+  onOpenImage,
 }: {
   items: TraceToolItem[];
   className?: string;
@@ -403,6 +456,7 @@ export function ToolCallCompactBlock({
   expandAllToolOutputs?: boolean;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: OpenWorkspacePathOptions) => void;
+  onOpenImage?: (src: string) => void;
 }): ReactElement {
   const expandAll = expandAllToolOutputs ?? false;
   const single = items.length === 1;
@@ -438,10 +492,15 @@ export function ToolCallCompactBlock({
           expandAllToolOutputs={expandAll}
           onCollapseExpandAll={onCollapseExpandAll}
           onOpenWorkspacePath={onOpenWorkspacePath}
+          onOpenImage={onOpenImage}
         />
       ) : (
         <div className="tool-call-compact-summary">
-          <CompactGroupSummary items={items} onOpenWorkspacePath={onOpenWorkspacePath} />
+          <CompactGroupSummary
+            items={items}
+            onOpenWorkspacePath={onOpenWorkspacePath}
+            onOpenImage={onOpenImage}
+          />
         </div>
       )}
       {!single ? (
@@ -463,6 +522,7 @@ export function ToolCallCompactBlock({
                 expandAllToolOutputs={expandAll}
                 onCollapseExpandAll={onCollapseExpandAll}
                 onOpenWorkspacePath={onOpenWorkspacePath}
+                onOpenImage={onOpenImage}
               />
             </li>
           ))}

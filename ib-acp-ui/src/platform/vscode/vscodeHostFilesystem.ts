@@ -14,6 +14,9 @@ export function createVscodeAcpHostFilesystem(): AcpHostFilesystem {
             const bytes = await workspace.fs.readFile(uriForHostPath(path));
             return Buffer.from(bytes).toString("utf-8");
         },
+        async readBytes(path: string): Promise<Uint8Array> {
+            return workspace.fs.readFile(uriForHostPath(path));
+        },
         async writeTextFile(path: string, content: string): Promise<void> {
             await workspace.fs.writeFile(uriForHostPath(path), Buffer.from(content, "utf-8"));
         },

@@ -8,6 +8,7 @@ import type {
 import type { AcpAgentSpawnConfig } from "../domain/agentSpawnConfig";
 import { resolveAuthMethodId } from "../domain/agentSpawnConfig";
 import { AcpAgentProcess } from "../infrastructure/acpAgentProcess";
+import { imagePreviewTargetFromMessage } from "../mapping/imageToolPreview";
 import { canonicalToolCallId } from "../mapping/canonicalToolCallId";
 import {
     createToolCallKindTracking,
@@ -17,6 +18,8 @@ import {
     type ToolCallKindTracking,
 } from "../mapping/sessionUpdateMapping";
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
+import { isImageFilePath } from "../../platform/imageFilePath";
+import { readWorkspaceImage } from "../../platform/readWorkspaceImage";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
 import { buildModelId, parseModelIdBracketParams } from "./modelVariantPicker";
 import {
@@ -121,7 +124,7 @@ export class AcpSessionBridge {
     constructor(
         private readonly config: AcpAgentSpawnConfig,
         private readonly postToWebview: PostToWebview,
-        host: AcpSessionHostRuntime,
+        private readonly host: AcpSessionHostRuntime,
         private readonly hooks?: AcpSessionBridgeHooks,
     ) {
         this.permissionGrants = [...(hooks?.initialPermissionGrants ?? [])];
@@ -1006,7 +1009,40 @@ export class AcpSessionBridge {
         const messages = messagesForSessionNotification(params, this.acpSessionId, tracking);
         for (const msg of messages) {
             this.postToWebview(msg);
+            this.queueImagePreview(msg);
         }
+    }
+
+    /** Loads a file preview when a read targets an image and the tool result had no image bytes. */
+    private queueImagePreview(message: ExtensionToWebviewMessage): void {
+        const target = imagePreviewTargetFromMessage(message);
+        if (target === undefined) {
+            return;
+        }
+        void this.loadImagePreview(target.toolCallId, target.path, target.sessionId);
+    }
+
+    private async loadImagePreview(
+        toolCallId: string,
+        path: string,
+        sessionId: string | undefined,
+    ): Promise<void> {
+        const filesystem = this.host.hostFilesystem;
+        if (filesystem.readBytes === undefined) {
+            return;
+        }
+        const image = await readWorkspaceImage(path, this.host.getWorkspaceRoot(), (absolutePath) =>
+            filesystem.readBytes!(absolutePath),
+        );
+        if (image === undefined) {
+            return;
+        }
+        const event = { type: "toolImage" as const, toolCallId, image };
+        if (sessionId !== undefined) {
+            this.postToWebview({ type: "subagentActivity", sessionId, event });
+            return;
+        }
+        this.postToWebview(event);
     }
 
     private trackReadToolCallForFilesystemCorrelation(update: acp.SessionUpdate): void {
@@ -1046,6 +1082,9 @@ export class AcpSessionBridge {
             status: "in_progress",
             subtitle: trimmed,
         });
+        if (isImageFilePath(trimmed)) {
+            void this.loadImagePreview(toolCallId, trimmed, undefined);
+        }
     }
 }
 

@@ -33,6 +33,8 @@ A grep line shows the pattern, the path, and the match count.
 Click that line when the result lists the matching lines.
 A file path on that line shows the path.
 A read of `SKILL.md` shows `Used` and the folder that holds that file, for example `Used writing-for-agents`.
+A read of an image shows a small preview of that image.
+Click the preview to view the image larger.
 A tool path shows the full path.
 The path text uses the link color.
 Hover uses the link hover color.
@@ -82,7 +84,7 @@ Adjust **Chat content width (%)** in settings to narrow the transcript and compo
 [chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L541-L787) applies extension messages to trace state.
 [createChatStateFromInit](../../../webview/acp-ui/src/chatReducer.ts#L209-L337) seeds the trace from the bootstrap payload.
 
-ACP `session/update` events map in [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L621-L810):
+ACP `session/update` events map in [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1034-L1276):
 
 - `agent_message_chunk` to streaming agent text
 - `agent_thought_chunk` to thought blocks
@@ -123,12 +125,15 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 - Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) shows status and an Open control.
   [SubagentSessionBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentSessionBlock/SubagentSessionBlock.tsx#L10-L38) shows an ACP child session on the parent chat.
   [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L76) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L15-L92) show that subagent, and Back returns to the parent.
-  [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1255-L1291) keeps child session updates on that child.
+  [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps child session updates on that child.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L77) keeps each task on its own row.
-- Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L339-L405).
+- Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L443-L532).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
   Other paths shorten to `~/…`.
+  [imageFromToolFields](../../../src/acp/mapping/sessionUpdateMapping.ts#L129-L134) keeps the image from the tool result.
+  When that result has no image, [readWorkspaceImage](../../../src/platform/readWorkspaceImage.ts#L9-L29) reads the file for the preview.
+  [CompactImagePreview](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L240-L262) draws the preview on the tool line.
   [skillFolderName](../../../webview/acp-ui/src/toolCallCompactText.ts#L177-L191) names the folder that holds `SKILL.md`.
   [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L447-L463) then shows that read as `Used` plus that folder, and the folder still opens the file.
   [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.

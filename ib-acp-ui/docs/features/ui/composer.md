@@ -83,7 +83,7 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 
 [composerLocationLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L175-L181) keeps the workspace path when the stored title is still `New Cursor chat`.
 [ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L183-L197) draws `13.3k/256.0k` on the composer top line.
-[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L977-L978) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
+[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1266-L1267) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
 When a turn ends with token counts and no context window has arrived, [prompt](../../../src/acp/session/acpSessionBridge.ts#L794-L801) sends that count so the label still shows a number.
 
 ### Prompt history

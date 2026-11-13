@@ -1,3 +1,5 @@
+import { maxToolImageDataChars } from "../platform/imageFilePath";
+
 export const maxVisibleTraceItems = 40;
 /** One entry per thought, in order. A zero holds the slot when that thought has no saved time. */
 export const maxThoughtDurations = 2000;
@@ -42,6 +44,8 @@ export type AcpUiVisibleTraceItem =
           status: ToolCallStatus;
           content?: string;
           diffRows?: ToolCallDiffRow[];
+          /** Image the agent read. */
+          image?: { data: string; mimeType: string };
           detailVisible?: boolean;
           durationMs?: number;
           startedAtMs?: number;
@@ -162,6 +166,14 @@ function userImages(value: unknown): { data: string; mimeType: string }[] | unde
     return images.length > 0 ? images : undefined;
 }
 
+function toolImage(value: unknown): { data: string; mimeType: string } | undefined {
+    const image = userImages([value])?.[0];
+    if (image === undefined || image.data.length > maxToolImageDataChars) {
+        return undefined;
+    }
+    return image;
+}
+
 function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
     if (!isRecord(value) || typeof value.type !== "string") {
         return null;
@@ -248,6 +260,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
     const cwd = optionalString(value.cwd)?.trim();
     const content = optionalString(value.content);
     const diffRows = parseDiffRows(value.diffRows);
+    const image = toolImage(value.image);
     const detailVisible = value.detailVisible === true;
     const durationMs = positiveDurationMs(value.durationMs);
     const startedAtMs = positiveDurationMs(value.startedAtMs);
@@ -262,6 +275,7 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
         ...(cwd !== undefined && cwd.length > 0 ? { cwd } : {}),
         ...(content !== undefined ? { content } : {}),
         ...(diffRows !== undefined ? { diffRows } : {}),
+        ...(image !== undefined ? { image } : {}),
         ...(detailVisible ? { detailVisible } : {}),
         ...(durationMs !== undefined ? { durationMs } : {}),
         ...(durationMs === undefined && running && startedAtMs !== undefined

@@ -239,6 +239,8 @@ export type ExtensionToWebviewMessage =
           cwd?: string;
           /** Task prompt when the tool is a Cursor subagent task. */
           content?: string;
+          /** Image the agent read, shown as a small preview on the tool row. */
+          image?: AcpUiPromptImage;
           durationMs?: number;
       }
     | {
@@ -247,12 +249,20 @@ export type ExtensionToWebviewMessage =
           status: ToolCallStatus;
           content?: string;
           subtitle?: string;
+          /** Image the agent read, shown as a small preview on the tool row. */
+          image?: AcpUiPromptImage;
           /** Working directory for an execute tool. */
           cwd?: string;
           diffRows?: ToolCallDiffRow[];
           /** From ACP `tool_call_update` when the agent omits an initial `tool_call` (e.g. Gemini CLI). */
           kind?: string;
           durationMs?: number;
+      }
+    | {
+          /** Image bytes for a read tool, when they arrive after the tool row. */
+          type: "toolImage";
+          toolCallId: string;
+          image: AcpUiPromptImage;
       }
     | {
           type: "permissionRequest";
@@ -366,6 +376,7 @@ export type SubagentActivityEvent = Extract<
             | "appendAgentThought"
             | "appendToolCall"
             | "updateToolCall"
+            | "toolImage"
             | "appendPlan";
     }
 >;

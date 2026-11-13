@@ -1,5 +1,47 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { prerenderToNodeStream } from "react-dom/static";
 import { describe, expect, it } from "vite-plus/test";
+import type { TraceToolItem } from "../../../../chatReducer";
+import { ToolCallCompactBlock } from "./ToolCallCompactBlock";
+
+async function renderBlock(item: TraceToolItem): Promise<string> {
+  const { prelude } = await prerenderToNodeStream(
+    createElement(ToolCallCompactBlock, {
+      items: [item],
+      onOpenWorkspacePath: () => undefined,
+      onOpenImage: () => undefined,
+    }),
+  );
+  const chunks: Buffer[] = [];
+  for await (const chunk of prelude) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+describe("ToolCallCompactBlock image preview", () => {
+  it("shows Read and an inline image for a read of a picture", async () => {
+    const item: TraceToolItem = {
+      type: "tool",
+      toolCallId: "read-img",
+      title: "Read",
+      kind: "read",
+      subtitle: ".tmp/playtest/06-continue-a.png",
+      status: "completed",
+      content: undefined,
+      diffRows: undefined,
+      detailVisible: false,
+      image: { data: "QUJD", mimeType: "image/png" },
+    };
+    const html = await renderBlock(item);
+    expect(html).toContain("Read");
+    expect(html).toContain(".tmp/playtest/06-continue-a.png");
+    expect(html).toContain('class="tool-call-compact-image"');
+    expect(html).toContain("data:image/png;base64,QUJD");
+    expect(html).toContain('aria-label="View image"');
+  });
+});
 
 describe("ToolCallCompactBlock path links", () => {
   it("uses the link color for file paths and the link hover color on hover", () => {

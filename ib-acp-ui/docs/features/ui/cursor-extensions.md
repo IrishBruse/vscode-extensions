@@ -25,13 +25,13 @@ Goals include phased plan dialogs, a dedicated todo panel, and inline generated 
 [openPlanMarkdownInEditor](../../../src/platform/openPlanMarkdown.ts#L17-L34) writes that plan to `plan.md` and opens it in the editor.
 
 [taskToolFieldsFromRaw](../../../src/acp/mapping/taskToolPresentation.ts#L34-L63) reads a Cursor task `rawInput` (`_toolName: "task"`, prompt, description, subagent type).
-[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L820-L894) stores the subagent type as the subtitle and the prompt as the tool content.
+[sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1085-L1119) stores the subagent type as the subtitle and the prompt as the tool content.
 A background result (`isBackground` or status `disconnected`) stays in progress.
-[session_message](../../../src/acp/mapping/sessionUpdateMapping.ts#L995-L997) and `session_message_chunk` append their text on the session that owns the message.
-[withSessionLinks](../../../src/acp/mapping/sessionUpdateMapping.ts#L1048-L1061) links a tool to each `session` content block.
-[cursorSubagentUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1134-L1208) links the child session to that task.
-[childStateUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1232-L1253) applies a child `state_update`.
-[messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1255-L1291) keeps a nested child on its parent session.
+[session_message](../../../src/acp/mapping/sessionUpdateMapping.ts#L1270-L1272) and `session_message_chunk` append their text on the session that owns the message.
+[withSessionLinks](../../../src/acp/mapping/sessionUpdateMapping.ts#L1323-L1334) links a tool to each `session` content block.
+[cursorSubagentUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1408-L1482) links the child session to that task.
+[childStateUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1506-L1527) applies a child `state_update`.
+[messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps a nested child on its parent session.
 [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) renders that card, including a transcript that still has the older raw JSON subtitle.
 [upsertCursorTask](../../../webview/acp-ui/src/chatReducer.ts#L1042-L1105) updates that same tool row when `cursor/task` arrives, keeps a running task running, and stores `agentId`.
 [applySubagentUpdate](../../../webview/acp-ui/src/chatReducer.ts#L1274-L1315) places a nested child inside its parent.

@@ -25,7 +25,7 @@ See [AcpUiSessionConfigOption](../../../src/acp/session/sessionConfigOptions.ts#
 [buildModelId](../../../src/acp/session/modelVariantPicker.ts) handles Cursor bracketed model ids.
 [parseModelIdBracketParams](../../../src/acp/session/modelVariantPicker.ts) maps derived boolean params (`fast`, `thinking`).
 
-`config_option_update` in [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L794-L806) refreshes options mid-session.
+`config_option_update` in [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1254-L1265) refreshes options mid-session.
 
 ### Composer controls
 

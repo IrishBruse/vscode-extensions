@@ -375,6 +375,39 @@ describe("session cache items", () => {
         ]);
     });
 
+    it("round-trips an image on a tool row", () => {
+        const items = [
+            {
+                type: "tool" as const,
+                toolCallId: "read-img",
+                title: "Read",
+                kind: "read",
+                status: "completed" as const,
+                subtitle: ".tmp/shot.png",
+                image: { data: "QUJD", mimeType: "image/png" },
+            },
+        ];
+        expect(normalizeVisibleTrace(items)).toEqual(items);
+        expect(
+            normalizeVisibleTrace([
+                {
+                    type: "tool",
+                    toolCallId: "read-img",
+                    title: "Read",
+                    status: "completed",
+                    image: { data: "", mimeType: "image/png" },
+                },
+            ]),
+        ).toEqual([
+            {
+                type: "tool",
+                toolCallId: "read-img",
+                title: "Read",
+                status: "completed",
+            },
+        ]);
+    });
+
     it("round-trips tool command durations and drops non-positive values", () => {
         const items = [
             {

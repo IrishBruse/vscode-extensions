@@ -66,6 +66,26 @@ export const Diff: Story = {
   },
 };
 
+export const ImagePreview: Story = {
+  args: {
+    items: [
+      {
+        ...readItem,
+        toolCallId: "read-img",
+        title: "Read",
+        subtitle: ".tmp/playtest/pause-settings/06-continue-a.png",
+        content: undefined,
+        image: {
+          data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          mimeType: "image/png",
+        },
+      },
+    ],
+    onOpenWorkspacePath: () => undefined,
+    onOpenImage: () => undefined,
+  },
+};
+
 export const Grouped: Story = {
   args: {
     items: [

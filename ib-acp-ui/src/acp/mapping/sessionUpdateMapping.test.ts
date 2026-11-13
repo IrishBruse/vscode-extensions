@@ -19,6 +19,32 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendUserText", text: "hello" }]);
     });
 
+    it("keeps an image from a read tool and does not turn it into text", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "tool_call_update",
+            toolCallId: "read-img",
+            kind: "read",
+            status: "completed",
+            locations: [{ path: ".tmp/playtest/06-continue-a.png" }],
+            content: [
+                {
+                    type: "content",
+                    content: { type: "image", data: "QUJD", mimeType: "image/png" },
+                },
+            ],
+        });
+        expect(messages).toEqual([
+            {
+                type: "updateToolCall",
+                toolCallId: "read-img",
+                kind: "read",
+                status: "completed",
+                subtitle: ".tmp/playtest/06-continue-a.png",
+                image: { data: "QUJD", mimeType: "image/png" },
+            },
+        ]);
+    });
+
     it("maps a user image chunk to appendUserImage", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "user_message_chunk",

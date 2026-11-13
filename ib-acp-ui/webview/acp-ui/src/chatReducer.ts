@@ -52,6 +52,8 @@ export type TraceToolItem = {
   content: string | undefined;
   /** Structured diff when the agent sent `diff` content (preferred over plain `content`). */
   diffRows: ToolCallDiffRow[] | undefined;
+  /** Image the agent read. Shown as a small preview on the tool row. */
+  image?: AcpUiPromptImage;
   detailVisible: boolean;
   durationMs?: number;
   /** Epoch ms while a bash command or subagent is still running. */
@@ -745,6 +747,7 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
         status: item.status,
         content: item.content,
         diffRows: item.diffRows,
+        ...(item.image !== undefined ? { image: item.image } : {}),
         detailVisible: item.detailVisible === true || hasDiff || hasContent,
         ...(durationMs !== undefined ? { durationMs } : {}),
         ...(durationMs === undefined && startedAtMs !== undefined ? { startedAtMs } : {}),
@@ -995,6 +998,21 @@ function rememberToolIndex(
   }
 }
 
+function sameToolImage(
+  previous: AcpUiPromptImage | undefined,
+  incoming: AcpUiPromptImage | undefined,
+): boolean {
+  return previous?.data === incoming?.data && previous?.mimeType === incoming?.mimeType;
+}
+
+/** Saves the viewport once an image arrives after the turn has already finished. */
+function withLateToolImage(state: ChatState, changed: boolean): ChatState {
+  if (!changed || state.promptInFlight) {
+    return state;
+  }
+  return { ...state, visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) };
+}
+
 function mergeToolCwd(previous: string | undefined, incoming: string | undefined): string | undefined {
   if (incoming !== undefined && incoming.trim().length > 0) {
     return incoming.trim();
@@ -1013,6 +1031,7 @@ function appendToolCall(
   durationMs: number | undefined,
   content: string | undefined,
   cwd: string | undefined,
+  image: AcpUiPromptImage | undefined,
 ): ChatState {
   state = stateAfterLeavingOpenThoughtStream(state);
   const id = canonicalToolCallId(toolCallId);
@@ -1058,19 +1077,23 @@ function appendToolCall(
         detailVisible:
           (mergedContent !== undefined && mergedContent.trim().length > 0) ||
           (existing.diffRows !== undefined && existing.diffRows.length > 0),
+        ...(image !== undefined ? { image } : {}),
         ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
         ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
       };
       const toolIndexById = new Map(state.toolIndexById);
       rememberToolIndex(toolIndexById, id, existingIdx);
       const toolStartedAtMsById = clock.toolStartedAtMsById;
-      return {
-        ...state,
-        trace,
-        toolIndexById,
-        toolStartedAtMsById,
-        openStreamIndex: null,
-      };
+      return withLateToolImage(
+        {
+          ...state,
+          trace,
+          toolIndexById,
+          toolStartedAtMsById,
+          openStreamIndex: null,
+        },
+        image !== undefined && !sameToolImage(existing.image, image),
+      );
     }
   }
   const newStatus = status ?? "pending";
@@ -1098,6 +1121,7 @@ function appendToolCall(
     status: newStatus,
     content: content !== undefined && content.trim().length > 0 ? content : undefined,
     diffRows: undefined,
+    ...(image !== undefined ? { image } : {}),
     detailVisible: content !== undefined && content.trim().length > 0,
     ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
     ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
@@ -1146,6 +1170,7 @@ function updateToolCall(
   kind: string | undefined,
   durationMs: number | undefined,
   cwd: string | undefined,
+  image: AcpUiPromptImage | undefined,
 ): ChatState {
   const id = canonicalToolCallId(toolCallId);
   const idx = resolveToolIndexByCallId(state.toolIndexById, toolCallId);
@@ -1197,18 +1222,20 @@ function updateToolCall(
       ...(mergedCwd !== undefined ? { cwd: mergedCwd } : {}),
       kind: inferredKind,
       title: mergedTitle,
+      ...(image !== undefined ? { image } : {}),
       ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
       ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
     };
     const toolIndexById = new Map(state.toolIndexById);
     rememberToolIndex(toolIndexById, id, idx);
-    return {
+    const next = {
       ...state,
       trace,
       toolIndexById,
       toolStartedAtMsById: clock.toolStartedAtMsById,
       promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
     };
+    return withLateToolImage(next, image !== undefined && !sameToolImage(item.image, image));
   }
   state = stateAfterLeavingOpenThoughtStream(state);
   const mergedContent = content;
@@ -1246,6 +1273,7 @@ function updateToolCall(
     status,
     content: mergedContent,
     diffRows: mergedDiffRows,
+    ...(image !== undefined ? { image } : {}),
     detailVisible,
     ...(resolvedDuration !== undefined ? { durationMs: resolvedDuration } : {}),
     ...(clock.startedAtMs !== undefined ? { startedAtMs: clock.startedAtMs } : {}),
@@ -1262,6 +1290,21 @@ function updateToolCall(
     openStreamIndex: null,
     promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
   };
+}
+
+/** Attaches a file preview when the tool row is already on screen and has no image yet. */
+function attachToolImage(state: ChatState, toolCallId: string, image: AcpUiPromptImage): ChatState {
+  const idx = resolveToolIndexByCallId(state.toolIndexById, toolCallId);
+  if (idx === undefined) {
+    return state;
+  }
+  const item = state.trace[idx];
+  if (item?.type !== "tool" || item.image !== undefined) {
+    return state;
+  }
+  const trace = state.trace.slice();
+  trace[idx] = { ...item, image };
+  return withLateToolImage({ ...state, trace }, true);
 }
 
 /**
@@ -1313,6 +1356,7 @@ function isReplayTranscriptAction(action: ChatAction): boolean {
     case "appendAgentThought":
     case "appendToolCall":
     case "updateToolCall":
+    case "toolImage":
     case "appendPlan":
     case "cursorUpdateTodos":
     case "cursorTask":
@@ -1975,6 +2019,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.durationMs,
         action.content,
         action.cwd,
+        action.image,
       );
     case "updateToolCall":
       return updateToolCall(
@@ -1987,7 +2032,10 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.kind,
         action.durationMs,
         action.cwd,
+        action.image,
       );
+    case "toolImage":
+      return attachToolImage(state, action.toolCallId, action.image);
     case "slashCommands":
       return { ...state, slashCommands: action.commands };
     case "promptImageSupport":

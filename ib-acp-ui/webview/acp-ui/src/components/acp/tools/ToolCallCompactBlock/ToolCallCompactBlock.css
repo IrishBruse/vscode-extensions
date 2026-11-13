@@ -153,6 +153,26 @@
   }
 }
 
+.tool-call-compact-image {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0;
+  border: none;
+  background: none;
+  line-height: 0;
+  vertical-align: middle;
+  cursor: zoom-in;
+}
+
+.tool-call-compact-image img {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
+  border-radius: var(--acp-ui-radius-md);
+}
+
 .tool-call-compact-stat--added {
   color: var(--vscode-terminal-ansiGreen, #4ec9b0);
 }

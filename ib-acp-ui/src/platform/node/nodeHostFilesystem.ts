@@ -7,6 +7,9 @@ export function createNodeAcpHostFilesystem(): AcpHostFilesystem {
         async readTextFile(path: string): Promise<string> {
             return readFile(path, "utf-8");
         },
+        async readBytes(path: string): Promise<Uint8Array> {
+            return readFile(path);
+        },
         async writeTextFile(path: string, content: string): Promise<void> {
             await writeFile(path, content, "utf-8");
         },

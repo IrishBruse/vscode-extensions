@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: A read of an image shows a small preview of that image.
 - **Fix**: A thought and a bash command keep their elapsed time after the agent loads the full conversation.
 - **Change**: Debug hides the composer, the call list fills that view, and Chat and Debug float over the transcript.
 - **Change**: Debug colors each tool kind and shows a circle of how the calls split across those kinds.

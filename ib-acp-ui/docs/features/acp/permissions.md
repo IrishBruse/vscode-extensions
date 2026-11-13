@@ -34,9 +34,9 @@ Dispose cancels all pending waiters.
 
 ### Webview dialog
 
-[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts#L191-L256) builds `permissionRequest` messages.
-[permissionToolTitle](../../../src/acp/mapping/sessionUpdateMapping.ts#L150-L160) keeps the agent title, including a delete path.
-[permissionSummary](../../../src/acp/mapping/sessionUpdateMapping.ts#L162-L189) keeps the line counts after the path.
+[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts#L254-L317) builds `permissionRequest` messages.
+[permissionToolTitle](../../../src/acp/mapping/sessionUpdateMapping.ts#L213-L223) keeps the agent title, including a delete path.
+[permissionSummary](../../../src/acp/mapping/sessionUpdateMapping.ts#L225-L252) keeps the line counts after the path.
 The same message includes a short diff when the tool call has one.
 When the permission `toolCall` includes content (for example a `diff`), it also posts `updateToolCall` with `diffRows` or text so the tool row can show a preview while you decide.
 Execute-style tools still get a command subtitle when the shell line can be resolved.
