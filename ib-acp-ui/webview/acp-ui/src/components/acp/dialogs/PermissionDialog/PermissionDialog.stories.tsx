@@ -18,6 +18,21 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const DeleteFile: Story = {
+  args: {
+    toolTitle:
+      "Delete `/home/econn/git/vscode-extensions/ib-acp-ui/src/extension/acpUiChatOverview.test.ts`",
+    options: [
+      { optionId: "allow-once", name: "Allow once" },
+      { optionId: "allow-always", name: "Allow always" },
+      { optionId: "reject", name: "Reject" },
+    ],
+    onSelect: () => undefined,
+    onDismiss: () => undefined,
+    onOpenPath: () => undefined,
+  },
+};
+
 export const WriteFile: Story = {
   args: {
     toolTitle: "Write File",

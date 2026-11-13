@@ -617,6 +617,7 @@ export function AcpUiApp({
                 summary={permission.summary}
                 diffRows={permission.diffRows}
                 options={permission.options}
+                onOpenPath={postOpenWorkspacePath}
                 onSelect={(optionId) => {
                   postPermissionResponse({
                     requestId: permission.requestId,

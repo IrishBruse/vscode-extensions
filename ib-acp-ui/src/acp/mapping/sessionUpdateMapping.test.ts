@@ -396,6 +396,25 @@ describe("sessionUpdateToWebviewMessages", () => {
         ]);
     });
 
+    it("keeps the agent title on a delete permission", () => {
+        const title =
+            "Delete `/home/econn/git/vscode-extensions/ib-acp-ui/src/extension/acpUiChatOverview.test.ts`";
+        const messages = extensionMessagesForPermissionRequest("perm-del", {
+            sessionId: "sess-1",
+            toolCall: {
+                toolCallId: "call-7",
+                kind: "edit",
+                title,
+                status: "pending",
+            },
+            options: [{ optionId: "allow-once", name: "Allow once", kind: "allow_once" }],
+        });
+        expect(messages[0]).toMatchObject({
+            type: "permissionRequest",
+            toolTitle: title,
+        });
+    });
+
     it("forwards permission toolCall diff content as updateToolCall", () => {
         const messages = extensionMessagesForPermissionRequest("perm-1", {
             sessionId: "sess-1",

@@ -147,6 +147,18 @@ export function toolCallExecuteCommandSubtitle(call: {
  * Webview messages for a pending `session/request_permission`: dialog plus optional tool row update
  * (diff preview, content, subtitle) from the permission `toolCall`.
  */
+function permissionToolTitle(toolCall: { title?: string | null; kind?: string | null }): string {
+    const title = typeof toolCall.title === "string" ? toolCall.title.trim() : "";
+    if (title.length > 0) {
+        return title;
+    }
+    const kind =
+        toolCall.kind !== undefined && toolCall.kind !== null
+            ? String(toolCall.kind).toLowerCase()
+            : "";
+    return kind === "edit" ? "Write File" : "Tool";
+}
+
 function permissionSummary(
     content: string | undefined,
     detail: string | undefined,
@@ -199,12 +211,7 @@ export function extensionMessagesForPermissionRequest(
         {
             type: "permissionRequest",
             requestId,
-            toolTitle:
-                toolCall.kind !== undefined &&
-                toolCall.kind !== null &&
-                String(toolCall.kind).toLowerCase() === "edit"
-                    ? "Write File"
-                    : (toolCall.title ?? "Tool"),
+            toolTitle: permissionToolTitle(toolCall),
             ...(subtitle !== undefined ? { detail: subtitle } : {}),
             ...(summary !== undefined ? { summary } : {}),
             ...(previewRows.length > 0 ? { diffRows: previewRows } : {}),

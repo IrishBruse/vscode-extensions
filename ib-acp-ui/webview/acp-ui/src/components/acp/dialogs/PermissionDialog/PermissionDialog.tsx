@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { ToolCallDiffRow } from "../../../../../../../src/protocol/extensionHostMessages";
+import { backtickLooksLikePath, permissionTitleParts } from "./permissionTitle";
 import "./PermissionDialog.css";
 
 /**
@@ -16,6 +17,29 @@ function permissionToolSummaryForDisplay(raw: string): string {
 /**
  * Modal strip above the composer for `session/request_permission` (ACP).
  */
+function PermissionPathLink({
+  path,
+  onOpenPath,
+}: {
+  path: string;
+  onOpenPath?: (path: string) => void;
+}): ReactElement {
+  return (
+    <a
+      className="ib-permission-path-link"
+      href="#"
+      title={path}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenPath?.(path);
+      }}
+    >
+      {path}
+    </a>
+  );
+}
+
 export function PermissionDialog({
   toolTitle,
   detail,
@@ -24,6 +48,7 @@ export function PermissionDialog({
   options,
   onSelect,
   onDismiss,
+  onOpenPath,
 }: {
   toolTitle: string;
   detail?: string;
@@ -32,10 +57,16 @@ export function PermissionDialog({
   options: { optionId: string; name: string }[];
   onSelect: (optionId: string) => void;
   onDismiss: () => void;
+  onOpenPath?: (path: string) => void;
 }): ReactElement {
   const toolSummary = permissionToolSummaryForDisplay(toolTitle);
+  const titleParts = permissionTitleParts(toolSummary);
   const detailText = detail?.trim() ?? "";
-  const showDetail = detailText.length > 0 && detailText !== toolSummary;
+  const titleAlreadyShowsDetail = titleParts.some(
+    (part) => part.kind === "path" && part.text === detailText,
+  );
+  const showDetail = detailText.length > 0 && detailText !== toolSummary && !titleAlreadyShowsDetail;
+  const detailIsPath = backtickLooksLikePath(detailText);
   const summaryText = summary?.trim() ?? "";
   const previewRows = diffRows ?? [];
   return (
@@ -50,11 +81,21 @@ export function PermissionDialog({
           Permission required
         </div>
         <div className="ib-permission-tool" title={toolSummary}>
-          {toolSummary}
+          {titleParts.map((part, index) =>
+            part.kind === "path" ? (
+              <PermissionPathLink key={index} path={part.text} onOpenPath={onOpenPath} />
+            ) : (
+              <span key={index}>{part.text}</span>
+            ),
+          )}
         </div>
         {showDetail ? (
           <div className="ib-permission-detail" title={detailText}>
-            {detailText}
+            {detailIsPath ? (
+              <PermissionPathLink path={detailText} onOpenPath={onOpenPath} />
+            ) : (
+              detailText
+            )}
           </div>
         ) : null}
         {summaryText.length > 0 ? <div className="ib-permission-summary">{summaryText}</div> : null}

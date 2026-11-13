@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A permission request shows the agent title, and a path in that title opens the file.
 - **Remove**: The Setup sidebar is gone, and clients are added and chosen from commands.
 - **Fix**: Opening a chat no longer leaves Thinking counting after the agent is idle.
 - **Change**: A bash command shows the working directory and the elapsed time above the command.

@@ -38,6 +38,18 @@
   word-break: break-word;
 }
 
+.ib-permission-path-link {
+  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.ib-permission-path-link:hover,
+.ib-permission-path-link:focus-visible {
+  color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
+}
+
 .ib-permission-detail {
   font-family: var(--acp-ui-font-mono);
   font-size: var(--acp-ui-font-size-small);

@@ -3,7 +3,10 @@
 ## User facing
 
 When an agent needs approval before running a tool, ACP UI shows a permission dialog above the composer.
-The dialog names the tool, then shows the file path or command.
+The dialog shows the agent title.
+A file path in that title is a link.
+Click the link to open the file.
+The dialog also shows the file path or command when the agent sent it separately.
 A file write also shows the line counts and a short diff when the agent included the change.
 The dialog lists the options the agent provided.
 Pick an option to continue, or dismiss to cancel.
@@ -31,16 +34,18 @@ Dispose cancels all pending waiters.
 
 ### Webview dialog
 
-[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts#L179-L247) builds `permissionRequest` messages.
-[permissionSummary](../../../src/acp/mapping/sessionUpdateMapping.ts#L150-L177) keeps the line counts after the path.
+[extensionMessagesForPermissionRequest](../../../src/acp/mapping/sessionUpdateMapping.ts#L191-L256) builds `permissionRequest` messages.
+[permissionToolTitle](../../../src/acp/mapping/sessionUpdateMapping.ts#L150-L160) keeps the agent title, including a delete path.
+[permissionSummary](../../../src/acp/mapping/sessionUpdateMapping.ts#L162-L189) keeps the line counts after the path.
 The same message includes a short diff when the tool call has one.
 When the permission `toolCall` includes content (for example a `diff`), it also posts `updateToolCall` with `diffRows` or text so the tool row can show a preview while you decide.
 Execute-style tools still get a command subtitle when the shell line can be resolved.
 
-[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L1731-L1742) stores `permissionPrompt` state.
-[PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L19-L103) renders the path, the summary, and the diff.
+[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L1776-L1787) stores `permissionPrompt` state.
+[PermissionDialog](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/PermissionDialog.tsx#L43-L144) renders the title, the path, the summary, and the diff.
+[permissionTitleParts](../../../webview/acp-ui/src/components/acp/dialogs/PermissionDialog/permissionTitle.ts#L14-L38) turns a backtick path into a link.
 
-[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L614-L634) wires button handlers to `postPermissionResponse`.
-[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L714) forwards responses to the bridge.
+[AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx#L614-L636) wires button handlers to `postPermissionResponse` and opens a path link.
+[acpUiSessionController](../../../src/extension/acpUiSessionController.ts#L772) forwards responses to the bridge.
 
 Protocol: [tool calls](../../acp/protocol/v1/tool-calls.mdx).
