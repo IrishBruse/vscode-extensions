@@ -44,9 +44,9 @@ import { CursorCreatePlanDialog } from "./components/acp/dialogs/CursorCreatePla
 import { EmptyChatState } from "./components/acp/session/EmptyChatState/EmptyChatState";
 import { ImageViewer } from "./components/acp/dialogs/ImageViewer/ImageViewer";
 import { PermissionDialog } from "./components/acp/dialogs/PermissionDialog/PermissionDialog";
+import { openTaskHeader } from "./components/acp/trace/SubagentBlock/SubagentBlock";
+import { subagentStatusLabel } from "./components/acp/trace/SubagentBlock/subagentStatus";
 import { SubagentFocus } from "./components/acp/trace/SubagentFocus/SubagentFocus";
-import { TaskFocus } from "./components/acp/trace/SubagentFocus/TaskFocus";
-import { subagentStatusLabel } from "./components/acp/trace/SubagentSessionBlock/subagentStatus";
 import { ChatDebugView } from "./components/acp/debug/ChatDebugView";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
@@ -602,11 +602,12 @@ export function AcpUiApp({
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
                 taskActivityByToolId={taskActivityByToolId}
+                subagentSessionByToolId={state.subagentSessionByToolId}
               />
             ) : openTask?.type === "tool" ? (
-              <TaskFocus
-                item={openTask}
-                activity={openTaskActivity}
+              <SubagentFocus
+                {...openTaskHeader(openTask)}
+                items={openTaskActivity ?? []}
                 showThoughts={showThinkingBlocks}
                 expandAllToolOutputs={expandAllToolOutputs}
                 followBottom={stickToBottomRef.current}
@@ -625,6 +626,7 @@ export function AcpUiApp({
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
                 taskActivityByToolId={taskActivityByToolId}
+                subagentSessionByToolId={state.subagentSessionByToolId}
               />
             ) : (
               <TraceList
@@ -644,6 +646,7 @@ export function AcpUiApp({
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
                 taskActivityByToolId={taskActivityByToolId}
+                subagentSessionByToolId={state.subagentSessionByToolId}
               />
             )}
           </div>

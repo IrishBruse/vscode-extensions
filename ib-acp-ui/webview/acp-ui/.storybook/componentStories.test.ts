@@ -18,7 +18,7 @@ const STORY_MODULES = [
   "../src/components/acp/composer/SessionModeIndicator/SessionModeIndicator.stories.tsx",
   "../src/components/acp/tools/ToolCallBlock/ToolCallBlock.stories.tsx",
   "../src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.stories.tsx",
-  "../src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.stories.tsx",
+  "../src/components/acp/trace/SubagentBlock/SubagentBlock.stories.tsx",
   "../src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.stories.tsx",
   "../src/ShellCommandHighlight.stories.tsx",
   "../src/components/acp/trace/TraceList/TraceList.stories.tsx",

@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A completed file delete says Deleted.
+- **Change**: A subagent shows as one card, and that card opens the prompt.
 - **Add**: A read of an image shows a small preview of that image.
 - **Fix**: A thought and a bash command keep their elapsed time after the agent loads the full conversation.
 - **Change**: Debug hides the composer, the call list fills that view, and Chat and Debug float over the transcript.

@@ -2,14 +2,12 @@ import { createElement } from "react";
 import { prerenderToNodeStream } from "react-dom/static";
 import { describe, expect, it } from "vite-plus/test";
 import type { TraceToolItem } from "../../../../chatReducer";
-import { SubagentTaskBlock } from "./SubagentTaskBlock";
+import { SubagentBlock } from "./SubagentBlock";
 
 async function renderBlock(item: TraceToolItem): Promise<string> {
   const { prelude } = await prerenderToNodeStream(
-    createElement(SubagentTaskBlock, {
-      item,
-      expandAllToolOutputs: false,
-      onCollapseExpandAll: () => undefined,
+    createElement(SubagentBlock, {
+      tool: item,
     }),
   );
   const chunks: Buffer[] = [];
@@ -19,7 +17,7 @@ async function renderBlock(item: TraceToolItem): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-describe("SubagentTaskBlock", () => {
+describe("SubagentBlock", () => {
   it("shows a live Running for timer while the task is running", async () => {
     const html = await renderBlock({
       type: "tool",
@@ -34,5 +32,7 @@ describe("SubagentTaskBlock", () => {
       startedAtMs: Date.now() - 2_400,
     });
     expect(html).toMatch(/Running for \d+\.\ds/);
+    expect(html).not.toContain("Open</button>");
+    expect(html).toContain("Explore");
   });
 });

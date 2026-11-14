@@ -1256,7 +1256,7 @@ describe("chatReducer", () => {
     });
   });
 
-  it("links a task to the Cursor agent id and keeps a session link from removing the roster", () => {
+  it("links a task to the Cursor agent id and drops the duplicate child row", () => {
     let state = createInitialChatState();
     state = chatReducer(state, {
       type: "subagentUpdate",
@@ -1282,11 +1282,48 @@ describe("chatReducer", () => {
       sessionId: "child-1",
       event: { type: "appendAgentText", text: "Found it" },
     });
-    expect(state.trace.some((item) => item.type === "subagent")).toBe(true);
-    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(1);
+    expect(state.trace.some((item) => item.type === "subagent")).toBe(false);
+    expect(state.trace.some((item) => item.type === "tool")).toBe(true);
     expect(state.subagentActivity.get("child-1")?.trace).toEqual([
       { type: "agent", text: "Found it" },
     ]);
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId: "call-task-1",
+      status: "completed",
+    });
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      status: "completed",
+    });
+  });
+
+  it("drops the blank subagent row once the task links that child", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child.1",
+      event: { type: "appendAgentText", text: "Reading the menu" },
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(1);
+    state = chatReducer(state, {
+      type: "cursorTask",
+      toolCallId: "call-task-1",
+      description: "Decompile open menu",
+      prompt: "Write the declaration",
+      subagentType: "generalPurpose",
+      agentId: "child",
+    });
+    expect(state.trace.some((item) => item.type === "subagent")).toBe(false);
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      title: "Task: Decompile open menu",
+      status: "in_progress",
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child.1",
+      event: { type: "appendAgentText", text: "Still reading" },
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
   });
 
   it("places a nested child inside its parent", () => {

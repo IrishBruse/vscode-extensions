@@ -1,8 +1,5 @@
-.subagent-session {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 8px;
+.subagent-block {
+  display: block;
   width: 100%;
   margin: 0 0 var(--acp-ui-space-10);
   padding: var(--acp-ui-space-6) var(--acp-ui-space-10);
@@ -21,19 +18,36 @@
   cursor: pointer;
 }
 
-.subagent-session-status {
+.subagent-block-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  min-width: 0;
+}
+
+.subagent-block-status {
   flex-shrink: 0;
   color: var(--vscode-textLink-foreground, var(--vscode-foreground));
 }
 
-.subagent-session-title {
-  flex-shrink: 0;
-  font-weight: 600;
-}
-
-.subagent-session-description {
+.subagent-block-title {
   flex: 1 1 auto;
   min-width: 0;
-  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  font-weight: 600;
   word-break: break-word;
+}
+
+.subagent-block-detail,
+.subagent-block-activity {
+  display: block;
+  margin-top: 2px;
+  padding-left: 1.05rem;
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.subagent-block-activity {
+  color: var(--acp-ui-text-primary);
 }

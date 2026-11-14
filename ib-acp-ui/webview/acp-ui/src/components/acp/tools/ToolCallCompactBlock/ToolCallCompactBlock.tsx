@@ -25,6 +25,7 @@ import {
   compactToolDetailParts,
   compactToolGroupSummaryParts,
   compactToolShowsDiffStats,
+  isConfirmedFileDeletion,
   diffLineStats,
   toolCallDetailKind,
 } from "../../../../toolCallCompactText";
@@ -218,6 +219,7 @@ function CompactEditLine({
 }): ReactElement {
   const parts = compactToolDetailParts(item);
   const { added, removed } = diffLineStats(item.diffRows);
+  const showStats = !isConfirmedFileDeletion(item);
   return (
     <span className="tool-call-compact-edit">
       <span className="tool-call-compact-verb">{parts.verb}</span>
@@ -227,10 +229,10 @@ function CompactEditLine({
           <CompactDetailText parts={parts} onOpenWorkspacePath={onOpenWorkspacePath} />
         </>
       ) : null}
-      {added > 0 ? (
+      {showStats && added > 0 ? (
         <span className="tool-call-compact-stat tool-call-compact-stat--added"> +{added}</span>
       ) : null}
-      {removed > 0 ? (
+      {showStats && removed > 0 ? (
         <span className="tool-call-compact-stat tool-call-compact-stat--removed"> -{removed}</span>
       ) : null}
     </span>

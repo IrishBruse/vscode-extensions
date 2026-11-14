@@ -237,6 +237,44 @@ describe("toolCallCompactText", () => {
     );
   });
 
+  it("shows a completed file delete as Deleted", () => {
+    const path = "ib-acp-ui/webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx";
+    const removed = toolItem({
+      toolCallId: "del-1",
+      kind: "edit",
+      title: `Delete \`${path}\``,
+      subtitle: path,
+      status: "completed",
+      diffRows: [{ kind: "removed", text: "export function SubagentTaskBlock() {}" }],
+    });
+    expect(compactToolDetailLine(removed)).toBe(`Deleted ${path}`);
+    expect(compactToolGroupSummary([removed, { ...removed, toolCallId: "del-2" }])).toBe(
+      "deleted 2 files",
+    );
+    const pending = toolItem({
+      ...removed,
+      toolCallId: "del-pending",
+      status: "pending",
+    });
+    expect(compactToolDetailLine(pending)).toBe(`Edited ${path} -1`);
+  });
+
+  it("keeps a one-line removal inside a file as an edit", () => {
+    const item = toolItem({
+      toolCallId: "edit-line",
+      kind: "edit",
+      title: "Edit file",
+      subtitle: "src/app.ts",
+      status: "completed",
+      diffRows: [
+        { kind: "context", text: "const a = 1;" },
+        { kind: "removed", text: "const b = 2;" },
+        { kind: "context", text: "const c = 3;" },
+      ],
+    });
+    expect(compactToolDetailLine(item)).toBe("Edited src/app.ts -1");
+  });
+
   it("formats read tools with optional line ranges", () => {
     const item = toolItem({
       toolCallId: "read-1",

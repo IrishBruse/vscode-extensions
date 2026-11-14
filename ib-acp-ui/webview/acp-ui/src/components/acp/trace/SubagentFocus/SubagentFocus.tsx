@@ -1,7 +1,7 @@
 import type { ReactElement, RefObject } from "react";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import type { TraceItem } from "../../../../chatReducer";
-import { SubagentRunTimer } from "../SubagentSessionBlock/SubagentRunTimer";
+import { SubagentRunTimer } from "../SubagentBlock/SubagentRunTimer";
 import { TraceList } from "../TraceList/TraceList";
 import "./SubagentFocus.css";
 
@@ -13,6 +13,7 @@ export function SubagentFocus({
   status,
   startedAtMs,
   description,
+  prompt,
   items,
   showThoughts,
   expandAllToolOutputs,
@@ -26,11 +27,13 @@ export function SubagentFocus({
   onOpenSubagent,
   onOpenTask,
   taskActivityByToolId,
+  subagentSessionByToolId,
 }: {
   title: string;
   status: string;
   startedAtMs?: number;
   description: string;
+  prompt?: string;
   items: readonly TraceItem[];
   showThoughts: boolean;
   expandAllToolOutputs: boolean;
@@ -44,6 +47,7 @@ export function SubagentFocus({
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
   taskActivityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
+  subagentSessionByToolId?: ReadonlyMap<string, string>;
 }): ReactElement {
   return (
     <section className="subagent-focus" aria-label={title}>
@@ -57,6 +61,9 @@ export function SubagentFocus({
         <span className="subagent-focus-title">{title}</span>
       </div>
       {description.trim().length > 0 ? <p className="subagent-focus-description">{description}</p> : null}
+      {prompt !== undefined && prompt.trim().length > 0 ? (
+        <pre className="subagent-focus-prompt">{prompt}</pre>
+      ) : null}
       <TraceList
         items={items}
         showThoughts={showThoughts}
@@ -70,6 +77,7 @@ export function SubagentFocus({
         onOpenSubagent={onOpenSubagent}
         onOpenTask={onOpenTask}
         taskActivityByToolId={taskActivityByToolId}
+        subagentSessionByToolId={subagentSessionByToolId}
       />
     </section>
   );

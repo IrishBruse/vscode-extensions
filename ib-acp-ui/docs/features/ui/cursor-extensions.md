@@ -2,14 +2,17 @@
 
 ## User facing
 
-Subagent tasks show as cards with the status, the short description, the subagent type, and the prompt.
+A subagent shows as one card.
+The card shows the status, the short description, and the subagent type.
 A background subagent stays Running until it finishes.
 A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
 Unknown work, and a lost connection, show as Unknown.
-Its messages and tool calls show on the card.
+The latest lines of work show on the card.
+Open the card to read the prompt and the full transcript.
+Back returns to the parent chat.
 `cursor/task` `agentId` attaches that child session to the task.
+A linked child does not add a second row.
 Cursor streams that child only after `initialize` includes `_meta.subagents`.
-Open a card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 `cursor/ask_question` and basic `cursor/create_plan` dialogs already work.
 The plan dialog covers the chat.
 Open plan writes that plan to `plan.md` and opens it in the editor.
@@ -32,12 +35,13 @@ A background result (`isBackground` or status `disconnected`) stays in progress.
 [cursorSubagentUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1408-L1482) links the child session to that task.
 [childStateUpdateMessage](../../../src/acp/mapping/sessionUpdateMapping.ts#L1506-L1527) applies a child `state_update`.
 [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps a nested child on its parent session.
-[SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) renders that card, including a transcript that still has the older raw JSON subtitle.
-[upsertCursorTask](../../../webview/acp-ui/src/chatReducer.ts#L1042-L1105) updates that same tool row when `cursor/task` arrives, keeps a running task running, and stores `agentId`.
-[applySubagentUpdate](../../../webview/acp-ui/src/chatReducer.ts#L1274-L1315) places a nested child inside its parent.
-[markLiveSubagentsUnknown](../../../webview/acp-ui/src/chatReducer.ts#L1318-L1347) clears a confirmed running state after a disconnect.
+[SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L164-L213) renders that card, including a transcript that still has the older raw JSON subtitle.
+[upsertCursorTask](../../../webview/acp-ui/src/chatReducer.ts#L1395-L1442) updates that same tool row when `cursor/task` arrives, keeps a running task running, and stores `agentId`.
+[finishCursorTask](../../../webview/acp-ui/src/chatReducer.ts#L1444-L1465) drops the extra child row when that task owns the session.
+[applySubagentUpdate](../../../webview/acp-ui/src/chatReducer.ts#L1722-L1784) places a nested child inside its parent.
+[markLiveSubagentsUnknown](../../../webview/acp-ui/src/chatReducer.ts#L1787-L1816) clears a confirmed running state after a disconnect.
 [postSessionOrChild](../../../src/acp/session/acpSessionBridge.ts#L169-L180) keeps a child permission's tool row on that child.
-[TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L15-L92) opens that card and renders the child's live transcript.
+[SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) opens that card and renders the child's live transcript.
 
 Gaps: `phases` on create_plan, dedicated UI for `update_todos`, inline `generate_image`, and agent `toolCallId` correlation in bridge request ids.
 

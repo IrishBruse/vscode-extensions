@@ -88,6 +88,7 @@ export type ToolKindCounts = {
   search: number;
   glob: number;
   edit: number;
+  deleted: number;
   execute: number;
   other: number;
 };
@@ -140,6 +141,54 @@ export function diffLineStats(rows: ToolCallDiffRow[] | undefined): {
     }
   }
   return { added, removed };
+}
+
+function isDiffMarkerContext(text: string): boolean {
+  return text === "…" || text.startsWith("… (diff truncated");
+}
+
+/** True when every real line in the diff was removed. */
+function diffRemovesWholeFile(rows: ToolCallDiffRow[] | undefined): boolean {
+  if (rows === undefined || rows.length === 0) {
+    return false;
+  }
+  let removed = 0;
+  for (const row of rows) {
+    if (row.kind === "added") {
+      return false;
+    }
+    if (row.kind === "context" && !isDiffMarkerContext(row.text)) {
+      return false;
+    }
+    if (row.kind === "removed") {
+      removed += 1;
+    }
+  }
+  return removed > 0;
+}
+
+/**
+ * A finished tool that removed a file.
+ * Pending work stays an edit until the tool completes.
+ */
+export function isConfirmedFileDeletion(item: TraceToolItem): boolean {
+  if (item.status !== "completed") {
+    return false;
+  }
+  const kind = normalizedKind(item);
+  if (kind === "delete") {
+    return true;
+  }
+  if (kind !== "edit" && kind !== "write") {
+    return false;
+  }
+  if (diffLineStats(item.diffRows).added > 0) {
+    return false;
+  }
+  if (/^delete\b/i.test(item.title.trim())) {
+    return true;
+  }
+  return diffRemovesWholeFile(item.diffRows);
 }
 
 function normalizedKind(item: TraceToolItem): string {
@@ -350,6 +399,7 @@ export function countToolKinds(items: TraceToolItem[]): ToolKindCounts {
     search: 0,
     glob: 0,
     edit: 0,
+    deleted: 0,
     execute: 0,
     other: 0,
   };
@@ -365,8 +415,12 @@ export function countToolKinds(items: TraceToolItem[]): ToolKindCounts {
     const kind = normalizedKind(item);
     if (kind === "read") {
       counts.read++;
-    } else if (kind === "edit") {
-      counts.edit++;
+    } else if (kind === "edit" || kind === "write" || kind === "delete") {
+      if (isConfirmedFileDeletion(item)) {
+        counts.deleted++;
+      } else {
+        counts.edit++;
+      }
     } else if (kind === "execute" || kind === "terminal") {
       counts.execute++;
     } else {
@@ -402,6 +456,10 @@ export function compactToolGroupSummaryParts(
     verbs.push("edited");
     countParts.push(pluralCount(counts.edit, "edit", "edits"));
   }
+  if (counts.deleted > 0) {
+    verbs.push("deleted");
+    countParts.push(pluralCount(counts.deleted, "file", "files"));
+  }
   if (counts.execute > 0) {
     verbs.push("ran");
     countParts.push(pluralCount(counts.execute, "command", "commands"));
@@ -433,10 +491,11 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
   const kind = normalizedKind(item);
   const subtitle = item.subtitle?.trim() ?? "";
 
-  if (kind === "edit") {
+  if (kind === "edit" || kind === "delete" || kind === "write") {
     const path =
       subtitle.length > 0 ? subtitle : (item.content?.split("\n")[0]?.trim() ?? item.title);
-    return { verb: "Edited", ...pathSegmentFromRaw(path) };
+    const verb = isConfirmedFileDeletion(item) ? "Deleted" : "Edited";
+    return { verb, ...pathSegmentFromRaw(path) };
   }
 
   if (kind === "read") {
@@ -572,7 +631,7 @@ export function compactToolDetailLine(item: TraceToolItem): string {
   const { verb, detail } = compactToolDetailParts(item);
   const kind = normalizedKind(item);
 
-  if (kind === "edit") {
+  if ((kind === "edit" || kind === "delete" || kind === "write") && !isConfirmedFileDeletion(item)) {
     const { added, removed } = diffLineStats(item.diffRows);
     let stats = "";
     if (added > 0) {

@@ -1420,16 +1420,7 @@ function upsertCursorTask(
       status: existing.status,
       ...(running || action.durationMs === undefined ? {} : { durationMs: action.durationMs }),
     };
-    return {
-      ...base,
-      trace,
-      openStreamIndex: null,
-      subagentSessionByToolId: rememberSubagentTool(
-        base.subagentSessionByToolId,
-        action.toolCallId,
-        action.agentId ?? "",
-      ),
-    };
+    return finishCursorTask(base, trace, action.toolCallId, action.agentId ?? "");
   }
   const id = canonicalToolCallId(action.toolCallId);
   const trace = [
@@ -1447,14 +1438,30 @@ function upsertCursorTask(
       ...(action.durationMs !== undefined ? { durationMs: action.durationMs } : {}),
     },
   ];
-  const toolIndexById = new Map(base.toolIndexById);
-  rememberToolIndex(toolIndexById, id, trace.length - 1);
-  const subagentSessionByToolId = rememberSubagentTool(
-    base.subagentSessionByToolId,
-    action.toolCallId,
-    action.agentId ?? "",
-  );
-  return { ...base, trace, toolIndexById, subagentSessionByToolId, openStreamIndex: null };
+  return finishCursorTask(base, trace, action.toolCallId, action.agentId ?? "");
+}
+
+function finishCursorTask(
+  base: ChatState,
+  trace: TraceItem[],
+  toolCallId: string,
+  agentId: string,
+): ChatState {
+  const dropped = traceWithoutChildSession(trace, agentId);
+  return {
+    ...base,
+    trace: dropped?.trace ?? trace,
+    toolIndexById: dropped?.toolIndexById ?? reindexTools(trace),
+    openStreamIndex: null,
+    subagentSessionByToolId: rememberSubagentTool(
+      base.subagentSessionByToolId,
+      toolCallId,
+      agentId,
+    ),
+    ...(dropped !== undefined
+      ? { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base) }
+      : {}),
+  };
 }
 
 function blankSubagent(sessionId: string): SubagentTraceItem {
@@ -1511,6 +1518,55 @@ function sessionIdsReferToSameChild(stored: string, incoming: string): boolean {
   return (
     stored === incoming || incoming.startsWith(`${stored}.`) || stored.startsWith(`${incoming}.`)
   );
+}
+
+function reindexTools(trace: readonly TraceItem[]): Map<string, number> {
+  const toolIndexById = new Map<string, number>();
+  for (let index = 0; index < trace.length; index++) {
+    const item = trace[index];
+    if (item?.type === "tool") {
+      rememberToolIndex(toolIndexById, item.toolCallId, index);
+    }
+  }
+  return toolIndexById;
+}
+
+/** Drops the child-session row once a task card on this trace owns that child. */
+function traceWithoutChildSession(
+  trace: TraceItem[],
+  sessionId: string,
+): { trace: TraceItem[]; toolIndexById: Map<string, number> } | undefined {
+  if (sessionId.length === 0) {
+    return undefined;
+  }
+  const drops = trace.some(
+    (item) => item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId),
+  );
+  if (!drops) {
+    return undefined;
+  }
+  const nextTrace = trace.filter(
+    (item) => !(item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId)),
+  );
+  return { trace: nextTrace, toolIndexById: reindexTools(nextTrace) };
+}
+
+/** True when a task card in this trace already represents the child session. */
+export function traceCoversSubagentSession(
+  items: readonly TraceItem[],
+  sessionByToolId: ReadonlyMap<string, string>,
+  sessionId: string,
+): boolean {
+  for (const item of items) {
+    if (item.type !== "tool" || subagentTaskViewFromTool(item) === undefined) {
+      continue;
+    }
+    const linked = sessionByToolId.get(canonicalToolCallId(item.toolCallId));
+    if (linked !== undefined && sessionIdsReferToSameChild(linked, sessionId)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function sessionHasToolLink(map: Map<string, string>, sessionId: string): boolean {
@@ -1619,7 +1675,6 @@ function subagentUpdateHasDisplay(
 
 function placeSubagent(
   trace: TraceItem[],
-  toolIndexById: Map<string, number>,
   action: Extract<ChatAction, { type: "subagentUpdate" }>,
 ): TraceItem[] {
   const linked =
@@ -1628,11 +1683,12 @@ function placeSubagent(
     subagentUpdateHasDisplay(action);
   if (linked) {
     let next = trace.filter(
-      (item) => !(item.type === "subagent" && item.sessionId === action.sessionId),
+      (item) =>
+        !(item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, action.sessionId)),
     );
     const patch = linkedToolStatus(action);
     if (patch !== undefined && action.toolCallId !== undefined) {
-      next = applyLinkedToolStatus(next, toolIndexById, action.toolCallId, patch);
+      next = applyLinkedToolStatus(next, reindexTools(next), action.toolCallId, patch);
     }
     return next;
   }
@@ -1673,7 +1729,20 @@ function applySubagentUpdate(
     action.sessionId,
   );
   if (!subagentUpdateHasDisplay(action)) {
-    return { ...state, subagentSessionByToolId };
+    const toolOnTrace =
+      action.toolCallId !== undefined &&
+      resolveToolIndexByCallId(state.toolIndexById, action.toolCallId) !== undefined;
+    const dropped = toolOnTrace ? traceWithoutChildSession(state.trace, action.sessionId) : undefined;
+    if (dropped === undefined) {
+      return { ...state, subagentSessionByToolId };
+    }
+    return {
+      ...state,
+      trace: dropped.trace,
+      toolIndexById: dropped.toolIndexById,
+      subagentSessionByToolId,
+      visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
+    };
   }
   const parentSessionId = action.parentSessionId;
   if (
@@ -1687,9 +1756,14 @@ function applySubagentUpdate(
       openStreamIndex: null,
     };
     const subagentActivity = new Map(state.subagentActivity);
+    const nestedTrace = placeSubagent(current.trace, action);
     subagentActivity.set(parentSessionId, {
       ...current,
-      trace: placeSubagent(current.trace, current.toolIndexById, action),
+      trace: nestedTrace,
+      toolIndexById:
+        nestedTrace.length === current.trace.length
+          ? current.toolIndexById
+          : reindexTools(nestedTrace),
     });
     return {
       ...state,
@@ -1698,9 +1772,12 @@ function applySubagentUpdate(
       visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
     };
   }
+  const nextTrace = placeSubagent(state.trace, action);
   return {
     ...state,
-    trace: placeSubagent(state.trace, state.toolIndexById, action),
+    trace: nextTrace,
+    toolIndexById:
+      nextTrace.length === state.trace.length ? state.toolIndexById : reindexTools(nextTrace),
     subagentSessionByToolId,
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
   };

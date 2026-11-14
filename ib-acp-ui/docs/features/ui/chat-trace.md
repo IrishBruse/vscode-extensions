@@ -43,6 +43,8 @@ A markdown file path on a tool line opens that file in the editor.
 Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
 A long diff shows a short window around the edits.
+A completed file delete says Deleted.
+A delete that is still waiting stays Edited.
 A bash command shows the working directory and the elapsed time, then the command under `$`.
 For example, `~/foo/bar 2.1s` and then `$ echo test`.
 A bash command keeps its line breaks under the `$`.
@@ -122,11 +124,10 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   [activityGroupRanges](../../../webview/acp-ui/src/components/acp/trace/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
   [trace-activity-group](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.css#L91-L96) adds padding around that run.
 - TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
-- Subagent tasks: [SubagentTaskBlock](../../../webview/acp-ui/src/components/acp/tools/SubagentTaskBlock/SubagentTaskBlock.tsx#L39-L124) shows status and an Open control.
-  [SubagentSessionBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentSessionBlock/SubagentSessionBlock.tsx#L10-L38) shows an ACP child session on the parent chat.
-  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L76) and [TaskFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/TaskFocus.tsx#L15-L92) show that subagent, and Back returns to the parent.
+- Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L164-L213) is the card for a Cursor task and for an ACP child session.
+  [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L88) skips the child row when a task card already owns that session.
+  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) shows the prompt and that subagent, and Back returns to the parent.
   [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps child session updates on that child.
-  [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L77) keeps each task on its own row.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L443-L532).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
@@ -134,8 +135,9 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   [imageFromToolFields](../../../src/acp/mapping/sessionUpdateMapping.ts#L129-L134) keeps the image from the tool result.
   When that result has no image, [readWorkspaceImage](../../../src/platform/readWorkspaceImage.ts#L9-L29) reads the file for the preview.
   [CompactImagePreview](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L240-L262) draws the preview on the tool line.
-  [skillFolderName](../../../webview/acp-ui/src/toolCallCompactText.ts#L177-L191) names the folder that holds `SKILL.md`.
-  [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L447-L463) then shows that read as `Used` plus that folder, and the folder still opens the file.
+  [skillFolderName](../../../webview/acp-ui/src/toolCallCompactText.ts#L226-L240) names the folder that holds `SKILL.md`.
+  [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L506-L520) then shows that read as `Used` plus that folder, and the folder still opens the file.
+  [isConfirmedFileDeletion](../../../webview/acp-ui/src/toolCallCompactText.ts#L174-L192) labels a finished file removal as Deleted.
   [CompactPathLink](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L48-L168) shows that label and the full path in a workbench-style tooltip.
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.

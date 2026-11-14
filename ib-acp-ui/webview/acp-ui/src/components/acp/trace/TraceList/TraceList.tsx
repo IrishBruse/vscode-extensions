@@ -24,8 +24,8 @@ const AgentMarkdown = lazy(() =>
 );
 import { AgentThoughtBlock } from "../AgentThoughtBlock/AgentThoughtBlock";
 import { PlanBlock } from "../PlanBlock/PlanBlock";
-import { SubagentSessionBlock } from "../SubagentSessionBlock/SubagentSessionBlock";
-import { SubagentTaskBlock } from "../../tools/SubagentTaskBlock/SubagentTaskBlock";
+import { traceCoversSubagentSession } from "../../../../chatReducer";
+import { SubagentBlock } from "../SubagentBlock/SubagentBlock";
 import { ToolCallCompactBlock } from "../../tools/ToolCallCompactBlock/ToolCallCompactBlock";
 import { ToolCallCompactExecuteBlock } from "../../tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock";
 import { isCompactGroupableTool, isSubagentTaskTool } from "../../../../toolCallCompactText";
@@ -52,11 +52,22 @@ type TraceRenderSegment =
   | { kind: "toolCompactSingle"; tool: TraceToolItem; index: number }
   | { kind: "toolExecute"; tool: TraceToolItem; index: number };
 
-function partitionTraceSegments(items: readonly TraceItem[], showThoughts: boolean): TraceRenderSegment[] {
+function partitionTraceSegments(
+  items: readonly TraceItem[],
+  showThoughts: boolean,
+  subagentSessionByToolId: ReadonlyMap<string, string> | undefined,
+): TraceRenderSegment[] {
   const segments: TraceRenderSegment[] = [];
   for (let index = 0; index < items.length; index++) {
     const item = items[index]!;
     if (item.type === "thought" && !showThoughts) {
+      continue;
+    }
+    if (
+      item.type === "subagent" &&
+      subagentSessionByToolId !== undefined &&
+      traceCoversSubagentSession(items, subagentSessionByToolId, item.sessionId)
+    ) {
       continue;
     }
     if (item.type === "tool" && isSubagentTaskTool(item)) {
@@ -253,12 +264,10 @@ const TraceSegmentView = memo(function TraceSegmentView({
       segment.index,
       segment.index,
       isSubagentTaskTool(item) ? (
-        <SubagentTaskBlock
+        <SubagentBlock
           className={gapClass.trim()}
-          item={item}
-          expandAllToolOutputs={expandAllToolOutputs}
-          onCollapseExpandAll={onCollapseExpandAll}
-          onOpen={onOpenTask}
+          tool={item}
+          onOpen={onOpenTask === undefined ? undefined : () => onOpenTask(item.toolCallId)}
           activity={taskActivity}
         />
       ) : (
@@ -277,10 +286,10 @@ const TraceSegmentView = memo(function TraceSegmentView({
     return traceRow(
       segment.index,
       segment.index,
-      <SubagentSessionBlock
+      <SubagentBlock
         className={gapClass.trim()}
-        item={item}
-        onOpen={onOpenSubagent}
+        session={item}
+        onOpen={onOpenSubagent === undefined ? undefined : () => onOpenSubagent(item.sessionId)}
       />,
     );
   }
@@ -310,6 +319,7 @@ export const TraceList = memo(function TraceList({
   onOpenSubagent,
   onOpenTask,
   taskActivityByToolId,
+  subagentSessionByToolId,
 }: {
   items: readonly TraceItem[];
   showThoughts: boolean;
@@ -325,6 +335,7 @@ export const TraceList = memo(function TraceList({
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
   taskActivityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
+  subagentSessionByToolId?: ReadonlyMap<string, string>;
 }): ReactElement {
   const thoughtIndexesRef = useRef<number[] | null>(null);
   const seenHistoryCommitRef = useRef(historyCommit);
@@ -401,7 +412,7 @@ export const TraceList = memo(function TraceList({
     }
   }, [collapseNonceByIndex, traceScrollRef]);
 
-  const segments = partitionTraceSegments(items, showThoughts);
+  const segments = partitionTraceSegments(items, showThoughts, subagentSessionByToolId);
   let previousVisibleType: TraceItem["type"] | undefined;
 
   const renderSegment = (segment: TraceRenderSegment): ReactElement | null => {
