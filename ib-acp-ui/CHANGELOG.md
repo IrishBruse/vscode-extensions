@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: A stalled connection says to send a message to continue.
 - **Change**: A completed file delete says Deleted.
 - **Change**: A subagent shows as one card, and that card opens the prompt.
 - **Add**: A read of an image shows a small preview of that image.

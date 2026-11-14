@@ -358,7 +358,7 @@ export type ExtensionToWebviewMessage =
     | { type: "appendPlan"; entries: PlanEntry[] }
     | { type: "commandFeedback"; message: string }
     | { type: "turnComplete"; stopReason: string }
-    | { type: "error"; message: string; disconnected?: boolean }
+    | { type: "error"; message: string; disconnected?: boolean; stalled?: boolean }
     | { type: "agentConnection"; connected: boolean }
     /** Clears the transcript and tool state; sent before the host reconnects the agent session. */
     | { type: "sessionReset" }

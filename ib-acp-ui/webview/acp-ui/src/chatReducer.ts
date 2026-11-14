@@ -411,6 +411,33 @@ function resolveToolDurationMs(
   return positiveDurationMs(Date.now() - startedAtMs);
 }
 
+/** Stops clocks on tools that were still running when the connection stalled. */
+function settleLiveTools(state: ChatState): ChatState {
+  const now = Date.now();
+  let changed = false;
+  const trace = state.trace.map((item): TraceItem => {
+    if (item.type !== "tool" || !toolStatusIsLive(item.status)) {
+      return item;
+    }
+    changed = true;
+    const durationMs =
+      item.durationMs ??
+      (item.startedAtMs !== undefined ? positiveDurationMs(now - item.startedAtMs) : undefined);
+    return {
+      ...item,
+      status: "failed",
+      startedAtMs: undefined,
+      ...(durationMs !== undefined ? { durationMs } : {}),
+    };
+  });
+  if (!changed) {
+    return state.toolStartedAtMsById.size === 0
+      ? state
+      : { ...state, toolStartedAtMsById: new Map() };
+  }
+  return { ...state, trace, toolStartedAtMsById: new Map() };
+}
+
 function finalizeOpenThoughtDuration(state: ChatState): ChatState {
   const now = Date.now();
   let changed = false;
@@ -2220,13 +2247,15 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           ? finalizeOpenThoughtDuration(replayShadow(state))
           : null;
       const disconnected = action.disconnected === true;
-      const withUnknown = disconnected ? markLiveSubagentsUnknown(base) : base;
-      const trace =
-        disconnected && action.message.trim().length > 0
-          ? [...withUnknown.trace, { type: "agent" as const, text: action.message }]
-          : withUnknown.trace;
+      const stalled = action.stalled === true;
+      const withUnknown = disconnected || stalled ? markLiveSubagentsUnknown(base) : base;
+      const settled = stalled ? settleLiveTools(withUnknown) : withUnknown;
+      const showInTrace = (disconnected || stalled) && action.message.trim().length > 0;
+      const trace = showInTrace
+        ? [...settled.trace, { type: "agent" as const, text: action.message }]
+        : settled.trace;
       return {
-        ...withUnknown,
+        ...settled,
         trace,
         ...(replay !== null
           ? {

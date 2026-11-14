@@ -685,6 +685,41 @@ describe("chatReducer", () => {
     expect(state.errorText).toBeNull();
   });
 
+  it("stops a live command when the connection stalls and keeps the agent connected", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "agentConnection", connected: true });
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "bash-1",
+      title: "cmake --build build/debug --target nsmbu -j && nsmbu",
+      kind: "execute",
+      status: "in_progress",
+    });
+    vi.advanceTimersByTime(1_200);
+    state = chatReducer(state, {
+      type: "error",
+      message: "The connection stalled. Send a message to continue.",
+      stalled: true,
+    });
+    expect(state.agentConnected).toBe(true);
+    expect(state.promptInFlight).toBe(false);
+    expect(state.errorText).toBe("The connection stalled. Send a message to continue.");
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      status: "failed",
+      durationMs: 1_200,
+    });
+    expect(state.trace.at(-1)).toEqual({
+      type: "agent",
+      text: "The connection stalled. Send a message to continue.",
+    });
+    state = chatReducer(state, { type: "submit", body: "continue" });
+    expect(state.errorText).toBeNull();
+    expect(state.agentConnected).toBe(true);
+    vi.useRealTimers();
+  });
+
   it("stops a running thought timer on error or disconnect", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));

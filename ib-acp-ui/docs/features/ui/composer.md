@@ -12,6 +12,8 @@ Before the agent reports usage, that label shows a dash.
 Connecting and Thinking sit in the center of that line and pulse while they are active.
 A running bash command uses that same spot and shows `Running for 3.8s`.
 ACP connection errors sit in that same spot.
+A stalled connection says to send a message to continue.
+The agent stays connected, and a command that was still running stops.
 A long error stays on one line, and the full text is in the tooltip.
 
 While typing, ACP UI suggests completions without leaving the message box.
@@ -77,6 +79,8 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 ### Status clock
 
 [useComposerStatusText](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L126-L169) draws Connecting, Thinking, and Running in the center of the top line.
+[formatAcpConnectionErrorMessage](../../../src/acp/session/agentDisconnect.ts#L49-L60) replaces a stall such as `RetriableError: Connection stalled` with a short instruction.
+[settleLiveTools](../../../webview/acp-ui/src/chatReducer.ts#L415-L439) stops a command that is still running so that message can show.
 [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) supplies the start time for a bash command that is still running.
 
 ### Context usage

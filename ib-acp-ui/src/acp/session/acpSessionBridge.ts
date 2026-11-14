@@ -43,6 +43,7 @@ import {
     type AgentProcessExitDetails,
     formatAcpConnectionErrorMessage,
     formatAgentProcessExitMessage,
+    isAcpConnectionStall,
     isAcpDisconnectError,
 } from "./agentDisconnect";
 import {
@@ -859,11 +860,13 @@ export class AcpSessionBridge {
             });
         } catch (err: unknown) {
             const raw = err instanceof Error ? err.message : String(err);
+            const stalled = isAcpConnectionStall(raw);
             const message = formatAcpConnectionErrorMessage(this.config.name, raw);
             this.postToWebview({
                 type: "error",
                 message,
                 disconnected: isAcpDisconnectError(raw),
+                ...(stalled ? { stalled: true } : {}),
             });
         } finally {
             this.prompting = false;

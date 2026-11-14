@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
     formatAcpConnectionErrorMessage,
     formatAgentProcessExitMessage,
+    isAcpConnectionStall,
     isAcpDisconnectError,
 } from "./agentDisconnect";
 
@@ -27,6 +28,15 @@ describe("formatAcpConnectionErrorMessage", () => {
     it("rewrites opaque connection-closed errors", () => {
         expect(formatAcpConnectionErrorMessage("Cursor", "ACP connection closed")).toContain(
             'Lost connection to ACP agent "Cursor"',
+        );
+    });
+
+    it("rewrites a retriable stall and keeps the session usable", () => {
+        const raw = "Error: RetriableError: Connection stalled";
+        expect(isAcpConnectionStall(raw)).toBe(true);
+        expect(isAcpDisconnectError(raw)).toBe(false);
+        expect(formatAcpConnectionErrorMessage("Cursor", raw)).toBe(
+            "The connection stalled. Send a message to continue.",
         );
     });
 });

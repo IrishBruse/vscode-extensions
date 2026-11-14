@@ -33,10 +33,25 @@ export function isAcpDisconnectError(message: string): boolean {
     );
 }
 
+/** True when the agent link failed but the session can accept another message. */
+export function isAcpConnectionStall(message: string): boolean {
+    const lower = message.toLowerCase();
+    return (
+        lower.includes("connection stalled") ||
+        lower.includes("retriableerror") ||
+        lower.includes("econnreset") ||
+        lower.includes("socket hang up") ||
+        lower.includes("other side closed")
+    );
+}
+
 /** Rewrites low-level connection errors into clearer text. */
 export function formatAcpConnectionErrorMessage(agentName: string, detail: string): string {
     if (detail === "Agent session not connected.") {
         return `ACP agent "${agentName}" is not connected. Send a message to reconnect, or use /reset to start a new session.`;
+    }
+    if (isAcpConnectionStall(detail)) {
+        return "The connection stalled. Send a message to continue.";
     }
     if (isAcpDisconnectError(detail)) {
         return `Lost connection to ACP agent "${agentName}". The agent process may have stopped.`;
