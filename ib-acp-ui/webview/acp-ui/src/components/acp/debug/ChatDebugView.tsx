@@ -15,6 +15,7 @@ export type ChatDebugViewProps = {
   title: string;
   agentName?: string;
   childTraces?: ReadonlyMap<string, { trace: readonly TraceItem[] }>;
+  activityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
 };
 
 function ShareCircle({ calls }: { calls: readonly ChatDebugCall[] }): ReactElement | null {
@@ -68,10 +69,11 @@ export function ChatDebugView({
   title,
   agentName,
   childTraces,
+  activityByToolId,
 }: ChatDebugViewProps): ReactElement {
   const model = useMemo(
-    () => buildChatDebug(trace, title, childTraces),
-    [trace, title, childTraces],
+    () => buildChatDebug(trace, title, childTraces, activityByToolId),
+    [trace, title, childTraces, activityByToolId],
   );
   const [pickedId, setPickedId] = useState<string | null>(null);
   const selected = model.nodes.find((node) => node.id === pickedId) ?? model.nodes.at(-1) ?? null;

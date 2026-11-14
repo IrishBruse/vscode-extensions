@@ -115,6 +115,8 @@ export type ChatState = {
   openStreamIndex: number | null;
   toolIndexById: Map<string, number>;
   promptInFlight: boolean;
+  /** Optimistic prompt text from submit waiting to absorb agent's echo. */
+  pendingUserEcho: string | null;
   errorText: string | null;
   /** Whether the ACP agent subprocess is connected for this chat. */
   agentConnected: boolean;
@@ -260,6 +262,7 @@ export function createInitialChatState(): ChatState {
     openStreamIndex: null,
     toolIndexById: new Map(),
     promptInFlight: false,
+    pendingUserEcho: null,
     errorText: null,
     agentConnected: false,
     modelSelection: null,
@@ -892,19 +895,48 @@ function userAttachmentFields(item: {
 }
 
 function appendUserText(state: ChatState, text: string): ChatState {
+  if (text.length === 0) {
+    return state;
+  }
+  if (
+    state.pendingUserEcho !== undefined &&
+    state.pendingUserEcho !== null &&
+    state.pendingUserEcho.length > 0
+  ) {
+    if (state.pendingUserEcho.startsWith(text)) {
+      const nextPending = state.pendingUserEcho.slice(text.length);
+      return {
+        ...state,
+        pendingUserEcho: nextPending.length > 0 ? nextPending : null,
+      };
+    }
+    const trimmedPending = state.pendingUserEcho.trim();
+    const trimmedText = text.trim();
+    if (trimmedPending.length > 0 && trimmedPending === trimmedText) {
+      return {
+        ...state,
+        pendingUserEcho: null,
+      };
+    }
+  }
+
   const last = state.trace[state.trace.length - 1];
   if (last?.type === "user") {
+    if (state.promptInFlight && last.text.length > 0 && last.text === text) {
+      return state;
+    }
     const trace = state.trace.slice();
     trace[trace.length - 1] = {
       type: "user",
       text: last.text + text,
       ...userAttachmentFields(last),
     };
-    return { ...state, trace };
+    return { ...state, trace, pendingUserEcho: null };
   }
   return {
     ...state,
     trace: [...state.trace, { type: "user" as const, text }],
+    pendingUserEcho: null,
   };
 }
 
@@ -944,7 +976,7 @@ function appendAgentText(state: ChatState, text: string): ChatState {
     if (existing?.type === "agent") {
       const trace = state.trace.slice();
       trace[open] = { type: "agent", text: existing.text + text };
-      return { ...state, trace };
+      return { ...state, trace, pendingUserEcho: null };
     }
     if (existing?.type === "thought") {
       state = finalizeOpenThoughtDuration(state);
@@ -955,6 +987,7 @@ function appendAgentText(state: ChatState, text: string): ChatState {
     ...state,
     trace,
     openStreamIndex: trace.length - 1,
+    pendingUserEcho: null,
   };
 }
 
@@ -986,6 +1019,7 @@ function appendAgentThought(
         trace,
         thoughtStartedAtMs: startedAtMs ?? null,
         promptInFlight: startedAtMs !== undefined ? true : state.promptInFlight,
+        pendingUserEcho: null,
       };
     }
   }
@@ -1005,6 +1039,7 @@ function appendAgentThought(
     openStreamIndex: trace.length - 1,
     thoughtStartedAtMs: startedAtMs ?? null,
     promptInFlight: startedAtMs !== undefined ? true : state.promptInFlight,
+    pendingUserEcho: null,
   };
 }
 
@@ -1164,6 +1199,7 @@ function appendToolCall(
     toolStartedAtMsById,
     openStreamIndex: null,
     promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
+    pendingUserEcho: null,
   };
 }
 
@@ -1316,6 +1352,7 @@ function updateToolCall(
     toolStartedAtMsById,
     openStreamIndex: null,
     promptInFlight: toolStatusIsLive(status) ? true : state.promptInFlight,
+    pendingUserEcho: null,
   };
 }
 
@@ -1348,6 +1385,7 @@ function applySessionReset(state: ChatState): ChatState {
     openStreamIndex: null,
     toolIndexById: new Map(),
     promptInFlight: false,
+    pendingUserEcho: null,
     errorText: null,
     agentConnected: false,
     permissionPrompt: null,
@@ -1405,6 +1443,7 @@ function replayShadow(state: ChatState): ChatState {
     toolStartedAtMsById: state.replayToolStartedAtMsById,
     sessionHistoryLoading: false,
     viewportCacheActive: false,
+    pendingUserEcho: null,
   };
 }
 
@@ -1902,6 +1941,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           ...(action.images !== undefined && action.images.length > 0 ? { images: action.images } : {}),
         },
       ],
+      pendingUserEcho: action.body,
       promptInFlight: true,
       errorText: state.agentConnected ? null : state.errorText,
       openStreamIndex: null,
@@ -2204,6 +2244,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...base,
         trace,
         openStreamIndex: null,
+        pendingUserEcho: null,
       };
     }
     case "agentConnection":
@@ -2220,6 +2261,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         trace,
         openStreamIndex: trace.length - 1,
         promptInFlight: false,
+        pendingUserEcho: null,
         errorText: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
@@ -2229,6 +2271,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return {
         ...base,
         promptInFlight: false,
+        pendingUserEcho: null,
       };
     }
     case "turnComplete": {
@@ -2237,6 +2280,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...base,
         openStreamIndex: null,
         promptInFlight: false,
+        pendingUserEcho: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
     }
@@ -2268,6 +2312,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         errorText: action.message,
         agentConnected: disconnected ? false : state.agentConnected,
         promptInFlight: false,
+        pendingUserEcho: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
     }

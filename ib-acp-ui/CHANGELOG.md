@@ -5,6 +5,9 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: User message text is no longer doubled when the agent echoes prompt text.
+
+- **Fix**: Debug lists the tools a subagent called.
 - **Fix**: A stalled connection says to send a message to continue.
 - **Change**: A completed file delete says Deleted.
 - **Change**: A subagent shows as one card, and that card opens the prompt.

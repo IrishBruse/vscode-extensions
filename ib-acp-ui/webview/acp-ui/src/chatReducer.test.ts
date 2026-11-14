@@ -430,6 +430,46 @@ describe("chatReducer", () => {
     expect(state.promptImageSupported).toBe(false);
   });
 
+  it("does not double user text when the agent echoes the prompt in full", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "test" });
+    expect(state.trace).toEqual([{ type: "user", text: "test" }]);
+    state = chatReducer(state, { type: "appendUserText", text: "test" });
+    expect(state.trace).toEqual([{ type: "user", text: "test" }]);
+  });
+
+  it("does not double user text when the agent echoes the prompt in chunks", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "hello world" });
+    expect(state.trace).toEqual([{ type: "user", text: "hello world" }]);
+    state = chatReducer(state, { type: "appendUserText", text: "hello " });
+    state = chatReducer(state, { type: "appendUserText", text: "world" });
+    expect(state.trace).toEqual([{ type: "user", text: "hello world" }]);
+  });
+
+  it("does not double user text across sequential prompt turns", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, { type: "submit", body: "test" });
+    state = chatReducer(state, { type: "appendUserText", text: "test" });
+    state = chatReducer(state, { type: "appendAgentText", text: "Loud and clear!" });
+    state = chatReducer(state, { type: "turnComplete", stopReason: "end_turn" });
+    expect(state.trace).toEqual([
+      { type: "user", text: "test" },
+      { type: "agent", text: "Loud and clear!" },
+    ]);
+
+    state = chatReducer(state, { type: "submit", body: "hi" });
+    state = chatReducer(state, { type: "appendUserText", text: "hi" });
+    state = chatReducer(state, { type: "appendAgentText", text: "Hello!" });
+    state = chatReducer(state, { type: "turnComplete", stopReason: "end_turn" });
+    expect(state.trace).toEqual([
+      { type: "user", text: "test" },
+      { type: "agent", text: "Loud and clear!" },
+      { type: "user", text: "hi" },
+      { type: "agent", text: "Hello!" },
+    ]);
+  });
+
   it("clears model config on loading and restores on sessionConfigOptions", () => {
     const withOptions = chatReducer(
       {

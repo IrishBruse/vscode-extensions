@@ -256,6 +256,7 @@ export function buildChatDebug(
   trace: readonly TraceItem[],
   title: string,
   childTraces?: ReadonlyMap<string, { trace: readonly TraceItem[] }>,
+  activityByToolId?: ReadonlyMap<string, readonly TraceItem[]>,
 ): ChatDebugModel {
   const nodes: ChatDebugNode[] = [];
   const chatCalls: ChatDebugCall[] = [];
@@ -284,12 +285,13 @@ export function buildChatDebug(
       const task = subagentTaskViewFromTool(item);
       if (task !== undefined) {
         const call = toolCall(item);
+        const childCalls = callsInTrace(activityByToolId?.get(item.toolCallId) ?? []);
         pushSubagent({
           tone: "subagent",
           label: shortLabel(task.description),
           kicker: call.kind,
           title: oneLine(task.description),
-          calls: [call],
+          calls: childCalls.length > 0 ? childCalls : [call],
         });
         continue;
       }

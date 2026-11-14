@@ -551,6 +551,7 @@ export function AcpUiApp({
               title={state.sessionTitle}
               agentName={state.acpAgentSelection?.currentName}
               childTraces={state.subagentActivity}
+              activityByToolId={taskActivityByToolId}
             />
           ) : (
           <>

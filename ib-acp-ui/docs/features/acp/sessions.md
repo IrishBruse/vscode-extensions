@@ -74,7 +74,7 @@ On load failure, the bridge falls back to `session/new` and the cached screen st
 
 ### Debug view
 
-[buildChatDebug](../../../webview/acp-ui/src/chatDebugModel.ts#L255-L353) turns the live trace into the chat and its subagents.
+[buildChatDebug](../../../webview/acp-ui/src/chatDebugModel.ts#L255-L355) turns the live trace into the chat and its subagents.
 [ChatDebugView](../../../webview/acp-ui/src/components/acp/debug/ChatDebugView.tsx#L66-L144) shows those steps in the chat when Debug is selected.
 
 ### Session updates

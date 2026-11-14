@@ -80,4 +80,42 @@ describe("buildChatDebug", () => {
     expect(model.nodes.map((node) => [node.tone, node.calls.length])).toEqual([["subagent", 2]]);
     expect(model.nodes[0]?.calls.map((call) => call.tone)).toEqual(["read", "search"]);
   });
+
+  it("fills a task step with the tools that subagent called", () => {
+    const model = buildChatDebug(
+      [
+        {
+          type: "tool",
+          toolCallId: "task-1",
+          title: "Task: Decompile pause course call",
+          kind: "other",
+          subtitle: "generalPurpose",
+          status: "completed",
+          content: "Decompile NSMBU function 0x025FE554.",
+          diffRows: undefined,
+          detailVisible: true,
+          durationMs: 132_300,
+        },
+      ],
+      "Chat",
+      undefined,
+      new Map([
+        [
+          "task-1",
+          [
+            tool("read-1", "PauseGame.cpp", "read"),
+            tool("run-1", "decompile 0x025FE554", "execute"),
+          ],
+        ],
+      ]),
+    );
+    expect(model.nodes.map((node) => [node.label, node.calls.length])).toEqual([
+      ["Decompile pause cours…", 2],
+    ]);
+    expect(model.nodes[0]?.calls.map((call) => call.tone)).toEqual(["read", "shell"]);
+    expect(model.nodes[0]?.calls.map((call) => call.title)).toEqual([
+      "PauseGame.cpp",
+      "decompile 0x025FE554",
+    ]);
+  });
 });
