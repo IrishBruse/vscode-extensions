@@ -5,7 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
-- **Fix**: A new chat takes its title from the first message when the agent does not send `session_info_update`.
+- **Fix**: Cursor chats keep the agent-generated `session_info_update` title instead of the first prompt text.
+- **Fix**: Other agents fall back to the first prompt only after the turn when `session_info_update` never arrives.
 - **Change**: Debug call list uses the editor background and a resizable workbench sash instead of a dark panel fill.
 - **Change**: Context usage sits beside the model picker and infers the window when Cursor omits ACP `usage_update`.
 - **Change**: Chat and Debug use a segmented control with a filled active segment instead of separate bordered pills.

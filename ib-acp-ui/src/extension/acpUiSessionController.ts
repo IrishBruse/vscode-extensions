@@ -68,7 +68,11 @@ import {
 } from "./acpUiSessionsStore";
 import { getAcpUiExtensionActivation } from "./extensionServices";
 import { setAcpUiSessionConnection, clearAcpUiSessionConnection } from "./acpUiSessionConnection";
-import { isPlaceholderSessionTitle, sessionTitleFromPrompt } from "./sessionTitleFromPrompt";
+import {
+    isPlaceholderSessionTitle,
+    sessionTitleFromPrompt,
+    shouldDeriveSessionTitleFromPrompt,
+} from "./sessionTitleFromPrompt";
 
 const maxWorkspaceFileAutocompleteEntries = 1500;
 const maxRecentSessionsInEmptyState = 8;
@@ -401,7 +405,10 @@ export class AcpUiSessionController {
     /** Sets the chat title from the first prompt when the agent omits `session_info_update`. */
     private async maybeTitleFromFirstPrompt(body: string): Promise<void> {
         const current = getAcpUiSession(this.sessionId);
-        if (current === undefined || !isPlaceholderSessionTitle(current.title)) {
+        if (
+            current === undefined ||
+            !shouldDeriveSessionTitleFromPrompt(current.title, this.agentConfig)
+        ) {
             return;
         }
         const nextTitle = sessionTitleFromPrompt(body);
@@ -704,7 +711,6 @@ export class AcpUiSessionController {
 
         if (parsed.type === "send") {
             void (async () => {
-                await this.maybeTitleFromFirstPrompt(parsed.body);
                 const b = await this.ensureBridgeConnected();
                 if (b === undefined) {
                     return;
@@ -716,6 +722,7 @@ export class AcpUiSessionController {
                     await b.prompt(parsed.body, parsed.images);
                 } finally {
                     await this.flushDeferredSessionTitleWrite();
+                    await this.maybeTitleFromFirstPrompt(parsed.body);
                 }
             })();
             return;

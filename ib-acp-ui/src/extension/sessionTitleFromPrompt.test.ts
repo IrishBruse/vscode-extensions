@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
-import { isPlaceholderSessionTitle, sessionTitleFromPrompt } from "./sessionTitleFromPrompt";
+import {
+    isPlaceholderSessionTitle,
+    sessionTitleFromPrompt,
+    shouldDeriveSessionTitleFromPrompt,
+} from "./sessionTitleFromPrompt";
 
 describe("isPlaceholderSessionTitle", () => {
     it("treats New Cursor chat as a placeholder", () => {
@@ -8,6 +12,24 @@ describe("isPlaceholderSessionTitle", () => {
 
     it("treats a real title as not a placeholder", () => {
         expect(isPlaceholderSessionTitle("Fix login")).toBe(false);
+    });
+});
+
+describe("shouldDeriveSessionTitleFromPrompt", () => {
+    const cursor = { name: "Cursor", command: "agent", args: ["acp"] };
+    const gemini = { name: "Gemini", command: "gemini", args: ["--stdio"] };
+
+    it("waits for Cursor session_info_update instead of the first prompt", () => {
+        expect(shouldDeriveSessionTitleFromPrompt("New Cursor chat", cursor)).toBe(false);
+    });
+
+    it("allows a prompt fallback for other agents while the title is still a placeholder", () => {
+        expect(shouldDeriveSessionTitleFromPrompt("New Gemini chat", gemini)).toBe(true);
+    });
+
+    it("skips prompt fallback once a real title is stored", () => {
+        expect(shouldDeriveSessionTitleFromPrompt("Fix login", cursor)).toBe(false);
+        expect(shouldDeriveSessionTitleFromPrompt("Fix login", gemini)).toBe(false);
     });
 });
 

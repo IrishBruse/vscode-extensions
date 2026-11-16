@@ -1,3 +1,6 @@
+import type { AcpAgentSpawnConfig } from "../acp/domain/agentSpawnConfig";
+import { isCursorAcpAgent } from "../acp/domain/agentSpawnConfig";
+
 /** Matches the auto-generated title of a chat that has not been used yet. */
 export const placeholderSessionTitlePattern = /^New .* chat$/;
 
@@ -7,6 +10,20 @@ const maxSessionTitleLength = 80;
 export function isPlaceholderSessionTitle(title: string): boolean {
     const trimmed = title.trim();
     return trimmed.length === 0 || placeholderSessionTitlePattern.test(trimmed);
+}
+
+/**
+ * True when the first prompt may supply the title because the agent is unlikely to send
+ * `session_info_update` (non-Cursor agents only; Cursor titles come from the agent).
+ */
+export function shouldDeriveSessionTitleFromPrompt(
+    currentTitle: string,
+    agentConfig: AcpAgentSpawnConfig | undefined,
+): boolean {
+    if (!isPlaceholderSessionTitle(currentTitle)) {
+        return false;
+    }
+    return agentConfig === undefined || !isCursorAcpAgent(agentConfig);
 }
 
 /**

@@ -86,6 +86,8 @@ On load failure, the bridge falls back to `session/new` and the cached screen st
 Still no-op in the default branch: `current_mode_update`.
 `usage_update` feeds the composer context usage label.
 `session_info_update` updates the session title via a bridge hook, not the trace.
+Cursor supplies the generated title this way; ACP UI does not copy the first prompt for Cursor chats.
+Other agents may take the first prompt as a fallback title only after the turn when no `session_info_update` arrives.
 
 Task: [session-update-handlers](../../tasks/session-update-handlers.md).
 Protocol: [session modes](../../acp/protocol/v1/session-modes.mdx), [session config options](../../acp/protocol/v1/session-config-options.mdx).

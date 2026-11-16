@@ -8,7 +8,7 @@
   flex: none;
   z-index: 2;
   touch-action: none;
-  background: var(--acp-ui-sash-idle-border);
+  background: var(--acp-ui-surface-panel);
 }
 
 .vs-sash--vertical {
@@ -27,7 +27,7 @@
   content: "";
   pointer-events: none;
   position: absolute;
-  background: var(--acp-ui-sash-idle-border);
+  background: var(--acp-ui-surface-panel);
   transition: background-color 0.1s ease-out;
 }
 
