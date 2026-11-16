@@ -19,7 +19,6 @@
 }
 
 .agent-trace {
-  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -49,7 +48,7 @@
 
 .acp-ui-view-switch {
   position: absolute;
-  z-index: 5;
+  z-index: 10;
   right: 12px;
   bottom: 8px;
   pointer-events: none;

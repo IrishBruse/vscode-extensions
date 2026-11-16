@@ -1,6 +1,7 @@
 import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import { formatCompactDurationMs } from "../../../src/protocol/visibleTrace";
 import type { TraceItem } from "./chatReducer";
+import { executeWorkingDirectoryLabel } from "./toolCallCompactText";
 
 export type ChatDebugTone =
   | "request"
@@ -59,7 +60,7 @@ export type ChatDebugNode = {
 
 export type ChatDebugModel = {
   title: string;
-  request: string;
+  workingDirectory: string;
   stats: { value: string; label: string }[];
   nodes: ChatDebugNode[];
 };
@@ -237,6 +238,21 @@ function planCalls(item: Extract<TraceItem, { type: "plan" }>): ChatDebugCall[] 
   }));
 }
 
+/** Latest shell working directory from the main trace, if the agent reported one. */
+function latestWorkingDirectory(trace: readonly TraceItem[]): string | undefined {
+  let latest: string | undefined;
+  for (const item of trace) {
+    if (item.type !== "tool") {
+      continue;
+    }
+    const cwd = item.cwd?.trim();
+    if (cwd !== undefined && cwd.length > 0 && cwd !== ".") {
+      latest = cwd;
+    }
+  }
+  return latest;
+}
+
 function callsInTrace(items: readonly TraceItem[]): ChatDebugCall[] {
   const calls: ChatDebugCall[] = [];
   for (const item of items) {
@@ -263,7 +279,6 @@ export function buildChatDebug(
   let toolCount = 0;
   let subagentCount = 0;
   let requestCount = 0;
-  let latestRequest = "";
 
   const pushSubagent = (node: Omit<ChatDebugNode, "id" | "color">): void => {
     const color = subagentCycle[subagentCount % subagentCycle.length] ?? chatDebugKindColor.subagent;
@@ -278,7 +293,6 @@ export function buildChatDebug(
         continue;
       }
       requestCount += 1;
-      latestRequest = text;
       continue;
     }
     if (item.type === "tool") {
@@ -348,7 +362,7 @@ export function buildChatDebug(
   }
   return {
     title: title.trim().length > 0 ? title.trim() : "Chat",
-    request: latestRequest.length > 0 ? latestRequest : "No messages yet.",
+    workingDirectory: executeWorkingDirectoryLabel(latestWorkingDirectory(trace)),
     stats,
     nodes,
   };

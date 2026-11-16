@@ -80,7 +80,12 @@
 
 .composer-context {
   flex-shrink: 0;
-  font-size: var(--acp-ui-font-size-label);
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  font-size: var(--acp-ui-font-size-small);
+  line-height: 18px;
   font-family: var(--acp-ui-font-mono);
   color: var(--acp-ui-text-secondary);
   white-space: nowrap;

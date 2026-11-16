@@ -69,4 +69,11 @@
   --acp-ui-text-secondary: var(--vscode-descriptionForeground);
   --acp-ui-text-tertiary: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
   --acp-ui-focus-border: var(--vscode-focusBorder);
+
+  /* Sash (workbench splitters; not input focus) */
+  --acp-ui-sash-idle-border: var(--vscode-editor-background);
+  --acp-ui-sash-hover-border: var(
+    --vscode-sash-hoverBorder,
+    color-mix(in srgb, var(--vscode-foreground) 24%, transparent)
+  );
 }

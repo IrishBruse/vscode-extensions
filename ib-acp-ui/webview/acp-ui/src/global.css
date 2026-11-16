@@ -38,6 +38,10 @@ body {
   gap: 0;
 }
 
+.agent-root:has(.agent-trace--debug) {
+  padding-block: 0;
+}
+
 .agent-root--narrow .acp-ui-content-column {
   width: 100%;
 }

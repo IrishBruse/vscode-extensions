@@ -534,28 +534,6 @@ export function AcpUiApp({
           aria-label={debugView ? "Debug view" : "Conversation"}
           onScroll={onTraceScroll}
         >
-          <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!debugView}
-              onClick={() => {
-                setDebugView(false);
-              }}
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={debugView}
-              onClick={() => {
-                setDebugView(true);
-              }}
-            >
-              Debug
-            </button>
-          </div>
           {debugView ? (
             <ChatDebugView
               trace={state.trace}
@@ -660,6 +638,28 @@ export function AcpUiApp({
           </>
           )}
         </main>
+        <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!debugView}
+            onClick={() => {
+              setDebugView(false);
+            }}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={debugView}
+            onClick={() => {
+              setDebugView(true);
+            }}
+          >
+            Debug
+          </button>
+        </div>
         {!debugView ||
         permission !== null ||
         askQuestion !== null ||

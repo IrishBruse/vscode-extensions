@@ -85,7 +85,7 @@ export function ChatDebugView({
   const selected = model.nodes.find((node) => node.id === pickedId) ?? model.nodes.at(-1) ?? null;
   const onPanelResize = useCallback((deltaPx: number) => {
     setPanelWidthPx((widthPx) =>
-      Math.min(DEBUG_PANEL_MAX_WIDTH_PX, Math.max(DEBUG_PANEL_MIN_WIDTH_PX, widthPx + deltaPx)),
+      Math.min(DEBUG_PANEL_MAX_WIDTH_PX, Math.max(DEBUG_PANEL_MIN_WIDTH_PX, widthPx - deltaPx)),
     );
   }, []);
 
@@ -101,7 +101,9 @@ export function ChatDebugView({
       <header className="chat-debug-hud">
         <p className="chat-debug-brand">{agentName?.trim() || "Chat"}</p>
         <h1>{model.title}</h1>
-        <p className="chat-debug-sub">{model.request}</p>
+        {model.workingDirectory.length > 0 ? (
+          <p className="chat-debug-sub">{model.workingDirectory}</p>
+        ) : null}
         <div className="chat-debug-stats">
           {model.stats.map((stat) => (
             <div key={stat.label}>

@@ -50,6 +50,10 @@ describe("ChatComposer", () => {
     expect(tsx).toContain('aria-label="Context usage"');
     expect(tsx).not.toContain('role="meter"');
     expect(css).not.toContain(".composer-context-fill");
+    expect(css).toContain(".composer-context");
+    expect(css).toMatch(/\.composer-context\s*\{[^}]*align-self:\s*flex-end/);
+    expect(css).toMatch(/\.composer-context\s*\{[^}]*min-height:\s*26px/);
+    expect(css).toMatch(/\.composer-context\s*\{[^}]*font-size:\s*var\(--acp-ui-font-size-small\)/);
     expect(tsx).toContain("composer-footer-model");
     expect(tsx).toContain("<ContextUsageLabel usage={tokenUsage} />");
     const topEnd = tsx.indexOf('className="composer-top-bar-side composer-top-bar-side--end"');

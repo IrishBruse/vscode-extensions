@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { buildChatDebug } from "./chatDebugModel";
 import type { TraceItem } from "./chatReducer";
+import { setCompactToolPathHome, setCompactToolWorkspaceRoot } from "./toolCallCompactText";
 
 function tool(
   toolCallId: string,
@@ -40,7 +41,7 @@ describe("buildChatDebug", () => {
       ],
       "New Cursor chat",
     );
-    expect(model.request).toBe("commit the timer");
+    expect(model.workingDirectory).toBe("");
     expect(model.stats).toEqual([
       { value: "1", label: "turns" },
       { value: "3", label: "tools" },
@@ -53,6 +54,37 @@ describe("buildChatDebug", () => {
     expect(model.nodes[0]?.calls.map((call) => call.kind)).toEqual(["Read", "Read", "Shell"]);
     expect(model.nodes[0]?.calls.map((call) => call.tone)).toEqual(["read", "read", "shell"]);
     expect(model.nodes[0]?.calls[2]?.meta).toBe("Failed");
+  });
+
+  it("shows the workspace folder when no shell cwd is known", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("/home/econn/git/vscode-extensions");
+    const model = buildChatDebug([], "New Cursor chat");
+    expect(model.workingDirectory).toBe("~/git/vscode-extensions");
+  });
+
+  it("shows the latest shell cwd from the main trace", () => {
+    setCompactToolPathHome("/home/econn");
+    setCompactToolWorkspaceRoot("/home/econn/git/vscode-extensions");
+    const model = buildChatDebug(
+      [
+        { type: "user", text: "run ls" },
+        {
+          type: "tool",
+          toolCallId: "run-1",
+          title: "ls",
+          kind: "execute",
+          subtitle: "ls",
+          status: "completed",
+          content: undefined,
+          diffRows: undefined,
+          detailVisible: false,
+          cwd: "/home/econn/git/vscode-extensions/ib-acp-ui",
+        },
+      ],
+      "Chat",
+    );
+    expect(model.workingDirectory).toBe("~/git/vscode-extensions/ib-acp-ui");
   });
 
   it("fills a subagent step with that child's tool calls", () => {

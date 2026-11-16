@@ -8,6 +8,7 @@
   flex: none;
   z-index: 2;
   touch-action: none;
+  background: var(--acp-ui-sash-idle-border);
 }
 
 .vs-sash--vertical {
@@ -26,23 +27,22 @@
   content: "";
   pointer-events: none;
   position: absolute;
-  background: var(--vscode-panel-border, var(--vscode-widget-border, var(--acp-ui-border-chrome)));
+  background: var(--acp-ui-sash-idle-border);
+  transition: background-color 0.1s ease-out;
 }
 
 .vs-sash--vertical::before {
   top: 0;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1px;
+  left: calc(50% - (var(--vs-sash-hover-size) / 2));
+  width: var(--vs-sash-hover-size);
 }
 
 .vs-sash--horizontal::before {
   left: 0;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 1px;
+  top: calc(50% - (var(--vs-sash-hover-size) / 2));
+  height: var(--vs-sash-hover-size);
 }
 
 .vs-sash--vertical::after {
@@ -64,17 +64,7 @@
 
 .vs-sash:hover::before,
 .vs-sash--active::before {
-  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
-}
-
-.vs-sash--vertical:hover::before,
-.vs-sash--vertical.vs-sash--active::before {
-  width: var(--vs-sash-hover-size);
-}
-
-.vs-sash--horizontal:hover::before,
-.vs-sash--horizontal.vs-sash--active::before {
-  height: var(--vs-sash-hover-size);
+  background: var(--acp-ui-sash-hover-border);
 }
 
 .vs-sash:hover::after,
