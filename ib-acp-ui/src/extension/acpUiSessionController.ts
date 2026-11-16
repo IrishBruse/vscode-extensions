@@ -68,11 +68,10 @@ import {
 } from "./acpUiSessionsStore";
 import { getAcpUiExtensionActivation } from "./extensionServices";
 import { setAcpUiSessionConnection, clearAcpUiSessionConnection } from "./acpUiSessionConnection";
+import { isPlaceholderSessionTitle, sessionTitleFromPrompt } from "./sessionTitleFromPrompt";
 
 const maxWorkspaceFileAutocompleteEntries = 1500;
 const maxRecentSessionsInEmptyState = 8;
-/** Matches the auto-generated title of a chat that has not been used yet. */
-const emptyChatTitlePattern = /^New .* chat$/;
 
 type SessionControllerOptions = {
     context: ExtensionContext;
@@ -250,7 +249,7 @@ export class AcpUiSessionController {
         await clearSessionPermissionGrants(this.documentUri);
         const current = getAcpUiSession(this.sessionId);
         const oldUri = current?.uri;
-        if (current !== undefined && emptyChatTitlePattern.test(current.title)) {
+        if (current !== undefined && isPlaceholderSessionTitle(current.title)) {
             const nextTitle = `New ${next.name} chat`;
             const renamed = await renameAcpUiSession(this.sessionId, nextTitle);
             if (renamed) {
@@ -397,6 +396,23 @@ export class AcpUiSessionController {
         }
         this.deferredSessionTitleWrite = undefined;
         await persistAcpUiSessionTitleHeader(this.sessionId);
+    }
+
+    /** Sets the chat title from the first prompt when the agent omits `session_info_update`. */
+    private async maybeTitleFromFirstPrompt(body: string): Promise<void> {
+        const current = getAcpUiSession(this.sessionId);
+        if (current === undefined || !isPlaceholderSessionTitle(current.title)) {
+            return;
+        }
+        const nextTitle = sessionTitleFromPrompt(body);
+        if (nextTitle.length === 0) {
+            return;
+        }
+        const updated = await updateAcpUiSessionTitle(this.sessionId, nextTitle);
+        if (updated) {
+            this.publishSessionTitle(nextTitle);
+            this.options.refreshChatsList?.();
+        }
     }
 
     private async applySessionInfoUpdate(update: { title?: string | null }): Promise<void> {
@@ -688,6 +704,7 @@ export class AcpUiSessionController {
 
         if (parsed.type === "send") {
             void (async () => {
+                await this.maybeTitleFromFirstPrompt(parsed.body);
                 const b = await this.ensureBridgeConnected();
                 if (b === undefined) {
                     return;
