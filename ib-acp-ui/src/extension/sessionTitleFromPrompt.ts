@@ -13,6 +13,33 @@ export function isPlaceholderSessionTitle(title: string): boolean {
 }
 
 /**
+ * A `.acp` save that still has `New Cursor chat` must not replace a title the agent already sent.
+ */
+export function shouldPublishSessionFileTitle(displayedTitle: string, fileTitle: string): boolean {
+    if (isPlaceholderSessionTitle(fileTitle) && !isPlaceholderSessionTitle(displayedTitle)) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Keeps an agent title in the session index when a file rescan still sees the new-chat placeholder.
+ */
+export function titleAfterSessionFileReload(
+    memoryTitle: string | undefined,
+    diskTitle: string,
+): string {
+    if (
+        memoryTitle !== undefined &&
+        !isPlaceholderSessionTitle(memoryTitle) &&
+        isPlaceholderSessionTitle(diskTitle)
+    ) {
+        return memoryTitle;
+    }
+    return diskTitle;
+}
+
+/**
  * True when the first prompt may supply the title because the agent is unlikely to send
  * `session_info_update` (non-Cursor agents only; Cursor titles come from the agent).
  */

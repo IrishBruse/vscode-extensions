@@ -13,7 +13,8 @@ Back returns to the parent chat.
 `cursor/task` `agentId` attaches that child session to the task.
 A linked child does not add a second row.
 Cursor streams that child only after `initialize` includes `_meta.subagents`.
-`cursor/ask_question` and basic `cursor/create_plan` dialogs already work.
+`cursor/ask_question` shows one question per page with arrow-key selection, a typed Other answer, and no submit buttons.
+Basic `cursor/create_plan` dialogs already work.
 The plan dialog covers the chat.
 Open plan writes that plan to `plan.md` and opens it in the editor.
 

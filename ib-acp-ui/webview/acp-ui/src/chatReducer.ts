@@ -27,6 +27,7 @@ import type {
     ToolCallDiffRow,
     ToolCallStatus,
 } from "../../../src/protocol/extensionHostMessages";
+import { type AcpRpcLogEntry, maxAcpRpcLogLines } from "../../../src/protocol/acpRpcLog";
 import {
   normalizeBashDurations,
   normalizeThoughtDurations,
@@ -171,6 +172,9 @@ export type ChatState = {
   promptImageSupported: boolean | null;
   /** Context window usage from the agent; null until the first `usage_update`. */
   tokenUsage: AcpUiTokenUsage | null;
+  /** NDJSON-RPC lines for the in-chat ACP protocol view. */
+  acpRpcLines: AcpRpcLogEntry[];
+  nextAcpRpcLineId: number;
 };
 
 export type ChatAction =
@@ -296,6 +300,8 @@ export function createInitialChatState(): ChatState {
     toolStartedAtMsById: new Map(),
     promptImageSupported: null,
     tokenUsage: null,
+    acpRpcLines: [],
+    nextAcpRpcLineId: 1,
   };
 }
 
@@ -1410,6 +1416,8 @@ function applySessionReset(state: ChatState): ChatState {
     subagentActivity: new Map(),
     subagentSessionByToolId: new Map(),
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
+    acpRpcLines: [],
+    nextAcpRpcLineId: 1,
   };
 }
 
@@ -2044,6 +2052,26 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     return { ...state, createPlanPrompt: null };
   }
   switch (action.type) {
+    case "acpRpcLine": {
+      const entry: AcpRpcLogEntry = {
+        id: state.nextAcpRpcLineId,
+        direction: action.direction,
+        raw: action.line,
+        ...(action.agentName !== undefined && action.agentName.length > 0
+          ? { agentName: action.agentName }
+          : {}),
+      };
+      const nextLines = [...state.acpRpcLines, entry];
+      const capped =
+        nextLines.length > maxAcpRpcLogLines
+          ? nextLines.slice(nextLines.length - maxAcpRpcLogLines)
+          : nextLines;
+      return {
+        ...state,
+        acpRpcLines: capped,
+        nextAcpRpcLineId: state.nextAcpRpcLineId + 1,
+      };
+    }
     case "sessionReset":
       return applySessionReset(state);
     case "sessionModels": {

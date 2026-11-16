@@ -163,6 +163,21 @@ export function setAcpUiCustomEditorRefreshHandler(refreshChatsList: () => void)
     refreshChatsListHandler = refreshChatsList;
 }
 
+/** Opens the ACP protocol view on the active `.acp` editor, if any. */
+export function showAcpRpcLogInActiveSession(): void {
+    const editor = window.activeTextEditor;
+    if (editor === undefined) {
+        void window.showInformationMessage("Open a chat to view ACP protocol traffic.");
+        return;
+    }
+    const controller = controllersByDocumentUri.get(editor.document.uri.toString());
+    if (controller === undefined) {
+        void window.showInformationMessage("Open an ACP UI chat tab to view protocol traffic.");
+        return;
+    }
+    controller.focusTraceView("acp");
+}
+
 /**
  * Custom editor for `.acp` session files: hosts the ACP UI webview and persists events.
  */

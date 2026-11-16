@@ -2,6 +2,7 @@ import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPrese
 import type { ToolCallDiffRow } from "../../../src/protocol/extensionHostMessages";
 import { markdownFilesystemPathFromText } from "../../../src/platform/fileUriPath";
 import { formatPathWithTilde } from "../../../src/platform/pathDisplay";
+import { isHttpUrl } from "../../../src/acp/mapping/sessionUpdateMapping";
 import { extractShellCommandLine } from "../../../src/acp/mapping/shellCommandLine";
 import type { TraceToolItem } from "./chatReducer";
 import { pathForPrompt } from "./droppedFilePaths";
@@ -331,7 +332,14 @@ function isGenericToolDetailTitle(title: string, kind: string): boolean {
   if (kind === "glob") {
     return normalized === "glob" || normalized === "glob file search";
   }
+  if (normalized === "web fetch" || normalized === "webfetch") {
+    return true;
+  }
   return false;
+}
+
+function isWebFetchTitle(title: string): boolean {
+  return /^web\s*fetch$/i.test(title.trim());
 }
 
 function isGlobTool(item: TraceToolItem): boolean {
@@ -615,6 +623,16 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
       verb: title.length > 0 ? title : "Tool",
       ...pathSegmentFromRaw(markdownPath, prefix.length > 0 ? { prefix } : {}),
     };
+  }
+
+  if (subtitle.length > 0 && isHttpUrl(subtitle)) {
+    const itemTitle = item.title.trim();
+    const verb = isWebFetchTitle(itemTitle)
+      ? "Fetched"
+      : itemTitle.length > 0
+        ? itemTitle
+        : "Fetched";
+    return { verb, detail: subtitle };
   }
 
   const title = item.title.trim();

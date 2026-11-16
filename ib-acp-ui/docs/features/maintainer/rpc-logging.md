@@ -2,19 +2,25 @@
 
 ## User facing
 
-For debugging ACP protocol traffic, open the **ACP UI RPC** output channel from the command palette (**Show ACP RPC Log**).
-Each line is one NDJSON RPC message with direction (`toAgent` or `fromAgent`) and agent name metadata.
+For debugging ACP protocol traffic, open the **ACP** tab in an ACP UI chat (next to **Chat** and **Debug**).
+Traffic is pretty-printed JSON, one NDJSON RPC message per row, with direction (`toAgent` or `fromAgent`) and agent name metadata.
+
+**Show ACP Protocol in Chat** from the command palette focuses the active session and switches to the **ACP** tab.
+
+The **ACP UI** output channel is for general extension messages only, not raw RPC traffic.
 
 This is a developer diagnostics surface.
 End users typically only need it when troubleshooting agent connectivity.
 
 ## Implementation
 
-### VS Code output channel
+### In-chat ACP tab
 
-[activateAcpUiExtension](../../../src/extension/activateAcpUiExtension.ts#L23-L46) creates the `ACP UI RPC` output channel.
-It registers `ib-acp-ui.showAcpRpcLog`.
-[VscodeAcpRpcNdjsonSink](../../../src/platform/vscode/vscodeRpcNdjsonSink.ts) appends formatted lines.
+[WebviewAcpRpcNdjsonSink](../../../src/extension/webviewAcpRpcNdjsonSink.ts) forwards complete NDJSON lines from [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts) to the webview as `acpRpcLine` host messages.
+[AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders them with [prettyPrintAcpRpcJson](../../../src/protocol/acpRpcLog.ts).
+
+[activateAcpUiExtension](../../../src/extension/activateAcpUiExtension.ts#L23-L46) registers `ib-acp-ui.showAcpRpcLog`, which calls [showAcpRpcLogInActiveSession](../../../src/extension/acpUiCustomEditorProvider.ts) to post `focusTraceView` with `acp`.
+The global activation sink is [NullAcpRpcNdjsonSink](../../../src/acp/ports/rpcNdjsonSink.ts) so stdio taps do not duplicate RPC into the output channel.
 
 ### Stdio tap
 

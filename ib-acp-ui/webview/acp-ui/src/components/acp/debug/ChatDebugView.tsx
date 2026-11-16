@@ -60,7 +60,9 @@ function CallList({ node }: { node: ChatDebugNode }): ReactElement {
           <span className="chat-debug-call-kind" style={{ color: chatDebugKindColor[call.tone] }}>
             {call.kind}
           </span>
-          <span className="chat-debug-call-title">{call.title}</span>
+          <span className="chat-debug-call-title" title={call.title}>
+            {call.title}
+          </span>
           <span className="chat-debug-call-meta">{call.meta}</span>
         </li>
       ))}

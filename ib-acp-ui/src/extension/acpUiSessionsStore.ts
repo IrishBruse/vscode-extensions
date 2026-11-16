@@ -9,6 +9,7 @@ import {
     setAcpUiSessionJsonlLogger,
     updateSessionHeader,
 } from "./acpUiSessionJsonl";
+import { titleAfterSessionFileReload } from "./sessionTitleFromPrompt";
 
 /**
  * One saved ACP UI session.
@@ -63,8 +64,15 @@ async function reloadSessionsFromDisk(): Promise<void> {
         return;
     }
     const rows = await listSessionHeaders(extensionContext);
+    const previousTitles = new Map(sessions.map((row) => [row.id, row.title]));
     sessions.length = 0;
-    sessions.push(...rows.map(({ header, uri }) => indexFromHeader(header, uri)));
+    sessions.push(
+        ...rows.map(({ header, uri }) => {
+            const record = indexFromHeader(header, uri);
+            record.title = titleAfterSessionFileReload(previousTitles.get(record.id), record.title);
+            return record;
+        }),
+    );
     if (activeId !== null && !sessions.some((s) => s.id === activeId)) {
         activeId = sessions[0]?.id ?? null;
     }

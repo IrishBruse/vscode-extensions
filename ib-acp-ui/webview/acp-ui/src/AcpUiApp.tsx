@@ -48,6 +48,7 @@ import { openTaskHeader } from "./components/acp/trace/SubagentBlock/SubagentBlo
 import { subagentStatusLabel } from "./components/acp/trace/SubagentBlock/subagentStatus";
 import { SubagentFocus } from "./components/acp/trace/SubagentFocus/SubagentFocus";
 import { ChatDebugView } from "./components/acp/debug/ChatDebugView";
+import { AcpRpcLogView } from "./components/acp/protocol/AcpRpcLogView";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
 import { collectPathsFromDataTransfer, dataTransferLooksLikePathDrop } from "./droppedFilePaths";
@@ -132,7 +133,7 @@ export function AcpUiApp({
       replayed ?? createChatStateFromInit(initPayload),
   );
   const [expandAllToolOutputs, setExpandAllToolOutputs] = useState(false);
-  const [debugView, setDebugView] = useState(false);
+  const [traceView, setTraceView] = useState<"chat" | "debug" | "acp">("chat");
   const [showThinkingBlocks, setShowThinkingBlocks] = useState(true);
   const [contentWidthRatio, setContentWidthRatio] = useState(init.contentWidthRatio ?? 1);
   const traceRef = useRef<HTMLElement | null>(null);
@@ -225,6 +226,10 @@ export function AcpUiApp({
     }
     if (message.type === "contentWidthRatio") {
       setContentWidthRatio(message.ratio);
+      return;
+    }
+    if (message.type === "focusTraceView") {
+      setTraceView(message.view);
       return;
     }
     dispatch(message as ChatAction);
@@ -516,25 +521,69 @@ export function AcpUiApp({
         onDragOver={onShellDragOver}
         onDrop={onShellDrop}
       >
-        {openAgent !== null ? (
-          <button
-            type="button"
-            className="acp-ui-focus-back"
-            onClick={() => {
-              setOpenAgent(null);
-            }}
-          >
-            Back
-          </button>
-        ) : null}
+        <header className="acp-ui-top-chrome">
+          <div className="acp-ui-top-chrome-leading">
+            {openAgent !== null ? (
+              <button
+                type="button"
+                className="acp-ui-focus-back"
+                onClick={() => {
+                  setOpenAgent(null);
+                }}
+              >
+                Back
+              </button>
+            ) : null}
+          </div>
+          <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={traceView === "chat"}
+              onClick={() => {
+                setTraceView("chat");
+              }}
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={traceView === "debug"}
+              onClick={() => {
+                setTraceView("debug");
+              }}
+            >
+              Debug
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={traceView === "acp"}
+              onClick={() => {
+                setTraceView("acp");
+              }}
+            >
+              ACP
+            </button>
+          </div>
+        </header>
         <main
           ref={traceRef}
-          className={debugView ? "agent-trace agent-trace--debug" : "agent-trace"}
+          className={
+            traceView === "chat"
+              ? "agent-trace"
+              : traceView === "debug"
+                ? "agent-trace agent-trace--debug"
+                : "agent-trace agent-trace--debug agent-trace--acp"
+          }
           role="log"
-          aria-label={debugView ? "Debug view" : "Conversation"}
+          aria-label={
+            traceView === "debug" ? "Debug view" : traceView === "acp" ? "ACP protocol" : "Conversation"
+          }
           onScroll={onTraceScroll}
         >
-          {debugView ? (
+          {traceView === "debug" ? (
             <ChatDebugView
               trace={state.trace}
               title={state.sessionTitle}
@@ -542,6 +591,8 @@ export function AcpUiApp({
               childTraces={state.subagentActivity}
               activityByToolId={taskActivityByToolId}
             />
+          ) : traceView === "acp" ? (
+            <AcpRpcLogView entries={state.acpRpcLines} />
           ) : (
           <>
           {state.sessionHistoryLoading && state.trace.length > 0 && earlierOverlay ? (
@@ -638,29 +689,7 @@ export function AcpUiApp({
           </>
           )}
         </main>
-        <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!debugView}
-            onClick={() => {
-              setDebugView(false);
-            }}
-          >
-            Chat
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={debugView}
-            onClick={() => {
-              setDebugView(true);
-            }}
-          >
-            Debug
-          </button>
-        </div>
-        {!debugView ||
+        {traceView === "chat" ||
         permission !== null ||
         askQuestion !== null ||
         createPlan !== null ? (
@@ -700,10 +729,10 @@ export function AcpUiApp({
                   });
                   dispatch({ type: "clearAskQuestionPrompt" });
                 }}
-                onCancel={() => {
+                onSkip={() => {
                   postCursorAskQuestionResponse({
                     requestId: askQuestion.requestId,
-                    outcome: { outcome: "cancelled" },
+                    outcome: { outcome: "skipped" },
                   });
                   dispatch({ type: "clearAskQuestionPrompt" });
                 }}
@@ -744,7 +773,7 @@ export function AcpUiApp({
                 }}
               />
             ) : null}
-            {debugView ? null : (
+            {traceView === "chat" ? (
             <AcpUiComposer
               initialHistory={init.history}
               workspaceFiles={init.workspaceFiles}
@@ -789,7 +818,7 @@ export function AcpUiApp({
               onOpenImage={setViewerImageSrc}
               appendDroppedPathsRef={appendDroppedPathsRef}
             />
-            )}
+            ) : null}
           </div>
         </div>
         ) : null}

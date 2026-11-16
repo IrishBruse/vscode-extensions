@@ -5,6 +5,13 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: The title from the ACP connection stays on the chat and is stored in the `.acp` file.
+- **Add**: An **ACP** tab in the chat shows pretty-printed NDJSON protocol traffic for the open session.
+- **Remove**: Raw RPC traffic from the **ACP UI RPC** output channel (use the in-chat **ACP** tab or **Show ACP RPC Log**).
+- **Change**: The Debug call list pads the side panel and truncates each tool line to one row.
+- **Fix**: The Chat/Debug switch stays aligned and no longer jumps when Debug is selected.
+- **Fix**: Web Fetch shows the URL it is fetching in the trace and Debug call list.
+- **Change**: `cursor/ask_question` uses paginated arrow-key selection with a typed Other row instead of button choices.
 - **Fix**: Cursor chats keep the agent-generated `session_info_update` title instead of the first prompt text.
 - **Fix**: Other agents fall back to the first prompt only after the turn when `session_info_update` never arrives.
 - **Change**: Debug call list uses the editor background and a resizable workbench sash instead of a dark panel fill.

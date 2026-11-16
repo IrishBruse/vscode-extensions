@@ -20,6 +20,11 @@ A bash command keeps its elapsed time on that full transcript.
 
 **Debug** in the chat replaces the transcript with a run view of that same conversation.
 
+The agent can send a chat title after you send a message.
+That title replaces `New Cursor chat` in the composer and on the editor tab.
+ACP UI stores that title in the `.acp` file.
+A later save of that file keeps the agent title.
+
 The chat UI will also react to more agent-driven updates such as mode changes, config option updates, title sync, and usage meters.
 User message chunks during `session/load` replay already appear in the trace.
 
@@ -86,6 +91,9 @@ On load failure, the bridge falls back to `session/new` and the cached screen st
 Still no-op in the default branch: `current_mode_update`.
 `usage_update` feeds the composer context usage label.
 `session_info_update` updates the session title via a bridge hook, not the trace.
+[applySessionInfoUpdate](../../../src/extension/acpUiSessionController.ts#L439-L456) writes that title into the `.acp` file as soon as it arrives.
+[shouldPublishSessionFileTitle](../../../src/extension/sessionTitleFromPrompt.ts#L18-L23) ignores a later file save that still has `New Cursor chat`.
+[titleAfterSessionFileReload](../../../src/extension/sessionTitleFromPrompt.ts#L28-L40) keeps the same title when the session index reloads the file before that write finishes.
 Cursor supplies the generated title this way; ACP UI does not copy the first prompt for Cursor chats.
 Other agents may take the first prompt as a fallback title only after the turn when no `session_info_update` arrives.
 

@@ -19,11 +19,13 @@
 }
 
 .agent-trace {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
   width: 100%;
   color: var(--acp-ui-text-primary);
+  padding-top: var(--acp-ui-trace-chrome-inset, 3.25rem);
 }
 
 .agent-trace-follow-gap {
@@ -37,87 +39,91 @@
   width: 100%;
 }
 
-.acp-ui-focus-back {
-  position: absolute;
-  z-index: 5;
-  top: 8px;
-  pointer-events: none;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.acp-ui-view-switch {
+.acp-ui-top-chrome {
   position: absolute;
   z-index: 10;
-  left: 12px;
-  bottom: 8px;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: var(--acp-ui-space-8);
+  padding: var(--acp-ui-space-6) var(--acp-ui-space-12);
+  border: 0;
+  background: transparent;
   pointer-events: none;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+.acp-ui-top-chrome-leading {
+  min-width: 0;
 }
 
 .acp-ui-focus-back {
-  left: 12px;
   margin: 0;
-  padding: 4px 10px;
-  border: 1px solid var(--acp-ui-border-subtle);
-  border-radius: var(--acp-ui-radius-md);
-  background: color-mix(
-    in srgb,
-    var(--acp-ui-surface-panel) 88%,
-    var(--vscode-editor-background) 12%
-  );
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--acp-ui-radius-sm);
+  background: transparent;
   color: var(--vscode-textLink-foreground);
   font: inherit;
-  font-size: var(--acp-ui-font-size-small);
+  font-size: var(--acp-ui-font-size-x-small);
   font-weight: var(--acp-ui-font-weight-medium);
   line-height: 1.25;
   cursor: pointer;
+  white-space: nowrap;
   pointer-events: auto;
+}
+
+.acp-ui-focus-back:hover {
+  text-decoration: underline;
+}
+
+.acp-ui-focus-back:focus-visible {
+  outline: 1px solid var(--acp-ui-focus-border);
+  outline-offset: 1px;
 }
 
 .acp-ui-view-switch {
   display: inline-flex;
-  align-items: stretch;
-  gap: 1px;
-  padding: 2px;
-  border: 1px solid var(--acp-ui-border-subtle);
-  border-radius: var(--acp-ui-radius-md);
-  background: color-mix(
-    in srgb,
-    var(--acp-ui-surface-panel) 88%,
-    var(--vscode-editor-background) 12%
-  );
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
 }
 
 .acp-ui-view-switch button {
   margin: 0;
-  padding: 4px 12px;
+  padding: 1px 4px;
+  min-width: 0;
   border: 0;
-  border-radius: calc(var(--acp-ui-radius-md) - 2px);
+  border-radius: var(--acp-ui-radius-xs);
   background: transparent;
   color: var(--acp-ui-text-secondary);
   font: inherit;
-  font-size: var(--acp-ui-font-size-small);
-  font-weight: var(--acp-ui-font-weight-regular);
-  line-height: 1.25;
+  font-size: var(--acp-ui-font-size-x-small);
+  font-weight: var(--acp-ui-font-weight-medium);
+  line-height: 1.35;
   cursor: pointer;
-  pointer-events: auto;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .acp-ui-view-switch button:hover:not([aria-selected="true"]) {
   color: var(--acp-ui-text-primary);
-  background: color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
 }
 
 .acp-ui-view-switch button[aria-selected="true"] {
-  background: color-mix(in srgb, var(--vscode-textLink-foreground) 14%, var(--acp-ui-surface-panel));
+  background: transparent;
   color: var(--vscode-textLink-foreground);
-  font-weight: var(--acp-ui-font-weight-medium);
 }
 
 .acp-ui-view-switch button:focus-visible {
   outline: 1px solid var(--acp-ui-focus-border);
-  outline-offset: 1px;
+  outline-offset: -1px;
 }

@@ -122,6 +122,17 @@ describe("toolCallCompactText", () => {
     expect(parts.pathSegment?.openTarget).toBeUndefined();
   });
 
+  it("shows a Web Fetch URL on the compact tool line", () => {
+    const item = toolItem({
+      toolCallId: "fetch-1",
+      title: "Web Fetch",
+      subtitle: "https://agentclientprotocol.com/protocol",
+    });
+    expect(compactToolDetailLine(item)).toBe(
+      "Fetched https://agentclientprotocol.com/protocol",
+    );
+  });
+
   it("labels a SKILL.md read as Used plus the skill folder", () => {
     setCompactToolPathHome("/home/econn");
     setCompactToolWorkspaceRoot("");

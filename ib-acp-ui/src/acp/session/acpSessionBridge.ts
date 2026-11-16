@@ -53,6 +53,7 @@ import {
     stickyPermissionOutcome,
     upsertPermissionGrant,
 } from "./permissionMemory";
+import { normalizeAskQuestionAnswers } from "../cursor/askQuestion";
 import { inferContextWindowSizeTokens, promptTurnTokenCount } from "./contextWindowSize";
 
 /** Callback that forwards an extension-to-webview message to the UI host. */
@@ -275,7 +276,17 @@ export class AcpSessionBridge {
             return;
         }
         this.askQuestionWaiters.delete(message.requestId);
-        resolve({ outcome: message.outcome });
+        const outcome = message.outcome;
+        if (outcome.outcome === "answered") {
+            resolve({
+                outcome: {
+                    outcome: "answered",
+                    answers: normalizeAskQuestionAnswers(outcome.answers),
+                },
+            });
+            return;
+        }
+        resolve({ outcome });
     }
 
     handleCursorCreatePlanResponse(

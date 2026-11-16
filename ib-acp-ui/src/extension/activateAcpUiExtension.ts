@@ -1,14 +1,15 @@
-import { Disposable, type ExtensionContext, type OutputChannel, window } from "vscode";
+import { type ExtensionContext, type OutputChannel, window } from "vscode";
 import {
     buildAcpClientInfoFromPackage,
     configureAcpClientInfo,
 } from "../acp/infrastructure/acpAgentProcess";
-import { VscodeAcpRpcNdjsonSink } from "../platform/vscode/vscodeRpcNdjsonSink";
+import { NullAcpRpcNdjsonSink } from "../acp/ports/rpcNdjsonSink";
 import { registerCommandIB } from "../utils/vscode";
+import { showAcpRpcLogInActiveSession } from "./acpUiCustomEditorProvider";
 
 export type AcpUiExtensionActivation = {
     /** Shared between stdio taps and optional UI hosts that embed a bridge. */
-    rpcNdjsonSink: VscodeAcpRpcNdjsonSink;
+    rpcNdjsonSink: NullAcpRpcNdjsonSink;
     outputChannel: OutputChannel;
 };
 
@@ -25,14 +26,13 @@ export function activateAcpUiExtension(context: ExtensionContext): AcpUiExtensio
             },
         ),
     );
-    const outputChannel = window.createOutputChannel("ACP UI RPC", "jsonl");
-    const rpcNdjsonSink = new VscodeAcpRpcNdjsonSink(outputChannel, null);
+    const outputChannel = window.createOutputChannel("ACP UI");
+    const rpcNdjsonSink = new NullAcpRpcNdjsonSink();
     context.subscriptions.push(outputChannel);
-    context.subscriptions.push(new Disposable(() => rpcNdjsonSink.dispose()));
     registerCommandIB(
         "ib-acp-ui.showAcpRpcLog",
         () => {
-            outputChannel.show(true);
+            showAcpRpcLogInActiveSession();
         },
         context,
     );

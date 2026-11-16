@@ -13,7 +13,7 @@
 
 .chat-debug-hud {
   grid-column: 1;
-  padding: 0 22px 8px;
+  padding: 0 22px var(--acp-ui-space-8);
 }
 
 .chat-debug-brand {
@@ -149,7 +149,8 @@
   overflow: auto;
   min-height: 0;
   min-width: 0;
-  padding: 0 18px;
+  padding: var(--acp-ui-space-16) var(--acp-ui-space-16) var(--acp-ui-space-16)
+    var(--acp-ui-space-12);
 }
 
 .chat-debug-kicker {
@@ -244,7 +245,7 @@
   display: grid;
   grid-template-columns: 28px 72px minmax(0, 1fr) max-content;
   gap: 6px;
-  align-items: start;
+  align-items: center;
   padding: 3px 4px;
   border-radius: var(--acp-ui-radius-sm);
   color: var(--acp-ui-text-primary);
@@ -258,10 +259,16 @@
 
 .chat-debug-call-kind {
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-debug-call-title {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-debug-call-meta {
@@ -281,4 +288,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.agent-trace--acp .acp-rpc-log {
+  flex: 1;
+  min-height: 0;
 }

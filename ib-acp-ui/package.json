@@ -215,7 +215,7 @@
             },
             {
                 "command": "ib-acp-ui.showAcpRpcLog",
-                "title": "Show ACP RPC Log",
+                "title": "Show ACP Protocol in Chat",
                 "category": "IrishBruse ACP"
             },
             {

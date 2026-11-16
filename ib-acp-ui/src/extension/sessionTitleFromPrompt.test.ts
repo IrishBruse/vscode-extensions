@@ -3,6 +3,8 @@ import {
     isPlaceholderSessionTitle,
     sessionTitleFromPrompt,
     shouldDeriveSessionTitleFromPrompt,
+    shouldPublishSessionFileTitle,
+    titleAfterSessionFileReload,
 } from "./sessionTitleFromPrompt";
 
 describe("isPlaceholderSessionTitle", () => {
@@ -30,6 +32,28 @@ describe("shouldDeriveSessionTitleFromPrompt", () => {
     it("skips prompt fallback once a real title is stored", () => {
         expect(shouldDeriveSessionTitleFromPrompt("Fix login", cursor)).toBe(false);
         expect(shouldDeriveSessionTitleFromPrompt("Fix login", gemini)).toBe(false);
+    });
+});
+
+describe("shouldPublishSessionFileTitle", () => {
+    it("keeps the agent title when the file still says New Cursor chat", () => {
+        expect(shouldPublishSessionFileTitle("Fix login", "New Cursor chat")).toBe(false);
+    });
+
+    it("applies a real title from the file", () => {
+        expect(shouldPublishSessionFileTitle("New Cursor chat", "Fix login")).toBe(true);
+        expect(shouldPublishSessionFileTitle("Fix login", "Rename me")).toBe(true);
+    });
+});
+
+describe("titleAfterSessionFileReload", () => {
+    it("keeps the agent title when the file on disk is still the placeholder", () => {
+        expect(titleAfterSessionFileReload("Fix login", "New Cursor chat")).toBe("Fix login");
+    });
+
+    it("uses the title on disk when that title is real", () => {
+        expect(titleAfterSessionFileReload("Fix login", "Rename me")).toBe("Rename me");
+        expect(titleAfterSessionFileReload(undefined, "New Cursor chat")).toBe("New Cursor chat");
     });
 });
 

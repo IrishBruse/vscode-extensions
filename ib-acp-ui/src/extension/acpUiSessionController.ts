@@ -66,12 +66,13 @@ import {
     setAcpUiSessionTitleInMemory,
     updateAcpUiSessionTitle,
 } from "./acpUiSessionsStore";
-import { getAcpUiExtensionActivation } from "./extensionServices";
+import { WebviewAcpRpcNdjsonSink } from "./webviewAcpRpcNdjsonSink";
 import { setAcpUiSessionConnection, clearAcpUiSessionConnection } from "./acpUiSessionConnection";
 import {
     isPlaceholderSessionTitle,
     sessionTitleFromPrompt,
     shouldDeriveSessionTitleFromPrompt,
+    shouldPublishSessionFileTitle,
 } from "./sessionTitleFromPrompt";
 
 const maxWorkspaceFileAutocompleteEntries = 1500;
@@ -98,10 +99,21 @@ export class AcpUiSessionController {
     private agentLoadInProgress = false;
     /** When true, config messages from the agent are written into the session file. */
     private persistModelConfig = false;
-    private deferredSessionTitleWrite: string | undefined;
+    /** Title from ACP `session_info_update` or a later rename. A file save must not replace this with a placeholder. */
+    private agentSessionTitle: string | undefined;
     private lastPostedSessionTitle: string | undefined;
     private liveClockTimer: ReturnType<typeof setInterval> | undefined;
     private readonly disposables: Array<{ dispose(): void }> = [];
+    private readonly rpcNdjsonSink = new WebviewAcpRpcNdjsonSink((line, context) => {
+        this.post({
+            type: "acpRpcLine",
+            line,
+            direction: context?.direction ?? "fromAgent",
+            ...(context?.agentName !== undefined && context.agentName.length > 0
+                ? { agentName: context.agentName }
+                : {}),
+        });
+    });
 
     constructor(private readonly options: SessionControllerOptions) {
         const parsed = parseSessionFile(options.document.getText());
@@ -133,6 +145,10 @@ export class AcpUiSessionController {
                 }
                 const title = parseSessionFile(event.document.getText()).header?.title;
                 if (title === undefined) {
+                    return;
+                }
+                const displayed = this.agentSessionTitle ?? this.lastPostedSessionTitle ?? "";
+                if (!shouldPublishSessionFileTitle(displayed, title)) {
                     return;
                 }
                 this.publishSessionTitle(title);
@@ -169,6 +185,11 @@ export class AcpUiSessionController {
             disposable.dispose();
         }
         this.disposables.length = 0;
+    }
+
+    /** Switches the webview transcript panel to chat, debug, or ACP protocol view. */
+    focusTraceView(view: "chat" | "debug" | "acp"): void {
+        this.post({ type: "focusTraceView", view });
     }
 
     async sendBootstrapMessages(header: AcpUiSessionDocument): Promise<void> {
@@ -393,15 +414,6 @@ export class AcpUiSessionController {
         this.post({ type: "sessionTitle", title: nextTitle });
     }
 
-    private async flushDeferredSessionTitleWrite(): Promise<void> {
-        const title = this.deferredSessionTitleWrite;
-        if (title === undefined) {
-            return;
-        }
-        this.deferredSessionTitleWrite = undefined;
-        await persistAcpUiSessionTitleHeader(this.sessionId);
-    }
-
     /** Sets the chat title from the first prompt when the agent omits `session_info_update`. */
     private async maybeTitleFromFirstPrompt(body: string): Promise<void> {
         const current = getAcpUiSession(this.sessionId);
@@ -415,6 +427,7 @@ export class AcpUiSessionController {
         if (nextTitle.length === 0) {
             return;
         }
+        this.agentSessionTitle = nextTitle;
         const updated = await updateAcpUiSessionTitle(this.sessionId, nextTitle);
         if (updated) {
             this.publishSessionTitle(nextTitle);
@@ -422,24 +435,22 @@ export class AcpUiSessionController {
         }
     }
 
+    /** Writes the ACP `session_info_update` title into the open `.acp` file. */
     private async applySessionInfoUpdate(update: { title?: string | null }): Promise<void> {
         const title = update.title;
-        if (typeof title !== "string" || title.trim().length === 0) {
+        if (typeof title !== "string") {
             return;
         }
         const nextTitle = title.trim();
-        if (this.bridge?.isPrompting) {
-            const updated = setAcpUiSessionTitleInMemory(this.sessionId, nextTitle);
-            if (updated) {
-                this.deferredSessionTitleWrite = nextTitle;
-                this.publishSessionTitle(nextTitle);
-                this.options.refreshChatsList?.();
-            }
+        if (nextTitle.length === 0 || isPlaceholderSessionTitle(nextTitle)) {
             return;
         }
-        const updated = await updateAcpUiSessionTitle(this.sessionId, nextTitle);
-        if (updated) {
-            this.publishSessionTitle(nextTitle);
+        this.agentSessionTitle = nextTitle;
+        const previous = getAcpUiSession(this.sessionId)?.title;
+        setAcpUiSessionTitleInMemory(this.sessionId, nextTitle);
+        this.publishSessionTitle(nextTitle);
+        const saved = await persistAcpUiSessionTitleHeader(this.sessionId);
+        if (saved && previous !== nextTitle) {
             this.options.refreshChatsList?.();
         }
     }
@@ -512,8 +523,7 @@ export class AcpUiSessionController {
             this.options.refreshChatsList?.();
             return undefined;
         }
-        const { rpcNdjsonSink } = getAcpUiExtensionActivation();
-        const host = createDefaultAcpSessionHostRuntime(rpcNdjsonSink);
+        const host = createDefaultAcpSessionHostRuntime(this.rpcNdjsonSink);
         const header =
             (await readSessionDocumentAtUri(this.documentUri)) ??
             parseSessionFile(this.options.document.getText()).header;
@@ -721,7 +731,6 @@ export class AcpUiSessionController {
                 try {
                     await b.prompt(parsed.body, parsed.images);
                 } finally {
-                    await this.flushDeferredSessionTitleWrite();
                     await this.maybeTitleFromFirstPrompt(parsed.body);
                 }
             })();
@@ -749,6 +758,7 @@ export class AcpUiSessionController {
             const oldUri = before?.uri;
             const renamed = await renameAcpUiSession(this.sessionId, nextTitle);
             if (renamed) {
+                this.agentSessionTitle = nextTitle;
                 const record = getAcpUiSession(this.sessionId);
                 if (record !== undefined && oldUri !== undefined) {
                     moveAcpUiCustomEditorUri(oldUri, record.uri);

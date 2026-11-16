@@ -343,6 +343,16 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(hint).toBe('"createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts');
     });
 
+    it("uses the fetch URL from structured rawInput for Web Fetch tools", () => {
+        const hint = toolCallUpdateSubtitleHint({
+            toolCallId: "tool_fetch",
+            status: "completed",
+            title: "Web Fetch",
+            rawInput: { url: "https://agentclientprotocol.com/protocol" },
+        });
+        expect(hint).toBe("https://agentclientprotocol.com/protocol");
+    });
+
     it("maps Cursor-style completed edit update to diffRows and path subtitle", () => {
         const multilineId =
             "call-c4d9d88d-ab6e-48ed-9ff3-5425c287173c-4\nfc_p5fq8ry-6jKPYy-8ee7667a-aws_ue1_0";

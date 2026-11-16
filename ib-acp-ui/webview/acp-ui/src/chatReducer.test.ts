@@ -608,6 +608,36 @@ describe("chatReducer", () => {
     expect(reset.sessionConfigLoading).toBe(true);
   });
 
+  it("appends pretty-RPC entries on acpRpcLine", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "acpRpcLine",
+      line: '{"jsonrpc":"2.0","method":"ping"}',
+      direction: "toAgent",
+      agentName: "Cursor",
+    });
+    expect(state.acpRpcLines).toHaveLength(1);
+    expect(state.acpRpcLines[0]).toMatchObject({
+      id: 1,
+      direction: "toAgent",
+      raw: '{"jsonrpc":"2.0","method":"ping"}',
+      agentName: "Cursor",
+    });
+    expect(state.nextAcpRpcLineId).toBe(2);
+  });
+
+  it("clears acpRpcLines on sessionReset", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "acpRpcLine",
+      line: "{}",
+      direction: "fromAgent",
+    });
+    const reset = chatReducer(state, { type: "sessionReset" });
+    expect(reset.acpRpcLines).toEqual([]);
+    expect(reset.nextAcpRpcLineId).toBe(1);
+  });
+
   it("seeds sessionHistoryLoading from init when resuming a runtime session", () => {
     const state = createChatStateFromInit({
       type: "init",

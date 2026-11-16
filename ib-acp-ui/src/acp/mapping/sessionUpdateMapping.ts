@@ -590,6 +590,10 @@ function searchSubtitleFromRawInput(
     update: acp.ToolCallUpdate,
     pendingKind: string | undefined,
 ): string | undefined {
+    const urlHint = urlHintFromStructuredUnknown(raw);
+    if (urlHint !== undefined) {
+        return urlHint;
+    }
     const pattern = patternHintFromStructuredUnknown(raw) ?? patternHintFromPlainObject(raw);
     const pathHint = pathHintFromStructuredUnknown(raw);
     if (pattern !== undefined && pathHint !== undefined) {
@@ -652,6 +656,10 @@ function toolCallUpdateSubtitleBody(
             return locPath;
         }
     }
+    const fromRawInputUrl = urlHintFromStructuredUnknown(update.rawInput);
+    if (fromRawInputUrl !== undefined) {
+        return fromRawInputUrl;
+    }
     if (update.content && update.content.length > 0) {
         for (const block of update.content) {
             if (block.type === "diff") {
@@ -684,6 +692,10 @@ function toolCallUpdateSubtitleBody(
     }
     const rawInputText = formatToolRawInput(update.rawInput);
     if (rawInputText !== undefined && rawInputText.trim().length > 0) {
+        const fromJsonUrl = urlHintFromJsonishRawInput(rawInputText);
+        if (fromJsonUrl !== undefined) {
+            return fromJsonUrl;
+        }
         const fromJsonPath = pathHintFromJsonishRawInput(rawInputText);
         if (fromJsonPath !== undefined) {
             return formatSubtitlePathForKind(fromJsonPath, update, options?.pendingKind);
@@ -904,6 +916,57 @@ function pathHintFromJsonishRawInput(text: string): string | undefined {
     }
 }
 
+/** True when the string looks like an absolute HTTP(S) URL. */
+export function isHttpUrl(text: string): boolean {
+    return /^https?:\/\//i.test(text.trim());
+}
+
+function urlHintFromPlainObject(raw: unknown): string | undefined {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+        return undefined;
+    }
+    const record = raw as Record<string, unknown>;
+    for (const key of ["url", "uri", "href", "website", "link"] as const) {
+        const value = record[key];
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (trimmed.length > 0 && isHttpUrl(trimmed)) {
+                return trimmed;
+            }
+        }
+    }
+    return undefined;
+}
+
+/** Reads an HTTP(S) URL from structured tool `rawInput` / `rawOutput` payloads (for example Web Fetch). */
+export function urlHintFromStructuredUnknown(raw: unknown): string | undefined {
+    const direct = urlHintFromPlainObject(raw);
+    if (direct !== undefined) {
+        return direct;
+    }
+    if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+        const record = raw as Record<string, unknown>;
+        const nested = record._meta;
+        if (nested !== null && typeof nested === "object" && !Array.isArray(nested)) {
+            return urlHintFromPlainObject(nested);
+        }
+    }
+    return undefined;
+}
+
+function urlHintFromJsonishRawInput(text: string): string | undefined {
+    const trimmed = text.trim();
+    if (!trimmed.startsWith("{")) {
+        return undefined;
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        return urlHintFromPlainObject(parsed);
+    } catch {
+        return undefined;
+    }
+}
+
 function effectiveToolKindForUpdate(
     update: acp.ToolCallUpdate,
     pendingKind: string | undefined,
@@ -958,6 +1021,10 @@ export function toolCallSubtitleFromToolCall(call: acp.ToolCall): string | undef
             }
         }
         return formatToolRawInput(call.rawInput);
+    }
+    const fromRawInputUrl = urlHintFromStructuredUnknown(call.rawInput);
+    if (fromRawInputUrl !== undefined) {
+        return fromRawInputUrl;
     }
     const fromRawInputSearch = searchSubtitleFromRawInput(
         call.rawInput,

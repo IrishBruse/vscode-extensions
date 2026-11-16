@@ -1,3 +1,4 @@
+import { isHttpUrl } from "../../../src/acp/mapping/sessionUpdateMapping";
 import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import { formatCompactDurationMs } from "../../../src/protocol/visibleTrace";
 import type { TraceItem } from "./chatReducer";
@@ -219,7 +220,10 @@ function toolCall(item: Extract<TraceItem, { type: "tool" }>): ChatDebugCall {
     return { kind, tone: "subagent", title: detail, meta: callMeta(item) };
   }
   const tone = toneForKind(item.kind);
-  return { kind: kindName(tone), tone, title: oneLine(item.title), meta: callMeta(item) };
+  const subtitle = item.subtitle?.trim() ?? "";
+  const title =
+    subtitle.length > 0 && isHttpUrl(subtitle) ? oneLine(subtitle) : oneLine(item.title);
+  return { kind: kindName(tone), tone, title, meta: callMeta(item) };
 }
 
 function planCalls(item: Extract<TraceItem, { type: "plan" }>): ChatDebugCall[] {

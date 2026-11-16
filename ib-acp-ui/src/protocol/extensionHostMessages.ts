@@ -1,3 +1,4 @@
+import type { AcpRpcNdjsonDirection } from "../acp/ports/rpcNdjsonSink";
 import type { AcpUiSessionConfigOption } from "../acp/session/sessionConfigOptions";
 import { type AgentTabIndicator, isAgentTabIndicator } from "./agentTabTitle";
 import type { AcpUiSessionModelSelection } from "../acp/session/sessionModels";
@@ -105,6 +106,7 @@ export type WebviewToExtensionMessage =
                     answers: Array<{
                         questionId: string;
                         selectedOptionIds: string[];
+                        freeformText?: string;
                     }>;
                 }
               | { outcome: "skipped"; reason?: string }
@@ -363,7 +365,16 @@ export type ExtensionToWebviewMessage =
     /** Clears the transcript and tool state; sent before the host reconnects the agent session. */
     | { type: "sessionReset" }
     /** Replays persisted session log lines after `init` (custom editor restore). */
-    | { type: "historyReplay"; events: AcpUiHistoryReplayEvent[] };
+    | { type: "historyReplay"; events: AcpUiHistoryReplayEvent[] }
+    /** One NDJSON-RPC line for the in-chat ACP protocol view. */
+    | {
+          type: "acpRpcLine";
+          line: string;
+          direction: AcpRpcNdjsonDirection;
+          agentName?: string;
+      }
+    /** Switches the transcript panel to chat, debug, or ACP protocol view. */
+    | { type: "focusTraceView"; view: "chat" | "debug" | "acp" };
 
 /** Parent-trace messages that also belong inside a child subagent session. */
 export type SubagentActivityEvent = Extract<

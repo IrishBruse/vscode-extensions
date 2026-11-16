@@ -63,6 +63,26 @@ describe("buildChatDebug", () => {
     expect(model.workingDirectory).toBe("~/git/vscode-extensions");
   });
 
+  it("shows a Web Fetch URL in the call list", () => {
+    const model = buildChatDebug(
+      [
+        {
+          type: "tool",
+          toolCallId: "fetch-1",
+          title: "Web Fetch",
+          kind: undefined,
+          subtitle: "https://agentclientprotocol.com/protocol",
+          status: "completed",
+          content: undefined,
+          diffRows: undefined,
+          detailVisible: false,
+        },
+      ],
+      "Chat",
+    );
+    expect(model.nodes[0]?.calls[0]?.title).toBe("https://agentclientprotocol.com/protocol");
+  });
+
   it("shows the latest shell cwd from the main trace", () => {
     setCompactToolPathHome("/home/econn");
     setCompactToolWorkspaceRoot("/home/econn/git/vscode-extensions");

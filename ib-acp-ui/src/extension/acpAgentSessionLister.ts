@@ -6,9 +6,11 @@ import {
     AcpAgentProcess,
     type RequestPermissionHandler,
 } from "../acp/infrastructure/acpAgentProcess";
+import { NullAcpRpcNdjsonSink } from "../acp/ports/rpcNdjsonSink";
 import { createDefaultAcpSessionHostRuntime } from "../platform/vscode/defaultHostRuntime";
 import { sortSessionInfos } from "./acpAgentSessionListFormat";
-import { getAcpUiExtensionActivation } from "./extensionServices";
+
+const listerRpcNdjsonSink = new NullAcpRpcNdjsonSink();
 
 export {
     sessionInfoLabel,
@@ -66,8 +68,7 @@ export async function fetchAgentSessionsForWorkspace(
     config: AcpAgentConfig,
     cwd: string,
 ): Promise<FetchAgentSessionsResult> {
-    const { rpcNdjsonSink } = getAcpUiExtensionActivation();
-    const host = createDefaultAcpSessionHostRuntime(rpcNdjsonSink);
+    const host = createDefaultAcpSessionHostRuntime(listerRpcNdjsonSink);
     const agent = new AcpAgentProcess({
         config,
         requestPermission: cancelledPermission,
@@ -104,8 +105,7 @@ export async function deleteAgentSession(
     config: AcpAgentConfig,
     runtimeSessionId: string,
 ): Promise<DeleteAgentSessionResult> {
-    const { rpcNdjsonSink } = getAcpUiExtensionActivation();
-    const host = createDefaultAcpSessionHostRuntime(rpcNdjsonSink);
+    const host = createDefaultAcpSessionHostRuntime(listerRpcNdjsonSink);
     const agent = new AcpAgentProcess({
         config,
         requestPermission: cancelledPermission,
