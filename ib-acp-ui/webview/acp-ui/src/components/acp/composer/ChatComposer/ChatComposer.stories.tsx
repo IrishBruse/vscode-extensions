@@ -126,6 +126,11 @@ export const PendingImage: Story = {
   },
 };
 
+const storyImage = {
+  mimeType: "image/png",
+  data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+};
+
 export const FollowUpQueued: Story = {
   args: {
     ...baseProps,
@@ -134,6 +139,22 @@ export const FollowUpQueued: Story = {
     followUps: [
       { id: 1, body: "Also check the failing test.", images: [], mode: "queue" },
       { id: 2, body: "Then update the changelog.", images: [], mode: "queue" },
+    ],
+  },
+};
+
+export const FollowUpQueuedWithImage: Story = {
+  args: {
+    ...baseProps,
+    promptInFlight: true,
+    draft: "",
+    followUps: [
+      {
+        id: 1,
+        body: "with the acp window add a drop down like the terminal in the button in the tabs",
+        images: [storyImage],
+        mode: "queue",
+      },
     ],
   },
 };

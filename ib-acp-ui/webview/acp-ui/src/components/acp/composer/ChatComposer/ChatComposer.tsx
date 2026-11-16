@@ -43,7 +43,13 @@ import { Dropdown } from "../../../vscode/Dropdown/Dropdown";
 import { promptImageSrc } from "../../../../pastedImages";
 import { formatThoughtSeconds } from "../../../../../../../src/protocol/visibleTrace";
 import { useLiveNow } from "../../../../liveClock";
-import { type FollowUpMode, type QueuedFollowUp } from "./composerFollowUp";
+import {
+  followUpAccessibilityLabel,
+  followUpBodyText,
+  followUpImageThumbLimit,
+  type FollowUpMode,
+  type QueuedFollowUp,
+} from "./composerFollowUp";
 
 export type ChatComposerProps = {
   /** Workspace path shown in the composer status slot. */
@@ -99,16 +105,6 @@ export type ChatComposerProps = {
   composerInputRef?: RefObject<HTMLTextAreaElement | null>;
 };
 
-function followUpSummaryText(followUp: QueuedFollowUp): string {
-  if (followUp.body.trim().length > 0) {
-    return followUp.body.replace(/\s+/g, " ").trim();
-  }
-  if (followUp.images.length === 1) {
-    return "1 image";
-  }
-  return `${followUp.images.length} images`;
-}
-
 function sendFollowUpLabel(
   promptInFlight: boolean,
   hasContent: boolean,
@@ -130,6 +126,15 @@ function flattenStatusDetail(detail: string): string {
   return detail.replace(/\s+/g, " ").trim();
 }
 
+/** First line of a multi-line disconnect message for the composer status bar. */
+export function composerDisconnectStatusLine(detail: string): string {
+  const line = detail
+    .split("\n")
+    .map((part) => part.trim())
+    .find((part) => part.length > 0);
+  return line ?? "ACP disconnected";
+}
+
 function useComposerStatusText(
   activity: "connecting" | "thinking" | "disconnected" | null,
   thoughtStartedAtMs: number | undefined,
@@ -140,11 +145,10 @@ function useComposerStatusText(
   const thoughtRunning = activity === "thinking" && thoughtStartedAtMs !== undefined;
   const nowMs = useLiveNow(commandRunning || thoughtRunning);
   if (activity === "disconnected") {
-    const detail = statusDetail === null ? "" : flattenStatusDetail(statusDetail);
-    if (detail.length === 0) {
+    if (statusDetail === null || statusDetail.trim().length === 0) {
       return "ACP disconnected";
     }
-    return detail.toLowerCase().includes("disconnect") ? detail : `ACP disconnected: ${detail}`;
+    return composerDisconnectStatusLine(statusDetail);
   }
   if (activity === "connecting") {
     return "Connecting to ACP";
@@ -376,20 +380,46 @@ export function ChatComposer({
       {followUps.length > 0 ? (
         <div className="composer-follow-up-list">
           {followUps.map((followUp) => {
-            const followUpSummary = followUpSummaryText(followUp);
+            const followUpSummary = followUpBodyText(followUp);
+            const followUpLabel = followUpAccessibilityLabel(followUp);
+            const visibleImages = followUp.images.slice(0, followUpImageThumbLimit);
+            const overflowImageCount = Math.max(0, followUp.images.length - visibleImages.length);
             return (
-              <div key={followUp.id} className="composer-follow-up-bar" role="status">
+              <div
+                key={followUp.id}
+                className="composer-follow-up-bar"
+                role="status"
+                title={followUpLabel}
+              >
                 <span className="composer-follow-up-label">
                   {followUp.mode === "queue" ? "Queued" : "Steering"}
                 </span>
-                <span className="composer-follow-up-text" title={followUpSummary}>
-                  {followUpSummary}
-                </span>
+                {followUpSummary.length > 0 ? (
+                  <span className="composer-follow-up-text">{followUpSummary}</span>
+                ) : null}
+                {followUp.images.length > 0 ? (
+                  <span className="composer-follow-up-images" aria-label="Attached images">
+                    {visibleImages.map((image, index) => (
+                      <img
+                        key={`${index}:${image.mimeType}:${image.data.length}`}
+                        className="composer-follow-up-thumb"
+                        src={promptImageSrc(image)}
+                        alt=""
+                        onClick={() => onOpenImage(promptImageSrc(image))}
+                      />
+                    ))}
+                    {overflowImageCount > 0 ? (
+                      <span className="composer-follow-up-image-overflow" aria-hidden="true">
+                        +{overflowImageCount}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
                 <div className="composer-follow-up-actions">
                   <button
                     type="button"
                     className="composer-follow-up-action"
-                    aria-label={`Edit queued message: ${followUpSummary}`}
+                    aria-label={`Edit queued message: ${followUpLabel}`}
                     onClick={() => onEditFollowUp?.(followUp.id)}
                   >
                     <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">
@@ -402,7 +432,7 @@ export function ChatComposer({
                   <button
                     type="button"
                     className="composer-follow-up-action"
-                    aria-label={`Remove queued message: ${followUpSummary}`}
+                    aria-label={`Remove queued message: ${followUpLabel}`}
                     onClick={() => onDismissFollowUp?.(followUp.id)}
                   >
                     <svg className="composer-follow-up-icon" viewBox="0 0 16 16" aria-hidden="true">

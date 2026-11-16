@@ -40,6 +40,7 @@ Keyboard shortcuts while the composer is focused:
   The next Enter interrupts the current message and sends that queued message now.
   The messages behind it stay in the queue.
   Each queued line has edit and remove.
+  Queued images appear as small thumbnails beside the text (up to three, then +N).
 - Shift+Tab cycles session mode when the agent exposes a mode option
 - Ctrl+C / Cmd+C cancels the current turn when the agent is thinking, running a tool, or answering.
 - Cancel does the same thing.
@@ -79,7 +80,9 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 ### Status clock
 
 [useComposerStatusText](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L126-L169) draws Connecting, Thinking, and Running in the center of the top line.
-[formatAcpConnectionErrorMessage](../../../src/acp/session/agentDisconnect.ts#L49-L60) replaces a stall such as `RetriableError: Connection stalled` with a short instruction.
+[composerDisconnectStatusLine](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L133-L141) shows only the first line of a disconnect message in that bar; the full text stays in the trace tooltip.
+[formatAgentProcessExitMessage](../../../src/acp/session/agentDisconnect.ts#L71-L84) explains process exit codes and signals, and suggests reconnecting or `/reset`.
+[formatAcpConnectionErrorMessage](../../../src/acp/session/agentDisconnect.ts#L108-L123) replaces a stall such as `RetriableError: Connection stalled` with a short instruction.
 [settleLiveTools](../../../webview/acp-ui/src/chatReducer.ts#L415-L439) stops a command that is still running so that message can show.
 [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L261-L272) supplies the start time for a bash command that is still running.
 

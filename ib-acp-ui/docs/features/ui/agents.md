@@ -11,7 +11,7 @@ There are no built-in default agents; install from the registry on first use.
 Add a manual client with **Add ACP client**.
 Choose the client for new chats with **Select Active ACP Agent**.
 That choice is stored in extension state, outside `settings.json`.
-On an open `.acp` editor tab, the title bar shows a **New Chat** split control (`+ ▾`): the plus creates with the active client, and the chevron offers **New Chat with Agent…**.
+On an open `.acp` editor tab, the title bar shows a **New Chat** split control (`+ ▾`): the plus creates a chat with the active client, and the chevron lists every installed client (with **Browse Agent Registry** at the end).
 The selected client is used for new chats.
 Each open chat remembers which agent it was created with via the session file header.
 The composer does not switch agents.

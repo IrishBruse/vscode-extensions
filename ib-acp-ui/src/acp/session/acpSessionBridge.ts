@@ -148,10 +148,20 @@ export class AcpSessionBridge {
         return this.agentProcess.isAlive();
     }
 
+    private permissionTrackedKind(toolCall: acp.ToolCallUpdate): string | undefined {
+        const toolCallId =
+            typeof toolCall.toolCallId === "string" ? canonicalToolCallId(toolCall.toolCallId) : "";
+        if (toolCallId.length === 0) {
+            return undefined;
+        }
+        return this.toolCallKindTracking.kindByToolId.get(toolCallId);
+    }
+
     private async queuePermissionRequest(
         params: acp.RequestPermissionRequest,
     ): Promise<acp.RequestPermissionResponse> {
-        const remembered = stickyPermissionOutcome(this.permissionGrants, params);
+        const trackedKind = this.permissionTrackedKind(params.toolCall);
+        const remembered = stickyPermissionOutcome(this.permissionGrants, params, trackedKind);
         if (remembered !== undefined) {
             for (const msg of extensionMessagesForPermissionRequest("perm-remembered", params)) {
                 if (msg.type !== "permissionRequest") {
@@ -204,7 +214,11 @@ export class AcpSessionBridge {
         }
         if ("selectedOptionId" in message) {
             if (request !== undefined) {
-                const grant = grantForSelectedOption(request, message.selectedOptionId);
+                const grant = grantForSelectedOption(
+                    request,
+                    message.selectedOptionId,
+                    this.permissionTrackedKind(request.toolCall),
+                );
                 if (grant !== undefined) {
                     this.permissionGrants = upsertPermissionGrant(this.permissionGrants, grant);
                     this.hooks?.onPermissionGrantsChanged?.(this.permissionGrants);
@@ -230,6 +244,7 @@ export class AcpSessionBridge {
             this.permissionGrants,
             this.pendingPermissionRequests,
             exceptRequestId,
+            (pending) => this.permissionTrackedKind(pending.toolCall),
         );
         for (const match of matches) {
             const resolve = this.permissionWaiters.get(match.requestId);

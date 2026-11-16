@@ -6,15 +6,6 @@
   margin: 0 0 var(--acp-ui-space-10);
 }
 
-.subagent-focus-back {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--vscode-textLink-foreground, var(--vscode-foreground));
-  font: inherit;
-  cursor: pointer;
-}
-
 .subagent-focus-status {
   color: var(--vscode-textLink-foreground, var(--vscode-foreground));
   font-family: var(--acp-ui-font-mono);

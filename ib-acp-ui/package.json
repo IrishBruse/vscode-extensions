@@ -167,9 +167,8 @@
             },
             {
                 "command": "ib-acp-ui.newAcpUiInEditorPickAgent",
-                "title": "New ACP UI Chat with Agent…",
-                "shortTitle": "New Chat with Agent…",
-                "icon": "$(add)",
+                "title": "New Chat with ACP Client…",
+                "shortTitle": "ACP Client…",
                 "category": "IrishBruse ACP"
             },
             {

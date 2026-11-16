@@ -270,33 +270,6 @@
   color: var(--acp-ui-text-secondary, var(--vscode-descriptionForeground));
 }
 
-.acp-ui-view-switch {
-  position: absolute;
-  z-index: 5;
-  top: 8px;
-  left: 12px;
-  display: flex;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.acp-ui-view-switch button {
-  pointer-events: auto;
-  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
-  border-radius: var(--acp-ui-radius-full);
-  padding: 3px 10px;
-  background: var(--vscode-editor-background);
-  color: var(--acp-ui-text-secondary);
-  font: inherit;
-  font-size: var(--acp-ui-font-size-small);
-  cursor: pointer;
-}
-
-.acp-ui-view-switch button[aria-selected="true"] {
-  border-color: var(--acp-ui-focus-border);
-  color: var(--vscode-textLink-foreground);
-}
-
 .agent-trace--debug {
   overflow: hidden;
   display: flex;

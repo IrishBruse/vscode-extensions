@@ -2,6 +2,7 @@ import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPrese
 import type { ToolCallDiffRow } from "../../../src/protocol/extensionHostMessages";
 import { markdownFilesystemPathFromText } from "../../../src/platform/fileUriPath";
 import { formatPathWithTilde } from "../../../src/platform/pathDisplay";
+import { extractShellCommandLine } from "../../../src/acp/mapping/shellCommandLine";
 import type { TraceToolItem } from "./chatReducer";
 import { pathForPrompt } from "./droppedFilePaths";
 
@@ -590,13 +591,16 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
   }
 
   if (kind === "execute" || kind === "terminal") {
-    const cmd = subtitle.length > 0 ? subtitle : item.title.trim();
-    if (cmd.length === 0) {
+    const raw = subtitle.length > 0 ? subtitle : item.title.trim();
+    const resolved =
+      extractShellCommandLine(raw) ??
+      (raw.startsWith("{") ? undefined : raw.length > 0 ? raw : undefined);
+    if (resolved === undefined || resolved.length === 0) {
       return { verb: "Ran", detail: "" };
     }
     return {
       verb: "Ran",
-      detail: cmd.startsWith("$") ? cmd.slice(1).trimStart() : cmd,
+      detail: resolved.startsWith("$") ? resolved.slice(1).trimStart() : resolved,
     };
   }
 

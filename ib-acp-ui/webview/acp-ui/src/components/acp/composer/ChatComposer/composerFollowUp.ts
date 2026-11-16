@@ -9,6 +9,33 @@ export type QueuedFollowUp = {
   mode: FollowUpMode;
 };
 
+/** Truncated one-line body text for a queued follow-up row. */
+export function followUpBodyText(followUp: QueuedFollowUp): string {
+  return followUp.body.replace(/\s+/g, " ").trim();
+}
+
+/** Tooltip and screen-reader label for a queued follow-up row. */
+export function followUpAccessibilityLabel(followUp: QueuedFollowUp): string {
+  const text = followUpBodyText(followUp);
+  if (text.length > 0 && followUp.images.length > 0) {
+    const plural = followUp.images.length === 1 ? "image" : "images";
+    return `${text} (${followUp.images.length} ${plural})`;
+  }
+  if (text.length > 0) {
+    return text;
+  }
+  if (followUp.images.length === 1) {
+    return "1 image";
+  }
+  if (followUp.images.length > 0) {
+    return `${followUp.images.length} images`;
+  }
+  return "";
+}
+
+/** How many image thumbnails to show before collapsing the rest into a +N badge. */
+export const followUpImageThumbLimit = 3;
+
 export type FollowUpEnterAction = "send-now" | "ignore" | "enqueue" | "steer" | "interrupt";
 
 /**

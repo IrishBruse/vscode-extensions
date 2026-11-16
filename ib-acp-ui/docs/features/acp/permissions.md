@@ -28,7 +28,8 @@ While a permission prompt is open, the composer is blocked so you cannot send an
 
 [handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L186-L221) resolves the waiter when the webview replies.
 [resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L224-L236) applies Allow always or Reject always to other requests that are already waiting.
-[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L52-L69) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
+[resolveToolCallKind](../../../src/acp/session/permissionMemory.ts#L14-L41) and [enrichPermissionRequest](../../../src/acp/session/permissionMemory.ts#L62-L78) fill a missing permission `toolCall.kind` from the live trace or the title before scoping a grant.
+[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L136-L157) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
 The grants are `permissionGrants` on the session document.
 Dispose cancels all pending waiters.
 

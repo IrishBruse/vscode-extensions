@@ -705,21 +705,23 @@ describe("chatReducer", () => {
   });
 
   it("marks the agent disconnected, keeps the error, and logs the message in the trace", () => {
+    const disconnectMessage =
+      'Lost connection to ACP agent "Cursor".\nThe agent process exited with an error (code 1).\nSend a message to reconnect, or use /reset to start a new session.';
     let state = createInitialChatState();
     state = chatReducer(state, { type: "agentConnection", connected: true });
     state = chatReducer(state, {
       type: "error",
-      message: 'ACP agent "Cursor" stopped.\nExit code: 1.',
+      message: disconnectMessage,
       disconnected: true,
     });
     expect(state.agentConnected).toBe(false);
-    expect(state.errorText).toBe('ACP agent "Cursor" stopped.\nExit code: 1.');
+    expect(state.errorText).toBe(disconnectMessage);
     expect(state.trace.at(-1)).toEqual({
       type: "agent",
-      text: 'ACP agent "Cursor" stopped.\nExit code: 1.',
+      text: disconnectMessage,
     });
     state = chatReducer(state, { type: "submit", body: "retry" });
-    expect(state.errorText).toBe('ACP agent "Cursor" stopped.\nExit code: 1.');
+    expect(state.errorText).toBe(disconnectMessage);
     state = chatReducer(state, { type: "agentConnection", connected: true });
     expect(state.agentConnected).toBe(true);
     expect(state.errorText).toBeNull();

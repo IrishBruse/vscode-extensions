@@ -73,6 +73,31 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendAgentThought", text: "hmm", durationMs: 890 }]);
     });
 
+    it("parses Antigravity shell payloads into the command subtitle", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "tool_call",
+            toolCallId: "ag-bash",
+            title: "Terminal",
+            kind: "execute",
+            status: "pending",
+            rawInput: {
+                CommandLine: "ls -R .",
+                WaitMsBeforeAsync: 2000,
+                toolSummary: "List repository files",
+            },
+        });
+        expect(messages).toEqual([
+            {
+                type: "appendToolCall",
+                toolCallId: "ag-bash",
+                title: "Terminal",
+                kind: "execute",
+                status: "pending",
+                subtitle: "ls -R .",
+            },
+        ]);
+    });
+
     it("keeps the bash working directory separate from the command", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "tool_call",

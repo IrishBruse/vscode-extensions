@@ -7,6 +7,7 @@ import {
   compactToolGroupSummary,
   compactToolGroupSummaryParts,
   diffLineStats,
+  executeCommandText,
   executeOutputPreview,
   executeWorkingDirectoryLabel,
   isCompactGroupableTool,
@@ -333,6 +334,17 @@ describe("toolCallCompactText", () => {
     expect(compactToolDetailLine(item)).toBe(
       'Grepped "createChatStateFromInit" in webview/acp-ui/src/chatReducer.test.ts · 2 matches',
     );
+  });
+
+  it("renders Antigravity shell JSON as the command line", () => {
+    const item = toolItem({
+      toolCallId: "ag-run",
+      kind: "execute",
+      subtitle:
+        '{"CommandLine":"ls -R .","WaitMsBeforeAsync":2000,"toolSummary":"List repository files"}',
+    });
+    expect(compactToolDetailLine(item)).toBe("$ ls -R .");
+    expect(executeCommandText(item)).toBe("ls -R .");
   });
 
   it("drops a leading exit 0 line from terminal output", () => {

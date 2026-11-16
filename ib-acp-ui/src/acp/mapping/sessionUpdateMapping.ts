@@ -1,4 +1,5 @@
 import type * as acp from "@agentclientprotocol/sdk";
+import { extractShellCommandLine } from "./shellCommandLine";
 import { maxToolImageDataChars } from "../../platform/imageFilePath";
 import type {
     AcpUiPromptImage,
@@ -201,6 +202,10 @@ export function toolCallExecuteCommandSubtitle(call: {
             if (fromTitle !== undefined) {
                 return fromTitle;
             }
+            const fromTitlePayload = extractShellCommandLine(call.title);
+            if (fromTitlePayload !== undefined && call.title.trim().startsWith("{")) {
+                return fromTitlePayload;
+            }
         }
     }
     return undefined;
@@ -381,51 +386,6 @@ function shellWorkingDirectory(
         return undefined;
     }
     return trimmedPath(call.locations?.[0]?.path);
-}
-
-function extractShellCommandLine(raw: unknown): string | undefined {
-    if (raw === undefined || raw === null) {
-        return undefined;
-    }
-    if (typeof raw === "string") {
-        const t = raw.trim();
-        return t.length > 0 ? t : undefined;
-    }
-    if (typeof raw !== "object" || Array.isArray(raw)) {
-        return undefined;
-    }
-    const record = raw as Record<string, unknown>;
-    const directKeys = [
-        "command",
-        "cmd",
-        "shellCommand",
-        "shell_command",
-        "bashCommand",
-        "script",
-        "line",
-    ] as const;
-    for (const key of directKeys) {
-        const v = record[key];
-        if (typeof v === "string" && v.trim().length > 0) {
-            return v.trim();
-        }
-    }
-    if (Array.isArray(record.argv) && record.argv.length > 0) {
-        const parts = record.argv
-            .filter((x): x is string => typeof x === "string")
-            .map((s) => s.trim());
-        if (parts.length > 0) {
-            return parts.join(" ");
-        }
-    }
-    if (typeof record.program === "string" && record.program.trim().length > 0) {
-        const prog = record.program.trim();
-        const args = Array.isArray(record.args)
-            ? record.args.filter((x): x is string => typeof x === "string")
-            : [];
-        return args.length > 0 ? `${prog} ${args.join(" ")}` : prog;
-    }
-    return undefined;
 }
 
 function commandLineHintForToolUpdate(update: acp.ToolCallUpdate): string | undefined {

@@ -83,21 +83,28 @@ function OpenableSubagent(): ReactElement {
   const liveItem = { ...sessionItem, startedAtMs };
   if (open) {
     return (
-      <SubagentFocus
-        title={liveItem.title}
-        status={subagentStatusLabel(liveItem.state, liveItem.stopReason)}
-        startedAtMs={startedAtMs}
-        description={liveItem.description}
-        items={childTrace}
-        showThoughts
-        expandAllToolOutputs={false}
-        followBottom
-        historyCommit={0}
-        traceScrollRef={{ current: null }}
-        onBack={() => {
-          setOpen(false);
-        }}
-      />
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          Back
+        </button>
+        <SubagentFocus
+          title={liveItem.title}
+          status={subagentStatusLabel(liveItem.state, liveItem.stopReason)}
+          startedAtMs={startedAtMs}
+          description={liveItem.description}
+          items={childTrace}
+          showThoughts
+          expandAllToolOutputs={false}
+          followBottom
+          historyCommit={0}
+          traceScrollRef={{ current: null }}
+        />
+      </div>
     );
   }
   return (

@@ -17,6 +17,7 @@ import {
     getAcpAgentConfigByNameMerged,
     getAcpAgentConfigsMerged,
 } from "../acp/config/mergedAgents";
+import { formatAgentConnectFailureMessage } from "../acp/session/agentDisconnect";
 import { AcpSessionBridge } from "../acp/session/acpSessionBridge";
 import { readCachedComposerSeed } from "../acp/session/sessionConfigOptionsCache";
 import { openPlanMarkdownInEditor } from "../platform/openPlanMarkdown";
@@ -47,6 +48,7 @@ import {
     modelConfigFromSessionOptions,
     parseSessionFile,
     readSessionCache,
+    readSessionDocumentAtUri,
     shouldDeferJsonlHistoryReplay,
     updateSessionHistory,
     writeSessionCache,
@@ -489,7 +491,9 @@ export class AcpUiSessionController {
         }
         const { rpcNdjsonSink } = getAcpUiExtensionActivation();
         const host = createDefaultAcpSessionHostRuntime(rpcNdjsonSink);
-        const header = parseSessionFile(this.options.document.getText()).header;
+        const header =
+            (await readSessionDocumentAtUri(this.documentUri)) ??
+            parseSessionFile(this.options.document.getText()).header;
         const bridge = new AcpSessionBridge(config, (msg) => this.post(msg), host, {
             onSessionInfoUpdate: (update) => {
                 void this.applySessionInfoUpdate(update);
@@ -569,7 +573,7 @@ export class AcpUiSessionController {
             return bridge;
         } catch (err: unknown) {
             const detail = err instanceof Error ? err.message : String(err);
-            const message = `Failed to connect to agent: ${detail}`;
+            const message = formatAgentConnectFailureMessage(config.name, detail);
             setAcpUiSessionConnection(this.sessionId, "disconnected", message);
             window.showErrorMessage(message);
             this.post({

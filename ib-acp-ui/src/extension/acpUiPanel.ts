@@ -11,7 +11,7 @@ import type { AcpAgentConfig } from "../acp/config/vscodeSettingsAgents";
 import { promptNoAcpAgentsConfigured } from "./acpUiNoAgentsPrompt";
 import { registerCommandIB } from "../utils/vscode";
 import { getActiveAgentConfig } from "./acpUiActiveAgent";
-import { pickAcpAgentConfig } from "./acpUiAgentPicker";
+import { pickAcpAgentForNewChat } from "./acpUiAgentPicker";
 import {
     acpUiCustomEditorViewType,
     moveAcpUiCustomEditorUri,
@@ -195,7 +195,7 @@ async function openNewAcpUiWithAgentPicker(
     context: ExtensionContext,
     refreshChatsList: () => void,
 ): Promise<void> {
-    const agentConfig = await pickAcpAgentConfig();
+    const agentConfig = await pickAcpAgentForNewChat();
     if (agentConfig === undefined) {
         return;
     }

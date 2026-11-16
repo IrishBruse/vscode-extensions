@@ -5,9 +5,7 @@ import { SubagentRunTimer } from "../SubagentBlock/SubagentRunTimer";
 import { TraceList } from "../TraceList/TraceList";
 import "./SubagentFocus.css";
 
-/**
- * Child session view. Back returns to the parent transcript.
- */
+/** Child session view. The shell draws Back in the top-left chrome. */
 export function SubagentFocus({
   title,
   status,
@@ -20,7 +18,6 @@ export function SubagentFocus({
   followBottom,
   historyCommit,
   traceScrollRef,
-  onBack,
   onCollapseExpandAll,
   onOpenWorkspacePath,
   onOpenImage,
@@ -40,7 +37,6 @@ export function SubagentFocus({
   followBottom: boolean;
   historyCommit: number;
   traceScrollRef: RefObject<HTMLElement | null>;
-  onBack: () => void;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
   onOpenImage?: (src: string) => void;
@@ -52,9 +48,6 @@ export function SubagentFocus({
   return (
     <section className="subagent-focus" aria-label={title}>
       <div className="subagent-focus-bar">
-        <button type="button" className="subagent-focus-back" onClick={onBack}>
-          Back
-        </button>
         <span className="subagent-focus-status">
           {startedAtMs !== undefined ? <SubagentRunTimer startedAtMs={startedAtMs} /> : status}
         </span>

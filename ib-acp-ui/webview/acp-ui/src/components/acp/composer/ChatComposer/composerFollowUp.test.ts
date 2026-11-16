@@ -1,9 +1,50 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  followUpAccessibilityLabel,
+  followUpBodyText,
   hasRunningTool,
   resolveFollowUpEnter,
   steerShouldStopAfterTool,
 } from "./composerFollowUp";
+
+const sampleImage = { mimeType: "image/png", data: "QUJD" };
+
+describe("followUpAccessibilityLabel", () => {
+  it("includes image count in the tooltip when text and images are queued", () => {
+    expect(
+      followUpAccessibilityLabel({
+        id: 1,
+        body: "Look at this",
+        images: [sampleImage],
+        mode: "queue",
+      }),
+    ).toBe("Look at this (1 image)");
+  });
+
+  it("labels image-only queue items", () => {
+    expect(
+      followUpAccessibilityLabel({
+        id: 1,
+        body: "",
+        images: [sampleImage, sampleImage],
+        mode: "queue",
+      }),
+    ).toBe("2 images");
+  });
+});
+
+describe("followUpBodyText", () => {
+  it("normalizes whitespace for the visible row text", () => {
+    expect(
+      followUpBodyText({
+        id: 1,
+        body: "  line one\nline two ",
+        images: [],
+        mode: "queue",
+      }),
+    ).toBe("line one line two");
+  });
+});
 
 describe("resolveFollowUpEnter", () => {
   it("sends immediately when the agent is idle", () => {

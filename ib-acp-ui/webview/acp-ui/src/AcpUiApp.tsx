@@ -516,6 +516,17 @@ export function AcpUiApp({
         onDragOver={onShellDragOver}
         onDrop={onShellDrop}
       >
+        {openAgent !== null ? (
+          <button
+            type="button"
+            className="acp-ui-focus-back"
+            onClick={() => {
+              setOpenAgent(null);
+            }}
+          >
+            Back
+          </button>
+        ) : null}
         <div className="acp-ui-view-switch" role="tablist" aria-label="Chat view">
           <button
             type="button"
@@ -590,9 +601,6 @@ export function AcpUiApp({
                 followBottom={stickToBottomRef.current}
                 historyCommit={state.historyCommit}
                 traceScrollRef={traceRef}
-                onBack={() => {
-                  setOpenAgent(null);
-                }}
                 onCollapseExpandAll={onCollapseExpandAll}
                 onOpenWorkspacePath={postOpenWorkspacePath}
                 onOpenImage={setViewerImageSrc}
@@ -614,9 +622,6 @@ export function AcpUiApp({
                 followBottom={stickToBottomRef.current}
                 historyCommit={state.historyCommit}
                 traceScrollRef={traceRef}
-                onBack={() => {
-                  setOpenAgent(null);
-                }}
                 onCollapseExpandAll={onCollapseExpandAll}
                 onOpenWorkspacePath={postOpenWorkspacePath}
                 onOpenImage={setViewerImageSrc}

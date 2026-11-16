@@ -3,6 +3,7 @@ import type { ToolCallStatus } from "../../../../../../../src/protocol/extension
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import "./ToolCallBlock.css";
 import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
+import { extractShellCommandLine } from "../../../../../../../src/acp/mapping/shellCommandLine";
 import {
   previewDiffRows,
   windowToolCallDiffRows,
@@ -88,7 +89,12 @@ function CollapsibleHintRow({
 function commandLineForExecuteTitle(item: TraceToolItem): string | null {
   const sub = item.subtitle?.trim() ?? "";
   if (sub.length > 0) {
-    const withoutPrompt = sub.startsWith("$") ? sub.slice(1).trimStart() : sub;
+    const fromPayload = extractShellCommandLine(sub);
+    const raw = fromPayload ?? (sub.startsWith("{") ? null : sub);
+    if (raw === null || raw.length === 0) {
+      return null;
+    }
+    const withoutPrompt = raw.startsWith("$") ? raw.slice(1).trimStart() : raw;
     return withoutPrompt.length > 0 ? withoutPrompt : null;
   }
   const tit = item.title.trim();

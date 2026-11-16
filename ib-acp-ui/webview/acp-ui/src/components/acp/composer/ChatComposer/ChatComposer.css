@@ -177,6 +177,31 @@
   text-overflow: ellipsis;
 }
 
+.composer-follow-up-images {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--acp-ui-space-4);
+}
+
+.composer-follow-up-thumb {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: cover;
+  border: var(--acp-ui-stroke-width) solid
+    var(--vscode-settings-textInputBorder, var(--vscode-input-border, transparent));
+  border-radius: var(--acp-ui-radius-xs);
+  cursor: zoom-in;
+}
+
+.composer-follow-up-image-overflow {
+  flex-shrink: 0;
+  font-size: var(--acp-ui-font-size-label);
+  font-weight: var(--acp-ui-font-weight-medium);
+  color: var(--acp-ui-text-secondary);
+}
+
 .composer-follow-up-actions {
   display: flex;
   flex-shrink: 0;

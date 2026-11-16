@@ -3,8 +3,9 @@
 ## User facing
 
 The chat trace is the scrolling conversation panel above the composer.
-**Chat** and **Debug** float over the top of that panel.
+**Chat** and **Debug** float over the top-right of that panel.
 They do not take a row from the conversation.
+Opening a subagent or task puts **Back** in the top-left chrome to return to the parent chat.
 Debug replaces the conversation with a run view and hides the composer.
 The call list fills the height of the debug view.
 The line shows the chat and each subagent.
@@ -126,7 +127,8 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 - TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
 - Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L164-L213) is the card for a Cursor task and for an ACP child session.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L88) skips the child row when a task card already owns that session.
-  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) shows the prompt and that subagent, and Back returns to the parent.
+  [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) shows the prompt and that subagent.
+  [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx) draws Back in the top-left chrome to return to the parent.
   [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps child session updates on that child.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L443-L532).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.

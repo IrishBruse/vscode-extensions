@@ -5,6 +5,12 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Allow always is remembered per tool kind when the agent omits `kind` on the permission request or on the option.
+- **Change**: Chat and Debug sit in the top-right chrome, and Back for a subagent or task sits in the top-left.
+- **Fix**: Antigravity bash tools show the command line instead of raw JSON in the trace.
+- **Change**: Queued messages show small image thumbnails beside the text.
+- **Change**: The `.acp` tab New Chat split uses the active client for + and lists other clients on the chevron.
+- **Change**: ACP disconnect and connect failures explain the cause, suggest reconnecting or /reset, and show a short line in the composer status bar.
 - **Fix**: User message text is no longer doubled when the agent echoes prompt text.
 
 - **Fix**: Debug lists the tools a subagent called.

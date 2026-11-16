@@ -36,3 +36,47 @@
   flex-shrink: 0;
   width: 100%;
 }
+
+.acp-ui-focus-back,
+.acp-ui-view-switch {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  pointer-events: none;
+}
+
+.acp-ui-focus-back {
+  left: 12px;
+  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
+  border-radius: var(--acp-ui-radius-full);
+  padding: 3px 10px;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-textLink-foreground);
+  font: inherit;
+  font-size: var(--acp-ui-font-size-small);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.acp-ui-view-switch {
+  right: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.acp-ui-view-switch button {
+  pointer-events: auto;
+  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
+  border-radius: var(--acp-ui-radius-full);
+  padding: 3px 10px;
+  background: var(--vscode-editor-background);
+  color: var(--acp-ui-text-secondary);
+  font: inherit;
+  font-size: var(--acp-ui-font-size-small);
+  cursor: pointer;
+}
+
+.acp-ui-view-switch button[aria-selected="true"] {
+  border-color: var(--acp-ui-focus-border);
+  color: var(--vscode-textLink-foreground);
+}
