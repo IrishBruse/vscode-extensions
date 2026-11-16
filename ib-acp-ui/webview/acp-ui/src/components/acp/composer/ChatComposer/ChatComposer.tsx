@@ -182,13 +182,18 @@ export function composerLocationLabel(sessionTitle: string, workspacePathHint: s
 
 function ContextUsageLabel({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
   const windowSize = usage?.size ?? null;
-  const label = usage === null ? "—" : formatTokenUsage(usage);
+  const usedCount = usage?.used ?? null;
+  const label = usage === null ? "\u2014" : formatTokenUsage(usage);
   const title =
     usage === null
       ? "Context usage has not been reported"
-      : windowSize === null
-        ? `${usage.used} tokens reported. Context window size was not reported.`
-        : `${usage.used} of ${windowSize} context tokens`;
+      : usedCount === null && windowSize !== null
+        ? `Context window: ${windowSize.toLocaleString()} tokens. Usage count is not reported by this agent yet.`
+        : usedCount !== null && windowSize === null
+          ? `${usedCount.toLocaleString()} tokens reported. Context window size was not reported.`
+          : usedCount !== null && windowSize !== null
+            ? `${usedCount.toLocaleString()} of ${windowSize.toLocaleString()} context tokens`
+            : "Context usage has not been reported";
   return (
     <span className="composer-context" aria-label="Context usage" title={title}>
       {label}
@@ -561,7 +566,6 @@ export function ChatComposer({
           />
         </div>
         <div className="composer-top-bar-side composer-top-bar-side--end">
-          <ContextUsageLabel usage={tokenUsage} />
           <span className="composer-top-bar-hint">/ commands · @ files</span>
         </div>
       </div>
@@ -683,8 +687,11 @@ export function ChatComposer({
                 ) : null}
               </>
             )}
+            <ContextUsageLabel usage={tokenUsage} />
           </div>
-        ) : null}
+        ) : (
+          <ContextUsageLabel usage={tokenUsage} />
+        )}
         <div className="composer-mode-slot">
           <SessionModeIndicator modeOption={modeOption} />
         </div>

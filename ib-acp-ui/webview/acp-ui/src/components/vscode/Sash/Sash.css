@@ -1,0 +1,88 @@
+:root {
+  --vs-sash-size: var(--vscode-sash-size, 4px);
+  --vs-sash-hover-size: var(--vscode-sash-hover-size, 4px);
+}
+
+.vs-sash {
+  position: relative;
+  flex: none;
+  z-index: 2;
+  touch-action: none;
+}
+
+.vs-sash--vertical {
+  cursor: ew-resize;
+  width: var(--vs-sash-size);
+  align-self: stretch;
+}
+
+.vs-sash--horizontal {
+  cursor: ns-resize;
+  height: var(--vs-sash-size);
+  width: 100%;
+}
+
+.vs-sash::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  background: var(--vscode-panel-border, var(--vscode-widget-border, var(--acp-ui-border-chrome)));
+}
+
+.vs-sash--vertical::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+}
+
+.vs-sash--horizontal::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1px;
+}
+
+.vs-sash--vertical::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--vscode-foreground);
+  opacity: 0.28;
+  box-shadow:
+    0 5px 0 currentColor,
+    0 10px 0 currentColor;
+}
+
+.vs-sash:hover::before,
+.vs-sash--active::before {
+  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
+}
+
+.vs-sash--vertical:hover::before,
+.vs-sash--vertical.vs-sash--active::before {
+  width: var(--vs-sash-hover-size);
+}
+
+.vs-sash--horizontal:hover::before,
+.vs-sash--horizontal.vs-sash--active::before {
+  height: var(--vs-sash-hover-size);
+}
+
+.vs-sash:hover::after,
+.vs-sash--active::after {
+  opacity: 0;
+}
+
+.vs-sash:disabled {
+  cursor: default;
+  pointer-events: none;
+}

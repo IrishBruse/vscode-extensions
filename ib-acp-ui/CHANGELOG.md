@@ -5,8 +5,11 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Debug call list uses the editor background and a resizable workbench sash instead of a dark panel fill.
+- **Change**: Context usage sits beside the model picker and infers the window when Cursor omits ACP `usage_update`.
+- **Change**: Chat and Debug use a segmented control with a filled active segment instead of separate bordered pills.
 - **Fix**: Allow always is remembered per tool kind when the agent omits `kind` on the permission request or on the option.
-- **Change**: Chat and Debug sit in the top-right chrome, and Back for a subagent or task sits in the top-left.
+- **Change**: Chat and Debug sit in the bottom-right of the transcript, and Back for a subagent or task sits in the top-left.
 - **Fix**: Antigravity bash tools show the command line instead of raw JSON in the trace.
 - **Change**: Queued messages show small image thumbnails beside the text.
 - **Change**: The `.acp` tab New Chat split uses the active client for + and lists other clients on the chevron.

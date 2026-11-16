@@ -26,6 +26,7 @@ const STORY_MODULES = [
   "../src/components/vscode/Checkbox/Checkbox.stories.tsx",
   "../src/components/vscode/Dropdown/Dropdown.stories.tsx",
   "../src/components/vscode/Input/Input.stories.tsx",
+  "../src/components/vscode/Sash/Sash.stories.tsx",
   "../src/components/scenarios/Scenarios.stories.tsx",
 ] as const;
 

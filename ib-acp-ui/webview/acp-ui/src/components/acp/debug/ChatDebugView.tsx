@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactElement } from "react";
+import { useCallback, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import type { TraceItem } from "../../../chatReducer";
 import {
   buildChatDebug,
@@ -8,7 +8,12 @@ import {
   type ChatDebugCall,
   type ChatDebugNode,
 } from "../../../chatDebugModel";
+import { Sash } from "../../vscode/Sash/Sash";
 import "./ChatDebugView.css";
+
+const DEBUG_PANEL_MIN_WIDTH_PX = 260;
+const DEBUG_PANEL_DEFAULT_WIDTH_PX = 380;
+const DEBUG_PANEL_MAX_WIDTH_PX = 720;
 
 export type ChatDebugViewProps = {
   trace: readonly TraceItem[];
@@ -76,10 +81,23 @@ export function ChatDebugView({
     [trace, title, childTraces, activityByToolId],
   );
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [panelWidthPx, setPanelWidthPx] = useState(DEBUG_PANEL_DEFAULT_WIDTH_PX);
   const selected = model.nodes.find((node) => node.id === pickedId) ?? model.nodes.at(-1) ?? null;
+  const onPanelResize = useCallback((deltaPx: number) => {
+    setPanelWidthPx((widthPx) =>
+      Math.min(DEBUG_PANEL_MAX_WIDTH_PX, Math.max(DEBUG_PANEL_MIN_WIDTH_PX, widthPx + deltaPx)),
+    );
+  }, []);
 
   return (
-    <div className={selected !== null ? "chat-debug chat-debug--split" : "chat-debug"}>
+    <div
+      className={selected !== null ? "chat-debug chat-debug--split" : "chat-debug"}
+      style={
+        selected !== null
+          ? ({ "--chat-debug-panel-width": `${panelWidthPx}px` } as CSSProperties)
+          : undefined
+      }
+    >
       <header className="chat-debug-hud">
         <p className="chat-debug-brand">{agentName?.trim() || "Chat"}</p>
         <h1>{model.title}</h1>
@@ -127,19 +145,22 @@ export function ChatDebugView({
         </div>
       )}
       {selected !== null ? (
-        <aside
-          className={`chat-debug-panel tone-${selected.tone}`}
-          style={{ "--node": selected.color } as CSSProperties}
-        >
-          <div className="chat-debug-panel-head">
-            <div>
-              <p className="chat-debug-kicker">{selected.kicker}</p>
-              <h2>{selected.title}</h2>
+        <div className="chat-debug-aside">
+          <Sash orientation="vertical" onDrag={onPanelResize} />
+          <aside
+            className={`chat-debug-panel tone-${selected.tone}`}
+            style={{ "--node": selected.color } as CSSProperties}
+          >
+            <div className="chat-debug-panel-head">
+              <div>
+                <p className="chat-debug-kicker">{selected.kicker}</p>
+                <h2>{selected.title}</h2>
+              </div>
+              <ShareCircle calls={selected.calls} />
             </div>
-            <ShareCircle calls={selected.calls} />
-          </div>
-          <CallList node={selected} />
-        </aside>
+            <CallList node={selected} />
+          </aside>
+        </div>
       ) : null}
     </div>
   );

@@ -352,7 +352,7 @@ export type ExtensionToWebviewMessage =
      */
     /** Chat title stored in the `.acp` file. The composer and editor tab use this value. */
     | { type: "sessionTitle"; title: string }
-    | { type: "tokenUsage"; used: number; size?: number }
+    | { type: "tokenUsage"; used?: number; size?: number }
     /** Host clock sample so a `1.2s` timer can move each tenth of a second. */
     | { type: "clock"; nowMs: number }
     | { type: "appendPlan"; entries: PlanEntry[] }

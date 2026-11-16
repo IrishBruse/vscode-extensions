@@ -37,7 +37,6 @@
 
 .composer-top-bar-side--end {
   justify-content: flex-end;
-  gap: var(--acp-ui-space-20);
 }
 
 .composer-top-bar-status {

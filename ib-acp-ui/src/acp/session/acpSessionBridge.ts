@@ -53,6 +53,7 @@ import {
     stickyPermissionOutcome,
     upsertPermissionGrant,
 } from "./permissionMemory";
+import { inferContextWindowSizeTokens, promptTurnTokenCount } from "./contextWindowSize";
 
 /** Callback that forwards an extension-to-webview message to the UI host. */
 export type PostToWebview = (message: ExtensionToWebviewMessage) => void;
@@ -582,6 +583,7 @@ export class AcpSessionBridge {
             this.lastModelSelection = selection;
             writeCachedSessionModels(this.config.name, selection);
             this.postToWebview({ type: "sessionModels", ...selection });
+            this.publishInferredContextWindow();
         }
         if (
             bootstrap.configOptions !== undefined &&
@@ -743,6 +745,7 @@ export class AcpSessionBridge {
             this.lastModelSelection = next;
             writeCachedSessionModels(this.config.name, next);
             this.postToWebview({ type: "sessionModels", ...next });
+            this.publishInferredContextWindow();
         }
     }
 
@@ -790,6 +793,7 @@ export class AcpSessionBridge {
             writeCachedSessionModels(this.config.name, selection);
             this.postToWebview({ type: "sessionModels", ...selection });
         }
+        this.publishInferredContextWindow();
     }
 
     private seedConfigOptionsBeforeConnect(): void {
@@ -807,6 +811,7 @@ export class AcpSessionBridge {
                 type: "sessionModels",
                 ...seed.modelSelection,
             });
+            this.publishInferredContextWindow();
             return;
         }
         this.postToWebview({ type: "sessionConfigOptionsLoading" });
@@ -834,6 +839,7 @@ export class AcpSessionBridge {
             this.lastModelSelection = selection;
             writeCachedSessionModels(this.config.name, selection);
         }
+        this.publishInferredContextWindow();
     }
 
     private applyConfigOptions(raw: ReadonlyArray<acp.SessionConfigOption>): void {
@@ -841,6 +847,21 @@ export class AcpSessionBridge {
         if (normalized !== null) {
             this.publishConfigOptions(normalized.options);
         }
+    }
+
+    /**
+     * Cursor ACP does not emit `usage_update`; infer the window from model config so the
+     * composer can show `—/200.0k` instead of a bare dash.
+     */
+    private publishInferredContextWindow(): void {
+        if (this.contextWindowKnown) {
+            return;
+        }
+        const size = inferContextWindowSizeTokens(this.lastModelSelection, this.lastConfigOptions);
+        if (size === null) {
+            return;
+        }
+        this.postToWebview({ type: "tokenUsage", size });
     }
 
     /** Sends a user prompt. The bridge forwards all session updates to the UI. */
@@ -861,13 +882,18 @@ export class AcpSessionBridge {
         this.prompting = true;
         try {
             const result = await this.agentProcess.prompt(this.acpSessionId, text, images);
-            const reportedTokens = result.usage?.totalTokens;
-            if (
-                !this.contextWindowKnown &&
-                reportedTokens !== undefined &&
-                Number.isFinite(reportedTokens)
-            ) {
-                this.postToWebview({ type: "tokenUsage", used: reportedTokens });
+            const reportedTokens = promptTurnTokenCount(result.usage);
+            const inferredSize = this.contextWindowKnown
+                ? null
+                : inferContextWindowSizeTokens(this.lastModelSelection, this.lastConfigOptions);
+            if (reportedTokens !== null || inferredSize !== null) {
+                this.postToWebview({
+                    type: "tokenUsage",
+                    ...(reportedTokens !== null ? { used: reportedTokens } : {}),
+                    ...(inferredSize !== null ? { size: inferredSize } : {}),
+                });
+            } else if (!this.contextWindowKnown) {
+                this.publishInferredContextWindow();
             }
             this.postToWebview({
                 type: "turnComplete",

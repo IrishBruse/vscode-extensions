@@ -6,9 +6,10 @@ The chat composer is where you draft messages, run slash commands, mention works
 The top line shows the chat title from the `.acp` file on the left and `/ commands · @ files` on the right.
 A title such as `New Cursor chat` leaves that spot on the workspace path.
 The workspace path stays in the tooltip.
-Context usage sits on that right side, before `/ commands · @ files`.
+Context usage sits in the composer footer, to the right of the model picker.
 It shows used tokens and the context window, for example `13.3k/256.0k`.
-Before the agent reports usage, that label shows a dash.
+When the agent has not reported usage yet, the label shows `—/200.0k` if the window size is known from model config.
+Cursor ACP does not emit `usage_update` yet; ACP UI infers the window from the selected model instead.
 Connecting and Thinking sit in the center of that line and pulse while they are active.
 A running bash command uses that same spot and shows `Running for 3.8s`.
 ACP connection errors sit in that same spot.
@@ -89,7 +90,8 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 ### Context usage
 
 [composerLocationLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L175-L181) keeps the workspace path when the stored title is still `New Cursor chat`.
-[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L183-L197) draws `13.3k/256.0k` on the composer top line.
+[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L183-L201) draws `13.3k/256.0k` beside the model controls.
+[inferContextWindowSizeTokens](../../../src/acp/session/contextWindowSize.ts) supplies the window when Cursor omits `usage_update`.
 [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1266-L1267) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
 When a turn ends with token counts and no context window has arrived, [prompt](../../../src/acp/session/acpSessionBridge.ts#L794-L801) sends that count so the label still shows a number.
 

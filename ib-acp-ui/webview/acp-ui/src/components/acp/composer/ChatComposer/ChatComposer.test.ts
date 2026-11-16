@@ -44,14 +44,17 @@ describe("ChatComposer", () => {
     expect(status).not.toContain("text-overflow");
   });
 
-  it("shows context usage as text with space before the command hint", () => {
+  it("shows context usage beside the model controls in the footer", () => {
     const tsx = readFileSync(new URL("./ChatComposer.tsx", import.meta.url), "utf8");
     const css = readFileSync(new URL("./ChatComposer.css", import.meta.url), "utf8");
     expect(tsx).toContain('aria-label="Context usage"');
     expect(tsx).not.toContain('role="meter"');
     expect(css).not.toContain(".composer-context-fill");
-    const endSide = css.match(/\.composer-top-bar-side--end\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(endSide).toContain("--acp-ui-space-20");
+    expect(tsx).toContain("composer-footer-model");
+    expect(tsx).toContain("<ContextUsageLabel usage={tokenUsage} />");
+    const topEnd = tsx.indexOf('className="composer-top-bar-side composer-top-bar-side--end"');
+    const topBarClose = tsx.indexOf("</div>", tsx.indexOf("composer-top-bar-hint", topEnd));
+    expect(tsx.slice(topEnd, topBarClose)).not.toContain("<ContextUsageLabel");
   });
 
   it("paints the composer frame with the input border", () => {

@@ -2192,7 +2192,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return {
         ...state,
         tokenUsage: {
-          used: action.used,
+          used: action.used !== undefined ? action.used : (state.tokenUsage?.used ?? null),
           size: action.size !== undefined ? action.size : (state.tokenUsage?.size ?? null),
         },
       };

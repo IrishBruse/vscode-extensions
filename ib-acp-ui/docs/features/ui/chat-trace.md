@@ -3,7 +3,7 @@
 ## User facing
 
 The chat trace is the scrolling conversation panel above the composer.
-**Chat** and **Debug** float over the top-right of that panel.
+**Chat** and **Debug** float over the bottom-right of that panel.
 They do not take a row from the conversation.
 Opening a subagent or task puts **Back** in the top-left chrome to return to the parent chat.
 Debug replaces the conversation with a run view and hides the composer.

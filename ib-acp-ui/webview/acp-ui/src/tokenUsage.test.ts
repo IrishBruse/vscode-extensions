@@ -21,4 +21,8 @@ describe("formatTokenUsage", () => {
   it("shows only the token count when the window size is missing", () => {
     expect(formatTokenUsage({ used: 12345, size: null })).toBe("12.3k");
   });
+
+  it("shows the window when Cursor omits used counts", () => {
+    expect(formatTokenUsage({ used: null, size: 200_000 })).toBe("\u2014/200.0k");
+  });
 });
