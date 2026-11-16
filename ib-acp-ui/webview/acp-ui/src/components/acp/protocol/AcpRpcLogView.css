@@ -54,9 +54,47 @@
   color: var(--vscode-charts-green, var(--acp-ui-text-primary));
 }
 
+.acp-rpc-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-8);
+  padding: var(--acp-ui-space-10) var(--acp-ui-space-12);
+}
+
+.acp-rpc-log-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-4);
+  min-width: 0;
+}
+
+.acp-rpc-log-field--method {
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--acp-ui-space-6);
+}
+
+.acp-rpc-log-label {
+  color: var(--acp-ui-text-secondary);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+  font-weight: var(--acp-ui-font-weight-semibold);
+  line-height: 1.35;
+}
+
+.acp-rpc-log-field--method .acp-rpc-log-value {
+  color: var(--acp-ui-text-primary);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-small);
+  font-weight: var(--acp-ui-font-weight-medium);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.acp-rpc-log-json,
 .acp-rpc-log-payload {
   margin: 0;
-  padding: var(--acp-ui-space-10) var(--acp-ui-space-12);
   font-family: var(--acp-ui-font-mono);
   font-size: var(--acp-ui-font-size-small);
   line-height: 1.45;
@@ -64,4 +102,8 @@
   word-break: break-word;
   color: var(--acp-ui-text-primary);
   background: transparent;
+}
+
+.acp-rpc-log-payload {
+  padding: var(--acp-ui-space-10) var(--acp-ui-space-12);
 }

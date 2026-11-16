@@ -25,7 +25,6 @@
   overflow: auto;
   width: 100%;
   color: var(--acp-ui-text-primary);
-  padding-top: var(--acp-ui-trace-chrome-inset, 3.25rem);
 }
 
 .agent-trace-follow-gap {
@@ -42,14 +41,11 @@
 .acp-ui-top-chrome {
   position: absolute;
   z-index: 10;
-  top: 0;
-  right: 0;
-  left: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  inset: var(--acp-ui-space-6) var(--acp-ui-space-12) auto;
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: var(--acp-ui-space-8);
-  padding: var(--acp-ui-space-6) var(--acp-ui-space-12);
   border: 0;
   background: transparent;
   pointer-events: none;

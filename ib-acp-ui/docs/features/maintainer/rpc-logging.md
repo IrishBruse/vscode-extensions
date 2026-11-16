@@ -17,7 +17,7 @@ End users typically only need it when troubleshooting agent connectivity.
 ### In-chat ACP tab
 
 [WebviewAcpRpcNdjsonSink](../../../src/extension/webviewAcpRpcNdjsonSink.ts) forwards complete NDJSON lines from [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts) to the webview as `acpRpcLine` host messages.
-[AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders them with [prettyPrintAcpRpcJson](../../../src/protocol/acpRpcLog.ts).
+[AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders each line with [formatAcpRpcDisplay](../../../src/protocol/acpRpcLog.ts) so **method** is inline and **params** / **result** / **error** are pretty-printed JSON blocks.
 
 [activateAcpUiExtension](../../../src/extension/activateAcpUiExtension.ts#L23-L46) registers `ib-acp-ui.showAcpRpcLog`, which calls [showAcpRpcLogInActiveSession](../../../src/extension/acpUiCustomEditorProvider.ts) to post `focusTraceView` with `acp`.
 The global activation sink is [NullAcpRpcNdjsonSink](../../../src/acp/ports/rpcNdjsonSink.ts) so stdio taps do not duplicate RPC into the output channel.

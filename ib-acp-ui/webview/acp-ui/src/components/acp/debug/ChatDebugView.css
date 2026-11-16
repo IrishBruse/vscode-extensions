@@ -290,6 +290,11 @@
   flex-direction: column;
 }
 
+.agent-trace--debug .chat-debug-hud,
+.agent-trace--acp .acp-rpc-log {
+  padding-inline-end: 3.5rem;
+}
+
 .agent-trace--acp .acp-rpc-log {
   flex: 1;
   min-height: 0;

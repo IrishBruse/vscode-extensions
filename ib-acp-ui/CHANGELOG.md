@@ -7,6 +7,7 @@ Update any bullet that does not follow this form.
 
 - **Fix**: The title from the ACP connection stays on the chat and is stored in the `.acp` file.
 - **Add**: An **ACP** tab in the chat shows pretty-printed NDJSON protocol traffic for the open session.
+- **Change**: The ACP tab splits each message into **method** and pretty-printed **params** / **result** blocks instead of raw JSON-RPC.
 - **Remove**: Raw RPC traffic from the **ACP UI RPC** output channel (use the in-chat **ACP** tab or **Show ACP RPC Log**).
 - **Change**: The Debug call list pads the side panel and truncates each tool line to one row.
 - **Fix**: The Chat/Debug switch stays aligned and no longer jumps when Debug is selected.
