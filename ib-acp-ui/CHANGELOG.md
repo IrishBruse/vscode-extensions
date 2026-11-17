@@ -5,11 +5,17 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: The composer top-left label stays on the workspace folder instead of switching to the chat title.
 - **Fix**: The title from the ACP connection stays on the chat and is stored in the `.acp` file.
 - **Add**: An **ACP** tab in the chat shows pretty-printed NDJSON protocol traffic for the open session.
-- **Change**: The ACP tab splits each message into **method** and pretty-printed **params** / **result** blocks instead of raw JSON-RPC.
+- **Change**: The ACP tab lists every RPC field (**jsonrpc**, **id**, **method**, **params**, **result**, …) in stacked labels with syntax-highlighted JSON, and each entry collapses from the header.
+- **Fix**: Each ACP protocol row titles itself from the tool title, `sessionUpdate` kind, or streamed text the chat trace renders.
+- **Change**: ACP protocol rows hide `jsonrpc` and show the JSON-RPC `id` as a number in the entry head.
+- **Change**: `agent_thought_chunk` rows start collapsed and show only the update kind in the entry head.
+- **Add**: Each chat appends wire-protocol RPC to `chats/<sessionId>.rpc.ndjson`; the ACP tab copies that path in one click.
 - **Remove**: Raw RPC traffic from the **ACP UI RPC** output channel (use the in-chat **ACP** tab or **Show ACP RPC Log**).
 - **Change**: The Debug call list pads the side panel and truncates each tool line to one row.
+- **Change**: The Debug side panel leads with the tool-kind donut chart instead of a text title.
 - **Fix**: The Chat/Debug switch stays aligned and no longer jumps when Debug is selected.
 - **Fix**: Web Fetch shows the URL it is fetching in the trace and Debug call list.
 - **Change**: `cursor/ask_question` uses paginated arrow-key selection with a typed Other row instead of button choices.

@@ -165,8 +165,8 @@
   color: var(--vscode-editor-foreground);
 }
 
-.agent-markdown .code-token-keyword {
-  color: var(--vscode-symbolIcon-keywordForeground, #c586c0);
+.agent-markdown .code-token-property {
+  color: var(--acp-json-property-foreground, var(--vscode-symbolIcon-propertyForeground, #9cdcfe));
 }
 
 .agent-markdown .code-token-string {
@@ -175,6 +175,14 @@
 
 .agent-markdown .code-token-number {
   color: var(--vscode-numberLiteralForeground, #b5cea8);
+}
+
+.agent-markdown .code-token-keyword {
+  color: var(--acp-json-literal-foreground, var(--vscode-symbolIcon-booleanForeground, #569cd6));
+}
+
+.agent-markdown .code-token-punctuation {
+  color: var(--acp-json-punctuation-foreground, var(--vscode-editor-foreground, #d4d4d4));
 }
 
 .agent-markdown .code-token-comment {

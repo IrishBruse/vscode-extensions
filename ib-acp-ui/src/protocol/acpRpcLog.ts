@@ -2,6 +2,8 @@ import type { AcpRpcNdjsonDirection } from "../acp/ports/rpcNdjsonSink";
 
 export const maxAcpRpcLogLines = 500;
 
+export const maxAcpRpcTitleLength = 120;
+
 export type AcpRpcLogEntry = {
     id: number;
     direction: AcpRpcNdjsonDirection;
@@ -9,14 +11,25 @@ export type AcpRpcLogEntry = {
     raw: string;
 };
 
+export type AcpRpcDisplayField = {
+    label: string;
+    kind: "scalar" | "json";
+    value: string;
+};
+
 /** Structured fields extracted from one NDJSON-RPC line for the in-chat ACP log. */
 export type AcpRpcDisplayMessage = {
-    method?: string;
-    params?: string;
-    result?: string;
-    error?: string;
+    /** Short summary for the entry head (tool title, sessionUpdate kind, prompt snippet, …). */
+    title?: string;
+    /** JSON-RPC request/response id shown in the entry head (not as a body field). */
+    rpcId?: string;
+    /** Starts collapsed in the ACP log (for example `agent_thought_chunk`). */
+    defaultCollapsed?: boolean;
+    fields?: readonly AcpRpcDisplayField[];
     raw?: string;
 };
+
+const RPC_FIELD_ORDER = ["jsonrpc", "id", "method", "params", "result", "error"] as const;
 
 function prettyJsonBlock(value: unknown): string {
     return JSON.stringify(value, null, 2);
@@ -26,7 +39,197 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Splits method/params/result from one NDJSON-RPC payload for display. */
+function truncateRpcTitle(text: string): string {
+    const collapsed = text.replace(/\s+/g, " ").trim();
+    if (collapsed.length === 0) {
+        return "";
+    }
+    if (collapsed.length <= maxAcpRpcTitleLength) {
+        return collapsed;
+    }
+    return `${collapsed.slice(0, maxAcpRpcTitleLength - 1).trimEnd()}…`;
+}
+
+function textFromAcpContent(content: unknown): string {
+    if (typeof content === "string") {
+        return content;
+    }
+    if (!isRecord(content)) {
+        return "";
+    }
+    if (typeof content.text === "string") {
+        return content.text;
+    }
+    return "";
+}
+
+function sessionUpdateKind(update: Record<string, unknown>): string | undefined {
+    if (typeof update.sessionUpdate === "string" && update.sessionUpdate.length > 0) {
+        return update.sessionUpdate;
+    }
+    return undefined;
+}
+
+/** Human-readable summary for one `session/update` payload. */
+export function acpSessionUpdateTitle(update: Record<string, unknown>): string | undefined {
+    const kind = sessionUpdateKind(update);
+    if (kind === undefined) {
+        return undefined;
+    }
+
+    if (typeof update.title === "string") {
+        const title = truncateRpcTitle(update.title);
+        if (title.length > 0) {
+            return `${kind} · ${title}`;
+        }
+    }
+
+    const textKinds = new Set([
+        "agent_message_chunk",
+        "user_message_chunk",
+        "session_message_chunk",
+    ]);
+    if (textKinds.has(kind)) {
+        const preview = truncateRpcTitle(textFromAcpContent(update.content));
+        if (preview.length > 0) {
+            return `${kind} · ${preview}`;
+        }
+    }
+
+    if (
+        kind === "tool_call_update" &&
+        typeof update.status === "string" &&
+        update.status.length > 0
+    ) {
+        return `${kind} · ${update.status}`;
+    }
+
+    return kind;
+}
+
+function scalarString(value: unknown): string {
+    if (value === null) {
+        return "null";
+    }
+    if (typeof value === "string") {
+        return value;
+    }
+    if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+    }
+    return JSON.stringify(value);
+}
+
+function pushField(fields: AcpRpcDisplayField[], label: string, value: unknown): void {
+    if (value === undefined) {
+        return;
+    }
+    if (typeof value === "object" && value !== null) {
+        fields.push({ label, kind: "json", value: prettyJsonBlock(value) });
+        return;
+    }
+    fields.push({ label, kind: "scalar", value: scalarString(value) });
+}
+
+function acpRpcSummaryTitle(
+    parsed: Record<string, unknown>,
+    method: string | undefined,
+): string | undefined {
+    if (method === "session/update" && isRecord(parsed.params) && isRecord(parsed.params.update)) {
+        return acpSessionUpdateTitle(parsed.params.update);
+    }
+
+    if (
+        method === "session/prompt" &&
+        isRecord(parsed.params) &&
+        typeof parsed.params.prompt === "string"
+    ) {
+        const preview = truncateRpcTitle(parsed.params.prompt);
+        if (preview.length > 0) {
+            return `${method} · ${preview}`;
+        }
+    }
+
+    if (method === "session/request_permission" && isRecord(parsed.params)) {
+        const toolCall = parsed.params.toolCall;
+        if (isRecord(toolCall) && typeof toolCall.title === "string") {
+            const title = truncateRpcTitle(toolCall.title);
+            if (title.length > 0) {
+                return `${method} · ${title}`;
+            }
+        }
+    }
+
+    if (method !== undefined) {
+        return method;
+    }
+
+    if (parsed.result !== undefined) {
+        return "response";
+    }
+
+    if (parsed.error !== undefined) {
+        return "error";
+    }
+
+    if (parsed.id !== undefined) {
+        return "response";
+    }
+
+    return undefined;
+}
+
+function buildRpcDisplayFields(parsed: Record<string, unknown>): AcpRpcDisplayField[] {
+    const fields: AcpRpcDisplayField[] = [];
+    const method =
+        typeof parsed.method === "string" && parsed.method.length > 0 ? parsed.method : undefined;
+    const usedKeys = new Set<string>();
+
+    if ("jsonrpc" in parsed) {
+        usedKeys.add("jsonrpc");
+    }
+    if ("id" in parsed) {
+        usedKeys.add("id");
+    }
+
+    if (method !== undefined) {
+        pushField(fields, "method", method);
+        usedKeys.add("method");
+    }
+
+    if (method === "session/update" && isRecord(parsed.params)) {
+        const { update, ...rest } = parsed.params;
+        if (Object.keys(rest).length > 0) {
+            pushField(fields, "params", rest);
+        }
+        if (isRecord(update)) {
+            pushField(fields, "update", update);
+        } else if (update !== undefined) {
+            pushField(fields, "update", update);
+        }
+        usedKeys.add("params");
+    } else {
+        for (const key of RPC_FIELD_ORDER) {
+            if (key === "jsonrpc" || key === "id" || key === "method") {
+                continue;
+            }
+            if (key in parsed) {
+                pushField(fields, key, parsed[key]);
+                usedKeys.add(key);
+            }
+        }
+    }
+
+    for (const key of Object.keys(parsed)) {
+        if (!usedKeys.has(key)) {
+            pushField(fields, key, parsed[key]);
+        }
+    }
+
+    return fields;
+}
+
+/** Splits RPC fields from one NDJSON-RPC payload for display. */
 export function formatAcpRpcDisplay(line: string): AcpRpcDisplayMessage {
     const trimmed = line.trim();
     if (trimmed.length === 0) {
@@ -38,27 +241,32 @@ export function formatAcpRpcDisplay(line: string): AcpRpcDisplayMessage {
             return { raw: trimmed };
         }
 
-        const display: AcpRpcDisplayMessage = {};
+        const fields = buildRpcDisplayFields(parsed);
+        const method =
+            typeof parsed.method === "string" && parsed.method.length > 0
+                ? parsed.method
+                : undefined;
+        const summary = acpRpcSummaryTitle(parsed, method);
+        const display: AcpRpcDisplayMessage = { fields };
 
-        if (typeof parsed.method === "string" && parsed.method.length > 0) {
-            display.method = parsed.method;
+        if ("id" in parsed) {
+            display.rpcId = scalarString(parsed.id);
         }
-        if (parsed.params !== undefined) {
-            display.params = prettyJsonBlock(parsed.params);
-        }
-        if (parsed.result !== undefined) {
-            display.result = prettyJsonBlock(parsed.result);
-        }
-        if (parsed.error !== undefined) {
-            display.error = prettyJsonBlock(parsed.error);
+
+        if (summary !== undefined) {
+            display.title = summary;
         }
 
         if (
-            display.method !== undefined ||
-            display.params !== undefined ||
-            display.result !== undefined ||
-            display.error !== undefined
+            method === "session/update" &&
+            isRecord(parsed.params) &&
+            isRecord(parsed.params.update) &&
+            sessionUpdateKind(parsed.params.update) === "agent_thought_chunk"
         ) {
+            display.defaultCollapsed = true;
+        }
+
+        if (fields.length > 0) {
             return display;
         }
 
@@ -75,17 +283,18 @@ export function prettyPrintAcpRpcJson(line: string): string {
         return display.raw;
     }
     const blocks: string[] = [];
-    if (display.method !== undefined) {
-        blocks.push(`method: ${display.method}`);
+    if (display.title !== undefined) {
+        blocks.push(`title: ${display.title}`);
     }
-    if (display.params !== undefined) {
-        blocks.push(`params:\n${display.params}`);
+    if (display.rpcId !== undefined) {
+        blocks.push(`id: ${display.rpcId}`);
     }
-    if (display.result !== undefined) {
-        blocks.push(`result:\n${display.result}`);
-    }
-    if (display.error !== undefined) {
-        blocks.push(`error:\n${display.error}`);
+    for (const field of display.fields ?? []) {
+        if (field.kind === "scalar") {
+            blocks.push(`${field.label}: ${field.value}`);
+        } else {
+            blocks.push(`${field.label}:\n${field.value}`);
+        }
     }
     return blocks.join("\n\n");
 }

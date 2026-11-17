@@ -156,10 +156,6 @@ export function ChatDebugView({
             style={{ "--node": selected.color } as CSSProperties}
           >
             <div className="chat-debug-panel-head">
-              <div>
-                <p className="chat-debug-kicker">{selected.kicker}</p>
-                <h2>{selected.title}</h2>
-              </div>
               <ShareCircle calls={selected.calls} />
             </div>
             <CallList node={selected} />

@@ -1,4 +1,4 @@
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createWriteStream, truncateSync, type WriteStream } from "node:fs";
 import type { AcpRpcNdjsonLineContext, AcpRpcNdjsonSink } from "../../acp/ports/rpcNdjsonSink";
 import { formatAcpRpcNdjsonDebugLine } from "../../acp/ports/rpcNdjsonSink";
 
@@ -27,6 +27,19 @@ export class FileAcpRpcNdjsonSink implements AcpRpcNdjsonSink {
         if (this.stream !== null) {
             this.stream.end();
             this.stream = null;
+        }
+    }
+
+    /** Clears the log file and closes any open stream (for example after session reset). */
+    clear(): void {
+        this.dispose();
+        if (this.logFilePath === null) {
+            return;
+        }
+        try {
+            truncateSync(this.logFilePath, 0);
+        } catch (err: unknown) {
+            console.error("ACP RPC log file truncate error:", err);
         }
     }
 

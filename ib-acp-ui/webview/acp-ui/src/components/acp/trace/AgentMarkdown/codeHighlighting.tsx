@@ -1,6 +1,14 @@
 import type { ReactElement, ReactNode } from "react";
 
-type TokenKind = "plain" | "keyword" | "string" | "number" | "comment" | "operator" | "punctuation";
+type TokenKind =
+    | "plain"
+    | "keyword"
+    | "string"
+    | "property"
+    | "number"
+    | "comment"
+    | "operator"
+    | "punctuation";
 
 type Token = { kind: TokenKind; text: string };
 
@@ -53,6 +61,55 @@ export function highlightCodeBuildCount(): number {
   return highlightCodeBuilds;
 }
 
+/** VS Code-style JSON tokenizer: keys, values, punctuation, literals. */
+export function tokenizeJsonCode(code: string): Token[] {
+    const tokens: Token[] = [];
+    let index = 0;
+    while (index < code.length) {
+        const rest = code.slice(index);
+
+        const whitespace = /^[\s]+/.exec(rest);
+        if (whitespace !== null) {
+            tokens.push({ kind: "plain", text: whitespace[0] });
+            index += whitespace[0].length;
+            continue;
+        }
+
+        const quoted = /^"(?:\\.|[^"\\])*"/.exec(rest);
+        if (quoted !== null) {
+            const text = quoted[0];
+            const isKey = /^\s*:/.test(code.slice(index + text.length));
+            tokens.push({ kind: isKey ? "property" : "string", text });
+            index += text.length;
+            continue;
+        }
+
+        const keyword = /^(?:true|false|null)\b/.exec(rest);
+        if (keyword !== null) {
+            tokens.push({ kind: "keyword", text: keyword[0] });
+            index += keyword[0].length;
+            continue;
+        }
+
+        const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(rest);
+        if (number !== null) {
+            tokens.push({ kind: "number", text: number[0] });
+            index += number[0].length;
+            continue;
+        }
+
+        if (/^[{}[\],:]/.test(rest)) {
+            tokens.push({ kind: "punctuation", text: rest[0] ?? "" });
+            index += 1;
+            continue;
+        }
+
+        tokens.push({ kind: "plain", text: rest[0] ?? "" });
+        index += 1;
+    }
+    return tokens;
+}
+
 function cachedHighlightTokens(language: string, code: string, build: () => Token[]): Token[] {
   const key = `${language}\0${code}`;
   const cached = highlightTokenCache.get(key);
@@ -75,15 +132,8 @@ function cachedHighlightTokens(language: string, code: string, build: () => Toke
 
 export function highlightCodeToNodes(language: string | undefined, code: string): ReactNode[] {
   if (language === "json") {
-    const quoted = cachedHighlightTokens(language, code, () =>
-      tokenizeByRegex(code, /"(?:\\.|[^"\\])*"/g, "string").flatMap((token) => {
-        if (token.kind !== "plain") {
-          return [token];
-        }
-        return tokenizeByRegex(token.text, /\b-?\d+(?:\.\d+)?\b/g, "number");
-      }),
-    );
-    return tokensToNodes(quoted);
+    const tokens = cachedHighlightTokens(language, code, () => tokenizeJsonCode(code));
+    return tokensToNodes(tokens);
   }
   if (language === "typescript" || language === "ts") {
     const keywords =

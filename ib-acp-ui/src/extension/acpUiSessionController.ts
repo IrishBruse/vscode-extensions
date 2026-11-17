@@ -18,7 +18,9 @@ import {
     getAcpAgentConfigsMerged,
 } from "../acp/config/mergedAgents";
 import { formatAgentConnectFailureMessage } from "../acp/session/agentDisconnect";
+import { CompositeAcpRpcNdjsonSink } from "../acp/ports/rpcNdjsonSink";
 import { AcpSessionBridge } from "../acp/session/acpSessionBridge";
+import { FileAcpRpcNdjsonSink } from "../platform/node/fileRpcNdjsonSink";
 import { readCachedComposerSeed } from "../acp/session/sessionConfigOptionsCache";
 import { openPlanMarkdownInEditor } from "../platform/openPlanMarkdown";
 import { openWorkspacePathTarget } from "../platform/openWorkspacePathTarget";
@@ -66,6 +68,7 @@ import {
     setAcpUiSessionTitleInMemory,
     updateAcpUiSessionTitle,
 } from "./acpUiSessionsStore";
+import { sessionRpcLogUriForId } from "./sessionRpcLogPath";
 import { WebviewAcpRpcNdjsonSink } from "./webviewAcpRpcNdjsonSink";
 import { setAcpUiSessionConnection, clearAcpUiSessionConnection } from "./acpUiSessionConnection";
 import {
@@ -104,16 +107,9 @@ export class AcpUiSessionController {
     private lastPostedSessionTitle: string | undefined;
     private liveClockTimer: ReturnType<typeof setInterval> | undefined;
     private readonly disposables: Array<{ dispose(): void }> = [];
-    private readonly rpcNdjsonSink = new WebviewAcpRpcNdjsonSink((line, context) => {
-        this.post({
-            type: "acpRpcLine",
-            line,
-            direction: context?.direction ?? "fromAgent",
-            ...(context?.agentName !== undefined && context.agentName.length > 0
-                ? { agentName: context.agentName }
-                : {}),
-        });
-    });
+    private readonly rpcLogFilePath: string;
+    private readonly rpcFileSink: FileAcpRpcNdjsonSink;
+    private readonly rpcNdjsonSink: CompositeAcpRpcNdjsonSink;
 
     constructor(private readonly options: SessionControllerOptions) {
         const parsed = parseSessionFile(options.document.getText());
@@ -122,6 +118,21 @@ export class AcpUiSessionController {
         }
         this.sessionId = parsed.header.id;
         this.lastPostedSessionTitle = parsed.header.title;
+        this.rpcLogFilePath = sessionRpcLogUriForId(options.context, this.sessionId).fsPath;
+        this.rpcFileSink = new FileAcpRpcNdjsonSink(this.rpcLogFilePath);
+        this.rpcNdjsonSink = new CompositeAcpRpcNdjsonSink([
+            this.rpcFileSink,
+            new WebviewAcpRpcNdjsonSink((line, context) => {
+                this.post({
+                    type: "acpRpcLine",
+                    line,
+                    direction: context?.direction ?? "fromAgent",
+                    ...(context?.agentName !== undefined && context.agentName.length > 0
+                        ? { agentName: context.agentName }
+                        : {}),
+                });
+            }),
+        ]);
         const configs = getAcpAgentConfigsMerged();
         const named = parsed.header.agentName;
         this.agentConfig =
@@ -180,6 +191,7 @@ export class AcpUiSessionController {
     dispose(): void {
         this.stopLiveClock();
         this.disposeBridge();
+        this.rpcFileSink.dispose();
         clearAcpUiSessionConnection(this.sessionId);
         for (const disposable of this.disposables) {
             disposable.dispose();
@@ -353,6 +365,7 @@ export class AcpUiSessionController {
                 : {}),
             ...(seededModelSelection !== null ? { sessionModels: seededModelSelection } : {}),
             contentWidthRatio: readContentWidthRatioFromSettings(),
+            acpRpcLogPath: this.rpcLogFilePath,
         };
     }
 
@@ -698,6 +711,7 @@ export class AcpUiSessionController {
             await clearSessionModelConfig(this.documentUri);
             await clearSessionPermissionGrants(this.documentUri);
             await clearAcpUiSessionRuntimeSessionId(this.sessionId);
+            this.rpcFileSink.clear();
             this.post({ type: "sessionReset" });
             this.postSessionConfigSeedOrLoading();
             void this.ensureBridgeConnected();

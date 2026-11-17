@@ -63,7 +63,6 @@ export type AcpUiComposerProps = {
   activity: "connecting" | "thinking" | "disconnected" | null;
   statusDetail: string | null;
   thoughtStartedAtMs: number | null;
-  sessionTitle: string;
   trace: TraceItem[];
   tokenUsage: AcpUiTokenUsage | null;
   dispatch: Dispatch<ChatAction>;
@@ -99,7 +98,6 @@ export function AcpUiComposer({
   activity,
   statusDetail,
   thoughtStartedAtMs,
-  sessionTitle,
   trace,
   tokenUsage,
   dispatch,
@@ -570,7 +568,6 @@ export function AcpUiComposer({
   return (
     <ChatComposer
       workspacePathHint={workspaceText}
-      sessionTitle={sessionTitle}
       modelSelection={modelSelection}
       sessionConfigOptions={sessionConfigOptions}
       sessionConfigLoading={sessionConfigLoading}

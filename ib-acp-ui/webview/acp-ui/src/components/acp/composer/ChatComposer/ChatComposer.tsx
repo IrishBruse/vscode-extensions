@@ -54,8 +54,6 @@ import {
 export type ChatComposerProps = {
   /** Workspace path shown in the composer status slot. */
   workspacePathHint: string;
-  /** Chat title stored in the `.acp` file. A title such as New Cursor chat leaves the path in place. */
-  sessionTitle?: string;
   modelSelection: AcpUiSessionModelSelection | null;
   sessionConfigOptions: AcpUiSessionConfigOption[] | null;
   sessionConfigLoading: boolean;
@@ -168,18 +166,6 @@ function useComposerStatusText(
   return null;
 }
 
-/** Auto-generated title for a chat that has not been renamed yet. */
-const emptyChatTitlePattern = /^New .* chat$/;
-
-/** Left composer label: a real chat title, or the workspace path for a new chat. */
-export function composerLocationLabel(sessionTitle: string, workspacePathHint: string): string {
-  const title = sessionTitle.trim();
-  if (title.length === 0 || emptyChatTitlePattern.test(title)) {
-    return workspacePathHint;
-  }
-  return title;
-}
-
 function ContextUsageLabel({ usage }: { usage: AcpUiTokenUsage | null }): ReactElement {
   const windowSize = usage?.size ?? null;
   const usedCount = usage?.used ?? null;
@@ -226,7 +212,6 @@ function ComposerStatusText({
  */
 export function ChatComposer({
   workspacePathHint,
-  sessionTitle = "",
   modelSelection,
   sessionConfigOptions,
   sessionConfigLoading,
@@ -539,7 +524,7 @@ export function ChatComposer({
       <div className="composer-top-bar">
         <div className="composer-top-bar-side">
           <div className="composer-activity" title={workspacePathHint}>
-            {composerLocationLabel(sessionTitle, workspacePathHint)}
+            {workspacePathHint}
           </div>
         </div>
         <div

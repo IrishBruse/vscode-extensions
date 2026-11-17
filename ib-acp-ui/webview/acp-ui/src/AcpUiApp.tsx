@@ -592,7 +592,11 @@ export function AcpUiApp({
               activityByToolId={taskActivityByToolId}
             />
           ) : traceView === "acp" ? (
-            <AcpRpcLogView entries={state.acpRpcLines} />
+            <AcpRpcLogView
+              entries={state.acpRpcLines}
+              logPath={state.acpRpcLogPath}
+              homeDir={init.homeDir}
+            />
           ) : (
           <>
           {state.sessionHistoryLoading && state.trace.length > 0 && earlierOverlay ? (
@@ -802,7 +806,6 @@ export function AcpUiApp({
               }
               statusDetail={state.errorText}
               thoughtStartedAtMs={state.thoughtStartedAtMs}
-              sessionTitle={state.sessionTitle}
               trace={state.trace}
               tokenUsage={state.tokenUsage}
               dispatch={dispatch}

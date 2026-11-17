@@ -198,6 +198,8 @@ export type ExtensionToWebviewMessage =
           bashDurations?: AcpUiBashDuration[];
           /** Fraction of panel width for transcript and composer (1 = full width). */
           contentWidthRatio?: number;
+          /** Absolute path of the session NDJSON RPC log file (for copy-to-clipboard in the ACP tab). */
+          acpRpcLogPath?: string;
       }
     | {
           type: "contentWidthRatio";

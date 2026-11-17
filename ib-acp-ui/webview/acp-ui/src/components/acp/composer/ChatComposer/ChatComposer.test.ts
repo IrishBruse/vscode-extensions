@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
-import { composerDisconnectStatusLine, composerLocationLabel } from "./ChatComposer";
+import { composerDisconnectStatusLine } from "./ChatComposer";
 
 describe("composerDisconnectStatusLine", () => {
   it("shows only the first line of a multi-line disconnect message", () => {
@@ -12,19 +12,12 @@ describe("composerDisconnectStatusLine", () => {
   });
 });
 
-describe("composerLocationLabel", () => {
-  it("keeps the workspace path for a new chat title", () => {
-    expect(composerLocationLabel("New Cursor chat", "/work/app")).toBe("/work/app");
-    expect(composerLocationLabel("Fix login", "/work/app")).toBe("Fix login");
-  });
-});
-
 describe("ChatComposer", () => {
   it("shows the workspace path and does not pulse an activity label", () => {
     const tsx = readFileSync(new URL("./ChatComposer.tsx", import.meta.url), "utf8");
     const css = readFileSync(new URL("./ChatComposer.css", import.meta.url), "utf8");
     expect(tsx).toContain("{workspacePathHint}");
-    expect(tsx).toContain("composerLocationLabel");
+    expect(tsx).not.toContain("composerLocationLabel");
     expect(tsx).not.toContain("activityLabel");
     expect(tsx).not.toContain("composer-activity--inflight");
     expect(css).not.toContain("composer-activity-pulse");

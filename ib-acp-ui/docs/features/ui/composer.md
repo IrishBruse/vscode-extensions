@@ -89,8 +89,8 @@ Protocol: [available_commands_update](../../acp/protocol/v2/slash-commands.mdx).
 
 ### Context usage
 
-[composerLocationLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L175-L181) keeps the workspace path when the stored title is still `New Cursor chat`.
-[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L183-L201) draws `13.3k/256.0k` beside the model controls.
+The composer top line always shows the workspace folder path in the left slot; chat titles stay in the editor tab and header.
+[ContextUsageLabel](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L171-L189) draws `13.3k/256.0k` beside the model controls.
 [inferContextWindowSizeTokens](../../../src/acp/session/contextWindowSize.ts) supplies the window when Cursor omits `usage_update`.
 [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1266-L1267) maps ACP `usage_update` (`used` of `size`) to `tokenUsage`.
 When a turn ends with token counts and no context window has arrived, [prompt](../../../src/acp/session/acpSessionBridge.ts#L794-L801) sends that count so the label still shows a number.

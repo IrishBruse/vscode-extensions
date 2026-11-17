@@ -5,6 +5,9 @@
 For debugging ACP protocol traffic, open the **ACP** tab in an ACP UI chat (next to **Chat** and **Debug**).
 Traffic is pretty-printed JSON, one NDJSON RPC message per row, with direction (`toAgent` or `fromAgent`) and agent name metadata.
 
+The same session also appends every wire line to `chats/<sessionId>.rpc.ndjson` beside the `.acp` file.
+Click the path at the top of the **ACP** tab to copy it to the clipboard.
+
 **Show ACP Protocol in Chat** from the command palette focuses the active session and switches to the **ACP** tab.
 
 The **ACP UI** output channel is for general extension messages only, not raw RPC traffic.
@@ -16,8 +19,13 @@ End users typically only need it when troubleshooting agent connectivity.
 
 ### In-chat ACP tab
 
-[WebviewAcpRpcNdjsonSink](../../../src/extension/webviewAcpRpcNdjsonSink.ts) forwards complete NDJSON lines from [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts) to the webview as `acpRpcLine` host messages.
-[AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders each line with [formatAcpRpcDisplay](../../../src/protocol/acpRpcLog.ts) so **method** is inline and **params** / **result** / **error** are pretty-printed JSON blocks.
+[AcpUiSessionController](../../../src/extension/acpUiSessionController.ts) composes [FileAcpRpcNdjsonSink](../../../src/platform/node/fileRpcNdjsonSink.ts) (per-session `chats/<sessionId>.rpc.ndjson`) with [WebviewAcpRpcNdjsonSink](../../../src/extension/webviewAcpRpcNdjsonSink.ts), which forwards complete NDJSON lines to the webview as `acpRpcLine` host messages.
+The init payload includes `acpRpcLogPath` for the copy control in [AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx).
+[AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders each line with [formatAcpRpcDisplay](../../../src/protocol/acpRpcLog.ts).
+The entry head shows a title from the tool title, `sessionUpdate` kind, or prompt text, and collapses the body.
+The body lists each top-level RPC field except **jsonrpc** (**method**, **params**, **result**, **error**, plus any extras) in composer-style labels with syntax-highlighted JSON.
+The JSON-RPC **id** appears as a number in the entry head.
+`session/update` still peels **update** out of **params** for readability.
 
 [activateAcpUiExtension](../../../src/extension/activateAcpUiExtension.ts#L23-L46) registers `ib-acp-ui.showAcpRpcLog`, which calls [showAcpRpcLogInActiveSession](../../../src/extension/acpUiCustomEditorProvider.ts) to post `focusTraceView` with `acp`.
 The global activation sink is [NullAcpRpcNdjsonSink](../../../src/acp/ports/rpcNdjsonSink.ts) so stdio taps do not duplicate RPC into the output channel.

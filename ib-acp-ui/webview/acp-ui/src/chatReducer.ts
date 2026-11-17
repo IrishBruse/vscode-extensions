@@ -175,6 +175,8 @@ export type ChatState = {
   /** NDJSON-RPC lines for the in-chat ACP protocol view. */
   acpRpcLines: AcpRpcLogEntry[];
   nextAcpRpcLineId: number;
+  /** Absolute path of the session's `.rpc.ndjson` log file. */
+  acpRpcLogPath?: string;
 };
 
 export type ChatAction =
@@ -865,6 +867,9 @@ export function createChatStateFromInit(payload: InitPayload): ChatState {
     lockSessionAgent: payload.lockSessionAgent === true,
     composerPicksLocked: false,
     hideComposerModelControls: payload.hideComposerModelControls === true,
+    ...(payload.acpRpcLogPath !== undefined && payload.acpRpcLogPath.length > 0
+      ? { acpRpcLogPath: payload.acpRpcLogPath }
+      : {}),
   };
   if (
     payload.sessionConfigOptionsSeed !== undefined &&

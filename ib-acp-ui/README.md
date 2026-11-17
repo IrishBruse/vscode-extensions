@@ -76,7 +76,8 @@ Optional manual overrides use `ib-acp-ui.agents`.
 
 ### Diagnostics
 
-Open **Show ACP RPC Log** to inspect protocol traffic in the **ACP UI RPC** output channel.
+Open the **ACP** tab in a chat or **Show ACP RPC Log** from the command palette.
+Wire traffic streams in the tab and appends to `chats/<sessionId>.rpc.ndjson`; click the path in the ACP tab to copy it.
 
 ## Install agents from the registry
 
@@ -121,7 +122,7 @@ Fields:
 - **Browse Agent Registry** — install or manage catalog agents
 - **Open ACP UI** — open or focus the chat panel
 - **New ACP UI in Editor** — open chat in an editor tab
-- **Show ACP RPC Log** — open the protocol output channel
+- **Show ACP RPC Log** — switch the active chat to the ACP protocol tab
 
 The composer also supports slash commands that the active agent advertises.
 
@@ -130,7 +131,7 @@ The composer also supports slash commands that the active agent advertises.
 - No agents in the picker: run **Browse Agent Registry** and install one, or add a manual `ib-acp-ui.agents` entry.
 - No responses in chat: confirm the agent command runs and supports ACP mode.
   Keep `npx` or `uvx` on `PATH` for package agents.
-- Need diagnostics: open the **ACP UI RPC** output channel and retry the action.
+- Need diagnostics: open the **ACP** tab, copy the `.rpc.ndjson` path, or retry the action.
 
 ## License
 

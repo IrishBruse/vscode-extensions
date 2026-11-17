@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { highlightCodeToNodes, languageFromClassName } from "./codeHighlighting";
+import { highlightCodeToNodes, languageFromClassName, tokenizeJsonCode } from "./codeHighlighting";
 
 describe("languageFromClassName", () => {
   it("extracts fenced code language", () => {
@@ -17,5 +17,37 @@ describe("highlightCodeToNodes", () => {
 
   it("falls back to plain text for unknown language", () => {
     expect(highlightCodeToNodes("ruby", "puts :ok")).toEqual(["puts :ok"]);
+  });
+});
+
+describe("tokenizeJsonCode", () => {
+  it("marks quoted keys and string values separately", () => {
+    expect(tokenizeJsonCode('{\n  "sessionId": "s1"\n}')).toEqual([
+      { kind: "punctuation", text: "{" },
+      { kind: "plain", text: "\n  " },
+      { kind: "property", text: '"sessionId"' },
+      { kind: "punctuation", text: ":" },
+      { kind: "plain", text: " " },
+      { kind: "string", text: '"s1"' },
+      { kind: "plain", text: "\n" },
+      { kind: "punctuation", text: "}" },
+    ]);
+  });
+
+  it("highlights punctuation, booleans, and numbers", () => {
+    expect(tokenizeJsonCode('["a", 1, true, null]')).toEqual([
+      { kind: "punctuation", text: "[" },
+      { kind: "string", text: '"a"' },
+      { kind: "punctuation", text: "," },
+      { kind: "plain", text: " " },
+      { kind: "number", text: "1" },
+      { kind: "punctuation", text: "," },
+      { kind: "plain", text: " " },
+      { kind: "keyword", text: "true" },
+      { kind: "punctuation", text: "," },
+      { kind: "plain", text: " " },
+      { kind: "keyword", text: "null" },
+      { kind: "punctuation", text: "]" },
+    ]);
   });
 });

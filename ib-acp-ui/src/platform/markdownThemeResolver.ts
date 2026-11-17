@@ -238,6 +238,36 @@ export function buildSyntaxHighlightCssVariables(
             rules,
             "#6a9955",
         ),
+        "--acp-json-property-foreground": resolveForegroundFromScopeList(
+            [
+                "support.type.property-name.json",
+                "meta.structure.dictionary.key.json",
+                "entity.other.attribute-name.class.json",
+                "support.type.property-name",
+            ],
+            rules,
+            semanticColors.property ?? "#9cdcfe",
+        ),
+        "--acp-json-literal-foreground": resolveForegroundFromScopeList(
+            [
+                "constant.language.json",
+                "constant.language.boolean",
+                "constant.language.null",
+                "keyword",
+            ],
+            rules,
+            semanticColors["boolean"] ?? "#569cd6",
+        ),
+        "--vscode-symbolIcon-propertyForeground": resolveForegroundFromScopeList(
+            [
+                "support.type.property-name.json",
+                "meta.structure.dictionary.key.json",
+                "entity.other.attribute-name.class.json",
+                "support.type.property-name",
+            ],
+            rules,
+            semanticColors.property ?? "#9cdcfe",
+        ),
     };
 }
 
@@ -276,6 +306,9 @@ export const WEBVIEW_MARKDOWN_THEME_VARIABLE_NAMES = [
     "--vscode-stringForeground",
     "--vscode-numberLiteralForeground",
     "--acp-code-token-comment-foreground",
+    "--acp-json-property-foreground",
+    "--acp-json-literal-foreground",
+    "--vscode-symbolIcon-propertyForeground",
 ] as const;
 
 export function pickWebviewMarkdownThemeVariables(

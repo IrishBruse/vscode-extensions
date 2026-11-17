@@ -153,27 +153,11 @@
     var(--acp-ui-space-12);
 }
 
-.chat-debug-kicker {
-  margin: 0;
-  color: var(--node, #a371f7);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .chat-debug-panel-head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
-}
-
-.chat-debug-panel h2 {
-  margin: 6px 0 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
 }
 
 .chat-debug-share {
@@ -181,7 +165,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 220px;
 }
 
 .chat-debug-donut {
