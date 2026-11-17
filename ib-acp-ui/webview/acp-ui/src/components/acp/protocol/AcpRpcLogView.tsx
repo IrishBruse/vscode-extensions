@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { formatPathWithTilde } from "../../../../../../src/platform/pathDisplay";
 import type { AcpRpcDisplayField, AcpRpcDisplayMessage, AcpRpcLogEntry } from "../../../../../../src/protocol/acpRpcLog";
-import { formatAcpRpcDisplay } from "../../../../../../src/protocol/acpRpcLog";
+import { formatAcpRpcDisplay, groupAcpRpcLogEntries } from "../../../../../../src/protocol/acpRpcLog";
 import { renderHighlightedCode } from "../trace/AgentMarkdown/codeHighlighting";
 import "./AcpRpcLogView.css";
 
@@ -49,14 +49,14 @@ function RpcDisplayField({ field }: { field: AcpRpcDisplayField }): ReactElement
 }
 
 function entryHeadTitle(message: AcpRpcDisplayMessage): string {
-    if (message.title !== undefined && message.title.length > 0) {
-        return message.title;
-    }
     const method = message.fields?.find((field) => field.label === "method");
     if (method?.kind === "scalar" && method.value.length > 0) {
         return method.value;
     }
-    if (message.rpcId !== undefined) {
+    if (message.fields?.some((field) => field.label === "error")) {
+        return "error";
+    }
+    if (message.rpcId !== undefined || message.fields?.some((field) => field.label === "result")) {
         return "response";
     }
     return "RPC";
@@ -95,6 +95,44 @@ function ChevronIcon({ expanded }: { expanded: boolean }): ReactElement {
     );
 }
 
+type RpcLogEntryRowProps = {
+    entry: AcpRpcLogEntry;
+    expanded: boolean;
+    nested?: boolean;
+    onToggle: () => void;
+};
+
+function RpcLogEntryRow({ entry, expanded, nested = false, onToggle }: RpcLogEntryRowProps): ReactElement {
+    const message = formatAcpRpcDisplay(entry.raw);
+    const headTitle = entryHeadTitle(message);
+    return (
+        <li
+            className={
+                nested
+                    ? entry.direction === "toAgent"
+                        ? "acp-rpc-log-entry acp-rpc-log-entry--nested acp-rpc-log-entry--out"
+                        : "acp-rpc-log-entry acp-rpc-log-entry--nested acp-rpc-log-entry--in"
+                    : entry.direction === "toAgent"
+                      ? "acp-rpc-log-entry acp-rpc-log-entry--out"
+                      : "acp-rpc-log-entry acp-rpc-log-entry--in"
+            }
+        >
+            <button
+                type="button"
+                className="acp-rpc-log-entry-head"
+                aria-expanded={expanded}
+                onClick={onToggle}
+            >
+                <ChevronIcon expanded={expanded} />
+                <span className="acp-rpc-log-direction">{directionLabel(entry)}</span>
+                <span className="acp-rpc-log-title">{headTitle}</span>
+                {message.rpcId !== undefined ? <span className="acp-rpc-log-id">{message.rpcId}</span> : null}
+            </button>
+            {expanded ? <RpcPayloadBody message={message} /> : null}
+        </li>
+    );
+}
+
 export type AcpRpcLogViewProps = {
     entries: readonly AcpRpcLogEntry[];
     /** Absolute path of the session RPC log file on disk. */
@@ -106,12 +144,16 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const stickToBottomRef = useRef(true);
     const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<number>>(() => new Set());
+    const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<ReadonlySet<string>>(() => new Set());
     const seenEntryIdsRef = useRef<Set<number>>(new Set());
+    const seenGroupKeysRef = useRef<Set<string>>(new Set());
     const [pathCopied, setPathCopied] = useState(false);
+    const listItems = useMemo(() => groupAcpRpcLogEntries(entries), [entries]);
 
     useEffect(() => {
         if (entries.length === 0) {
             seenEntryIdsRef.current = new Set();
+            seenGroupKeysRef.current = new Set();
             return;
         }
         setCollapsedIds((prev) => {
@@ -122,15 +164,25 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
                     continue;
                 }
                 seenEntryIdsRef.current.add(entry.id);
-                const message = formatAcpRpcDisplay(entry.raw);
-                if (message.defaultCollapsed === true) {
-                    next.add(entry.id);
-                    changed = true;
-                }
+                next.add(entry.id);
+                changed = true;
             }
             return changed ? next : prev;
         });
-    }, [entries]);
+        setCollapsedGroupKeys((prev) => {
+            const next = new Set(prev);
+            let changed = false;
+            for (const item of listItems) {
+                if (item.kind !== "thoughtGroup" || seenGroupKeysRef.current.has(item.groupKey)) {
+                    continue;
+                }
+                seenGroupKeysRef.current.add(item.groupKey);
+                next.add(item.groupKey);
+                changed = true;
+            }
+            return changed ? next : prev;
+        });
+    }, [entries, listItems]);
 
     useEffect(() => {
         const el = scrollRef.current;
@@ -138,7 +190,7 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
             return;
         }
         el.scrollTop = el.scrollHeight;
-    }, [entries]);
+    }, [entries, listItems]);
 
     const toggleEntry = useCallback((entryId: number) => {
         setCollapsedIds((prev) => {
@@ -147,6 +199,18 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
                 next.delete(entryId);
             } else {
                 next.add(entryId);
+            }
+            return next;
+        });
+    }, []);
+
+    const toggleGroup = useCallback((groupKey: string) => {
+        setCollapsedGroupKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(groupKey)) {
+                next.delete(groupKey);
+            } else {
+                next.add(groupKey);
             }
             return next;
         });
@@ -199,35 +263,65 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
                 <p className="acp-rpc-log-empty">No protocol traffic yet. Send a message to stream RPC here.</p>
             ) : (
                 <ol className="acp-rpc-log-list">
-                    {entries.map((entry) => {
-                        const message = formatAcpRpcDisplay(entry.raw);
-                        const headTitle = entryHeadTitle(message);
-                        const expanded = !collapsedIds.has(entry.id);
+                    {listItems.map((item) => {
+                        if (item.kind === "entry") {
+                            const expanded = !collapsedIds.has(item.entry.id);
+                            return (
+                                <RpcLogEntryRow
+                                    key={item.entry.id}
+                                    entry={item.entry}
+                                    expanded={expanded}
+                                    onToggle={() => {
+                                        toggleEntry(item.entry.id);
+                                    }}
+                                />
+                            );
+                        }
+
+                        const groupExpanded = !collapsedGroupKeys.has(item.groupKey);
+                        const count = item.entries.length;
+                        const chunkLabel = count === 1 ? "1 chunk" : `${count} chunks`;
+                        const headEntry = item.entries[0];
+                        const direction =
+                            headEntry !== undefined ? directionLabel(headEntry) : "← Agent";
+                        const groupMethod =
+                            headEntry !== undefined
+                                ? entryHeadTitle(formatAcpRpcDisplay(headEntry.raw))
+                                : "session/update";
                         return (
-                            <li
-                                key={entry.id}
-                                className={
-                                    entry.direction === "toAgent"
-                                        ? "acp-rpc-log-entry acp-rpc-log-entry--out"
-                                        : "acp-rpc-log-entry acp-rpc-log-entry--in"
-                                }
-                            >
+                            <li key={item.groupKey} className="acp-rpc-log-group acp-rpc-log-entry--in">
                                 <button
                                     type="button"
-                                    className="acp-rpc-log-entry-head"
-                                    aria-expanded={expanded}
+                                    className="acp-rpc-log-entry-head acp-rpc-log-group-head"
+                                    aria-expanded={groupExpanded}
                                     onClick={() => {
-                                        toggleEntry(entry.id);
+                                        toggleGroup(item.groupKey);
                                     }}
                                 >
-                                    <ChevronIcon expanded={expanded} />
-                                    <span className="acp-rpc-log-direction">{directionLabel(entry)}</span>
-                                    <span className="acp-rpc-log-title">{headTitle}</span>
-                                    {message.rpcId !== undefined ? (
-                                        <span className="acp-rpc-log-id">{message.rpcId}</span>
-                                    ) : null}
+                                    <ChevronIcon expanded={groupExpanded} />
+                                    <span className="acp-rpc-log-direction">{direction}</span>
+                                    <span className="acp-rpc-log-title">
+                                        {`${groupMethod} · ${chunkLabel}`}
+                                    </span>
                                 </button>
-                                {expanded ? <RpcPayloadBody message={message} /> : null}
+                                {groupExpanded ? (
+                                    <ol className="acp-rpc-log-group-entries">
+                                        {item.entries.map((entry) => {
+                                            const expanded = !collapsedIds.has(entry.id);
+                                            return (
+                                                <RpcLogEntryRow
+                                                    key={entry.id}
+                                                    entry={entry}
+                                                    expanded={expanded}
+                                                    nested
+                                                    onToggle={() => {
+                                                        toggleEntry(entry.id);
+                                                    }}
+                                                />
+                                            );
+                                        })}
+                                    </ol>
+                                ) : null}
                             </li>
                         );
                     })}

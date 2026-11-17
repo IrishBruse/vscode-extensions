@@ -22,10 +22,11 @@ End users typically only need it when troubleshooting agent connectivity.
 [AcpUiSessionController](../../../src/extension/acpUiSessionController.ts) composes [FileAcpRpcNdjsonSink](../../../src/platform/node/fileRpcNdjsonSink.ts) (per-session `chats/<sessionId>.rpc.ndjson`) with [WebviewAcpRpcNdjsonSink](../../../src/extension/webviewAcpRpcNdjsonSink.ts), which forwards complete NDJSON lines to the webview as `acpRpcLine` host messages.
 The init payload includes `acpRpcLogPath` for the copy control in [AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx).
 [AcpRpcLogView](../../../webview/acp-ui/src/components/acp/protocol/AcpRpcLogView.tsx) renders each line with [formatAcpRpcDisplay](../../../src/protocol/acpRpcLog.ts).
-The entry head shows a title from the tool title, `sessionUpdate` kind, or prompt text, and collapses the body.
+The entry head shows the JSON-RPC **method** (or **response** / **error**) and starts collapsed.
 The body lists each top-level RPC field except **jsonrpc** (**method**, **params**, **result**, **error**, plus any extras) in composer-style labels with syntax-highlighted JSON.
 The JSON-RPC **id** appears as a number in the entry head.
 `session/update` still peels **update** out of **params** for readability.
+Consecutive `agent_thought_chunk` lines collapse into one group; expand it to inspect each chunk.
 
 [activateAcpUiExtension](../../../src/extension/activateAcpUiExtension.ts#L23-L46) registers `ib-acp-ui.showAcpRpcLog`, which calls [showAcpRpcLogInActiveSession](../../../src/extension/acpUiCustomEditorProvider.ts) to post `focusTraceView` with `acp`.
 The global activation sink is [NullAcpRpcNdjsonSink](../../../src/acp/ports/rpcNdjsonSink.ts) so stdio taps do not duplicate RPC into the output channel.

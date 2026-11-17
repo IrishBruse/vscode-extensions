@@ -59,6 +59,40 @@
   border-color: color-mix(in srgb, var(--vscode-charts-green, #3fb950) 24%, var(--acp-ui-border-subtle));
 }
 
+.acp-rpc-log-group {
+  border: 1px solid color-mix(in srgb, var(--vscode-charts-green, #3fb950) 24%, var(--acp-ui-border-subtle));
+  border-radius: var(--acp-ui-radius-md);
+  background: color-mix(in srgb, var(--acp-ui-surface-panel) 72%, var(--vscode-editor-background));
+  overflow: hidden;
+}
+
+.acp-rpc-log-group-head {
+  width: 100%;
+}
+
+.acp-rpc-log-group-entries {
+  margin: 0;
+  padding: 0 var(--acp-ui-space-8) var(--acp-ui-space-8);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-6);
+}
+
+.acp-rpc-log-entry--nested {
+  border-radius: var(--acp-ui-radius-sm);
+  background: color-mix(in srgb, var(--vscode-editor-background) 88%, transparent);
+}
+
+.acp-rpc-log-entry--nested .acp-rpc-log-entry-head {
+  padding-block: var(--acp-ui-space-4);
+  font-size: var(--acp-ui-font-size-xx-small, 10px);
+}
+
+.acp-rpc-log-entry--nested .acp-rpc-log-title {
+  font-size: var(--acp-ui-font-size-x-small);
+}
+
 .acp-rpc-log-entry-head {
   display: flex;
   align-items: center;

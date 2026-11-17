@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
-import { acpSessionUpdateTitle, formatAcpRpcDisplay, prettyPrintAcpRpcJson } from "./acpRpcLog";
+import {
+    acpSessionUpdateTitle,
+    acpThoughtChunkPreview,
+    formatAcpRpcDisplay,
+    groupAcpRpcLogEntries,
+    isAgentThoughtChunkLine,
+    prettyPrintAcpRpcJson,
+    type AcpRpcLogEntry,
+} from "./acpRpcLog";
 
 describe("acpSessionUpdateTitle", () => {
     it("uses the tool title for tool_call updates", () => {
@@ -57,6 +65,7 @@ describe("formatAcpRpcDisplay", () => {
         expect(formatAcpRpcDisplay(line)).toEqual({
             title: "agent_message_chunk · hi",
             rpcId: "12",
+            defaultCollapsed: true,
             fields: [
                 { label: "method", kind: "scalar", value: "session/update" },
                 {
@@ -107,6 +116,7 @@ describe("formatAcpRpcDisplay", () => {
         expect(formatAcpRpcDisplay(line)).toEqual({
             title: "response",
             rpcId: "3",
+            defaultCollapsed: true,
             fields: [
                 {
                     label: "result",
@@ -137,6 +147,62 @@ describe("formatAcpRpcDisplay", () => {
 
     it("returns raw text when JSON parsing fails", () => {
         expect(formatAcpRpcDisplay("not-json")).toEqual({ raw: "not-json" });
+    });
+});
+
+const thoughtLine = (text: string): string =>
+    JSON.stringify({
+        jsonrpc: "2.0",
+        method: "session/update",
+        params: {
+            sessionId: "s1",
+            update: {
+                sessionUpdate: "agent_thought_chunk",
+                content: { type: "text", text },
+            },
+        },
+    });
+
+function rpcEntry(id: number, raw: string): AcpRpcLogEntry {
+    return { id, direction: "fromAgent", agentName: "Cursor", raw };
+}
+
+describe("groupAcpRpcLogEntries", () => {
+    it("groups consecutive thought chunks", () => {
+        const entries = [
+            rpcEntry(1, thoughtLine("The")),
+            rpcEntry(2, thoughtLine("user")),
+            rpcEntry(3, thoughtLine("asked")),
+        ];
+        expect(groupAcpRpcLogEntries(entries)).toEqual([
+            {
+                kind: "thoughtGroup",
+                groupKey: "thought-1",
+                entries,
+            },
+        ]);
+    });
+
+    it("keeps a lone thought chunk as a single entry", () => {
+        const entry = rpcEntry(1, thoughtLine("solo"));
+        expect(groupAcpRpcLogEntries([entry])).toEqual([{ kind: "entry", entry }]);
+    });
+
+    it("splits runs when a non-thought line appears", () => {
+        const ping = rpcEntry(2, JSON.stringify({ jsonrpc: "2.0", method: "ping" }));
+        const entries = [rpcEntry(1, thoughtLine("a")), rpcEntry(3, thoughtLine("b"))];
+        expect(groupAcpRpcLogEntries([entries[0]!, ping, entries[1]!])).toEqual([
+            { kind: "entry", entry: entries[0]! },
+            { kind: "entry", entry: ping },
+            { kind: "entry", entry: entries[1]! },
+        ]);
+    });
+});
+
+describe("acpThoughtChunkPreview", () => {
+    it("returns trimmed thought text", () => {
+        expect(isAgentThoughtChunkLine(thoughtLine("hello"))).toBe(true);
+        expect(acpThoughtChunkPreview(thoughtLine("  hello  \nworld"))).toBe("hello world");
     });
 });
 

@@ -257,14 +257,7 @@ export function formatAcpRpcDisplay(line: string): AcpRpcDisplayMessage {
             display.title = summary;
         }
 
-        if (
-            method === "session/update" &&
-            isRecord(parsed.params) &&
-            isRecord(parsed.params.update) &&
-            sessionUpdateKind(parsed.params.update) === "agent_thought_chunk"
-        ) {
-            display.defaultCollapsed = true;
-        }
+        display.defaultCollapsed = true;
 
         if (fields.length > 0) {
             return display;
@@ -274,6 +267,95 @@ export function formatAcpRpcDisplay(line: string): AcpRpcDisplayMessage {
     } catch {
         return { raw: trimmed };
     }
+}
+
+/** True when the NDJSON line is an `agent_thought_chunk` session update. */
+export function isAgentThoughtChunkLine(line: string): boolean {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+        return false;
+    }
+    try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (!isRecord(parsed)) {
+            return false;
+        }
+        if (parsed.method !== "session/update" || !isRecord(parsed.params)) {
+            return false;
+        }
+        const update = parsed.params.update;
+        return isRecord(update) && sessionUpdateKind(update) === "agent_thought_chunk";
+    } catch {
+        return false;
+    }
+}
+
+/** Short text preview from one thought chunk (for nested row labels). */
+export function acpThoughtChunkPreview(line: string): string | undefined {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+        return undefined;
+    }
+    try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (!isRecord(parsed) || !isRecord(parsed.params)) {
+            return undefined;
+        }
+        const update = parsed.params.update;
+        if (!isRecord(update) || sessionUpdateKind(update) !== "agent_thought_chunk") {
+            return undefined;
+        }
+        const preview = truncateRpcTitle(textFromAcpContent(update.content));
+        return preview.length > 0 ? preview : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+export type AcpRpcLogListItem =
+    | { kind: "entry"; entry: AcpRpcLogEntry }
+    | { kind: "thoughtGroup"; groupKey: string; entries: readonly AcpRpcLogEntry[] };
+
+/**
+ * Merges consecutive `agent_thought_chunk` rows into one collapsible group.
+ * A lone thought chunk stays a single top-level entry.
+ */
+export function groupAcpRpcLogEntries(entries: readonly AcpRpcLogEntry[]): AcpRpcLogListItem[] {
+    const items: AcpRpcLogListItem[] = [];
+    let thoughtRun: AcpRpcLogEntry[] = [];
+
+    const flushThoughtRun = (): void => {
+        if (thoughtRun.length === 0) {
+            return;
+        }
+        if (thoughtRun.length === 1) {
+            const entry = thoughtRun[0];
+            if (entry !== undefined) {
+                items.push({ kind: "entry", entry });
+            }
+        } else {
+            const first = thoughtRun[0];
+            if (first !== undefined) {
+                items.push({
+                    kind: "thoughtGroup",
+                    groupKey: `thought-${first.id}`,
+                    entries: thoughtRun,
+                });
+            }
+        }
+        thoughtRun = [];
+    };
+
+    for (const entry of entries) {
+        if (isAgentThoughtChunkLine(entry.raw)) {
+            thoughtRun.push(entry);
+            continue;
+        }
+        flushThoughtRun();
+        items.push({ kind: "entry", entry });
+    }
+    flushThoughtRun();
+    return items;
 }
 
 /** Pretty-prints one NDJSON-RPC payload for the in-chat ACP log view. */
