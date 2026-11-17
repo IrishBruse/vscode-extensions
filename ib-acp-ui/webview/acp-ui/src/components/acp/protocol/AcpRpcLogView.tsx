@@ -48,7 +48,7 @@ function RpcDisplayField({ field }: { field: AcpRpcDisplayField }): ReactElement
     );
 }
 
-function entryHeadTitle(message: AcpRpcDisplayMessage): string {
+function entryHeadLabel(message: AcpRpcDisplayMessage): string {
     const method = message.fields?.find((field) => field.label === "method");
     if (method?.kind === "scalar" && method.value.length > 0) {
         return method.value;
@@ -60,6 +60,14 @@ function entryHeadTitle(message: AcpRpcDisplayMessage): string {
         return "response";
     }
     return "RPC";
+}
+
+function entryHeadTitle(message: AcpRpcDisplayMessage): string {
+    const label = entryHeadLabel(message);
+    if (message.sessionUpdate !== undefined && message.sessionUpdate.length > 0) {
+        return `${label} · ${message.sessionUpdate}`;
+    }
+    return label;
 }
 
 function RpcPayloadBody({ message }: { message: AcpRpcDisplayMessage }): ReactElement {

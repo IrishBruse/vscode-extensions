@@ -23,6 +23,8 @@ export type AcpRpcDisplayMessage = {
     title?: string;
     /** JSON-RPC request/response id shown in the entry head (not as a body field). */
     rpcId?: string;
+    /** `session/update` kind shown in the collapsed entry head (`tool_call`, …). */
+    sessionUpdate?: string;
     /** Starts collapsed in the ACP log (for example `agent_thought_chunk`). */
     defaultCollapsed?: boolean;
     fields?: readonly AcpRpcDisplayField[];
@@ -255,6 +257,17 @@ export function formatAcpRpcDisplay(line: string): AcpRpcDisplayMessage {
 
         if (summary !== undefined) {
             display.title = summary;
+        }
+
+        if (
+            method === "session/update" &&
+            isRecord(parsed.params) &&
+            isRecord(parsed.params.update)
+        ) {
+            const kind = sessionUpdateKind(parsed.params.update);
+            if (kind !== undefined) {
+                display.sessionUpdate = kind;
+            }
         }
 
         display.defaultCollapsed = true;

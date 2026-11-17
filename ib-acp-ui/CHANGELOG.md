@@ -14,6 +14,7 @@ Update any bullet that does not follow this form.
 - **Change**: ACP protocol rows hide `jsonrpc` and show the JSON-RPC `id` as a number in the entry head.
 - **Change**: `agent_thought_chunk` rows start collapsed and show only the update kind in the entry head.
 - **Change**: Consecutive `agent_thought_chunk` rows fold into one collapsed group with nested per-chunk rows.
+- **Change**: Collapsed ACP protocol rows show the `sessionUpdate` value beside the method.
 - **Change**: ACP protocol rows default collapsed and show the JSON-RPC **method** in the entry head.
 - **Add**: Each chat appends wire-protocol RPC to `chats/<sessionId>.rpc.ndjson`; the ACP tab copies that path in one click.
 - **Remove**: Raw RPC traffic from the **ACP UI RPC** output channel (use the in-chat **ACP** tab or **Show ACP RPC Log**).

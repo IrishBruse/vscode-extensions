@@ -65,6 +65,7 @@ describe("formatAcpRpcDisplay", () => {
         expect(formatAcpRpcDisplay(line)).toEqual({
             title: "agent_message_chunk · hi",
             rpcId: "12",
+            sessionUpdate: "agent_message_chunk",
             defaultCollapsed: true,
             fields: [
                 { label: "method", kind: "scalar", value: "session/update" },
@@ -104,7 +105,10 @@ describe("formatAcpRpcDisplay", () => {
                 },
             },
         });
-        expect(formatAcpRpcDisplay(line).title).toBe("tool_call · Write File");
+        expect(formatAcpRpcDisplay(line)).toMatchObject({
+            title: "tool_call · Write File",
+            sessionUpdate: "tool_call",
+        });
     });
 
     it("lifts id to rpcId and omits jsonrpc from fields for responses", () => {
@@ -141,6 +145,7 @@ describe("formatAcpRpcDisplay", () => {
         });
         expect(formatAcpRpcDisplay(line)).toMatchObject({
             title: "agent_thought_chunk",
+            sessionUpdate: "agent_thought_chunk",
             defaultCollapsed: true,
         });
     });
