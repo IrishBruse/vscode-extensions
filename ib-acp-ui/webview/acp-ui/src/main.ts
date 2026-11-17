@@ -140,6 +140,9 @@ async function mountView(): Promise<void> {
     (sessionId) => {
       host.post({ type: "openSession", sessionId });
     },
+    (sessionId) => {
+      host.post({ type: "dismissRecentSession", sessionId });
+    },
     (path, options) => {
       host.post({
         type: "openWorkspacePath",

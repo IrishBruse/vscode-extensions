@@ -32,6 +32,10 @@
   gap: var(--acp-ui-space-4);
 }
 
+.empty-chat-recent-row {
+  position: relative;
+}
+
 .empty-chat-recent {
   width: 100%;
   padding: var(--acp-ui-space-4) var(--acp-ui-space-8);
@@ -62,8 +66,49 @@
   color: var(--acp-ui-text-secondary);
 }
 
-.empty-chat-recent:hover {
+.empty-chat-recent:hover,
+.empty-chat-recent-row:hover .empty-chat-recent,
+.empty-chat-recent-row:focus-within .empty-chat-recent {
   background-color: var(--vscode-list-hoverBackground, var(--acp-ui-border-chrome));
+}
+
+.empty-chat-recent-remove {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  padding: 0;
+  color: var(--acp-ui-text-secondary);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: var(--acp-ui-font-size-body);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.empty-chat-recent-row:hover .empty-chat-recent-remove,
+.empty-chat-recent-row:focus-within .empty-chat-recent-remove {
+  display: flex;
+}
+
+.empty-chat-recent-row:hover .empty-chat-recent-time,
+.empty-chat-recent-row:focus-within .empty-chat-recent-time {
+  visibility: hidden;
+}
+
+.empty-chat-recent-remove:hover,
+.empty-chat-recent-remove:focus-visible {
+  color: var(--acp-ui-text-primary);
+}
+
+.empty-chat-recent-remove:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .empty-chat-recent:focus-visible {

@@ -184,6 +184,7 @@ export type ChatAction =
   | { type: "submit"; body: string; imageCount?: number; images?: AcpUiPromptImage[] }
   | { type: "pickSessionModel"; modelId: string }
   | { type: "pickSessionAgent"; agentName: string }
+  | { type: "dismissRecentSession"; sessionId: string }
   | {
       type: "pickSessionConfigOption";
       configId: string;
@@ -1961,6 +1962,12 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       toolIndexById: new Map(),
       toolStartedAtMsById: new Map(),
       composerPicksLocked: state.lockSessionAgent === true ? state.composerPicksLocked : true,
+    };
+  }
+  if (action.type === "dismissRecentSession") {
+    return {
+      ...state,
+      recentSessions: state.recentSessions.filter((session) => session.id !== action.sessionId),
     };
   }
   if (action.type === "pickSessionAgent") {

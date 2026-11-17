@@ -137,6 +137,8 @@ export type WebviewToExtensionMessage =
     | { type: "setSessionAgent"; agentName: string }
     /** Open an existing chat session by local session id. */
     | { type: "openSession"; sessionId: string }
+    /** Hide a chat from the empty-chat recents list. The session file stays. */
+    | { type: "dismissRecentSession"; sessionId: string }
     /** Open a workspace path from a compact tool link (`auto` reveals folders, opens files). */
     | {
           type: "openWorkspacePath";
@@ -596,6 +598,13 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
         record.sessionId.length > 0
     ) {
         return { type: "openSession", sessionId: record.sessionId };
+    }
+    if (
+        messageType === "dismissRecentSession" &&
+        typeof record.sessionId === "string" &&
+        record.sessionId.length > 0
+    ) {
+        return { type: "dismissRecentSession", sessionId: record.sessionId };
     }
     if (messageType === "openNewChat") {
         return { type: "openNewChat" };

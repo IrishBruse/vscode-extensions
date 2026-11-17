@@ -15,8 +15,20 @@ vi.mock("./acpUiSessionJsonl", () => ({
     updateSessionHeader: vi.fn(async () => null),
 }));
 
-const { getAcpUiSession, replaceAcpUiSessionsForTests, setAcpUiSessionTitleInMemory } =
-    await import("./acpUiSessionsStore");
+const {
+    getAcpUiSession,
+    recentSessionIsHidden,
+    replaceAcpUiSessionsForTests,
+    setAcpUiSessionTitleInMemory,
+} = await import("./acpUiSessionsStore");
+
+describe("recentSessionIsHidden", () => {
+    it("hides a chat until its file is newer than the dismiss time", () => {
+        expect(recentSessionIsHidden(10, 10)).toBe(true);
+        expect(recentSessionIsHidden(11, 10)).toBe(false);
+        expect(recentSessionIsHidden(10, undefined)).toBe(false);
+    });
+});
 
 describe("setAcpUiSessionTitleInMemory", () => {
     afterEach(() => {

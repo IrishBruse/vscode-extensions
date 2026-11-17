@@ -31,6 +31,7 @@ export const Default: Story = {
     recentSessions,
     onPickProvider: () => undefined,
     onOpenSession: () => undefined,
+    onRemoveRecent: () => undefined,
   },
 };
 
@@ -41,5 +42,6 @@ export const NoRecents: Story = {
     recentSessions: [],
     onPickProvider: () => undefined,
     onOpenSession: () => undefined,
+    onRemoveRecent: () => undefined,
   },
 };

@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: Hover a recent chat on an empty chat and use × to remove it from that list.
 - **Fix**: The composer top-left label stays on the workspace folder instead of switching to the chat title.
 - **Fix**: The title from the ACP connection stays on the chat and is stored in the `.acp` file.
 - **Add**: An **ACP** tab in the chat shows pretty-printed NDJSON protocol traffic for the open session.

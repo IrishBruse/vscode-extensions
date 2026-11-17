@@ -72,6 +72,7 @@ export type AcpUiAppProps = {
   postOpenNewChat?: () => void;
   postSetSessionAgent?: (agentName: string) => void;
   postOpenSession?: (sessionId: string) => void;
+  postDismissRecent?: (sessionId: string) => void;
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
   postPermissionResponse: (
     payload:
@@ -118,6 +119,7 @@ export function AcpUiApp({
   postOpenNewChat,
   postSetSessionAgent,
   postOpenSession,
+  postDismissRecent,
   postOpenWorkspacePath,
   postPermissionResponse,
   postCursorAskQuestionResponse,
@@ -619,6 +621,10 @@ export function AcpUiApp({
                 }}
                 onOpenSession={(sessionId) => {
                   postOpenSession?.(sessionId);
+                }}
+                onRemoveRecent={(sessionId) => {
+                  dispatch({ type: "dismissRecentSession", sessionId });
+                  postDismissRecent?.(sessionId);
                 }}
               />
             ) : null}

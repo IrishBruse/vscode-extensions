@@ -31,8 +31,11 @@ const chatsStorageKey = "acpUi.chats.v2";
 const legacyGlobalChatsStorageKey = "acpUi.chats.v1";
 const migrationDoneKey = "acpUi.chats.jsonlMigration.v1";
 const hiddenAgentSessionsKey = "acpUi.hiddenAgentSessions.v1";
+const dismissedRecentSessionsKey = "acpUi.dismissedRecentSessions.v1";
 
 type HiddenAgentSessionsState = Record<string, string[]>;
+/** Session id to the `updatedAt` value at the time the user removed it from recents. */
+type DismissedRecentSessionsState = Record<string, number>;
 
 const sessions: AcpUiSessionRecord[] = [];
 let activeId: string | null = null;
@@ -156,6 +159,16 @@ export function replaceAcpUiSessionsForTests(rows: AcpUiSessionRecord[]): void {
 /** Sessions for one agent from the local `.acp` index. */
 export function listAcpUiSessionsForAgent(agentName: string): AcpUiSessionRecord[] {
     return sessions.filter((row) => row.agentName === agentName);
+}
+
+/** `updatedAt` captured when the user removed each chat from recents. */
+export function dismissedRecentUpdatedAtById(): Readonly<Record<string, number>> {
+    return readDismissedRecentSessions();
+}
+
+/** True when the user removed this chat from recents and the file has not changed since. */
+export function recentSessionIsHidden(updatedAt: number, dismissedAt: number | undefined): boolean {
+    return dismissedAt !== undefined && updatedAt <= dismissedAt;
 }
 
 export function findByRuntimeSessionId(
@@ -405,6 +418,35 @@ function readHiddenAgentSessionsState(): HiddenAgentSessionsState {
 export function getHiddenAgentSessionIds(agentName: string): ReadonlySet<string> {
     const ids = readHiddenAgentSessionsState()[agentName];
     return new Set(ids ?? []);
+}
+
+function readDismissedRecentSessions(): DismissedRecentSessionsState {
+    if (extensionContext === null) {
+        return {};
+    }
+    const raw = extensionContext.workspaceState.get<unknown>(dismissedRecentSessionsKey);
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+        return {};
+    }
+    const state: DismissedRecentSessionsState = {};
+    for (const [id, updatedAt] of Object.entries(raw)) {
+        if (id.length === 0 || typeof updatedAt !== "number" || !Number.isFinite(updatedAt)) {
+            continue;
+        }
+        state[id] = updatedAt;
+    }
+    return state;
+}
+
+/** Hides a chat from the empty-chat recents list until that chat changes again. */
+export async function dismissRecentSession(id: string): Promise<void> {
+    if (extensionContext === null || id.length === 0) {
+        return;
+    }
+    const row = sessions.find((session) => session.id === id);
+    const state = readDismissedRecentSessions();
+    state[id] = row?.updatedAt ?? Date.now();
+    await extensionContext.workspaceState.update(dismissedRecentSessionsKey, state);
 }
 
 /** Hides an agent session from the Chats tree after the user deletes it. */

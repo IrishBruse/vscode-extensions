@@ -1159,6 +1159,8 @@ describe("chatReducer", () => {
       sessions: [{ id: "s3", title: "Newer chat", updatedAt: 9 }],
     });
     expect(state.recentSessions).toEqual([{ id: "s3", title: "Newer chat", updatedAt: 9 }]);
+    state = chatReducer(state, { type: "dismissRecentSession", sessionId: "s3" });
+    expect(state.recentSessions).toEqual([]);
   });
 
   it("switches the agent only while the transcript is empty", () => {

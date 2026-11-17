@@ -10,6 +10,12 @@ Create a chat from the `.acp` editor tab **New Chat** split control (`+ ▾`), o
 Each chat opens as an editor tab with the ACP UI webview.
 Switching away from a chat tab and back keeps the scroll position.
 The chat does not jump or go blank while the webview has no size.
+An empty chat lists recent chats for the selected provider.
+Hover a recent chat to show × on the right.
+That control removes the chat from the list.
+The chat file stays.
+A later change to that chat puts it back on the list.
+
 Each chat is one `<uuid>.acp` file.
 The tab name is the chat title stored in that file.
 A background tab shows that title before you open it.
@@ -50,6 +56,14 @@ The transcript keeps its width and scroll position until the tab is on screen ag
 [syncAcpUiBackgroundTabTitles](../../../src/extension/acpUiBackgroundTabTitles.ts#L57-L96) reads that same title for every open `.acp` tab.
 [customLabelTemplate](../../../src/extension/acpUiEditorTabLabel.ts#L8-L14) stores it in `workbench.editor.customLabels.patterns` so the tab shows the title before the editor opens.
 The chat UI and the markdown renderer load as later chunks from `media/acp-ui/chunks/`.
+
+### Empty chat
+
+[EmptyChatState](../../../webview/acp-ui/src/components/acp/session/EmptyChatState/EmptyChatState.tsx#L19-L75) draws the provider select and the recent list.
+The remove control is hidden until the row is hovered or focused.
+[dismissRecentSession](../../../src/extension/acpUiSessionsStore.ts#L442-L450) stores the session id and the file `updatedAt` at that moment.
+[recentSessionsForAgent](../../../src/extension/acpUiSessionController.ts#L257-L274) skips a dismissed chat until that file is newer.
+[chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L1967-L1972) drops the row immediately, then the host posts the filtered list.
 
 ### Debug view
 

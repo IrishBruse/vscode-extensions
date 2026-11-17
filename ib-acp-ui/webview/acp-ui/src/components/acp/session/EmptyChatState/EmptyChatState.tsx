@@ -10,6 +10,7 @@ export type EmptyChatStateProps = {
   recentSessions: AcpUiRecentSession[];
   onPickProvider: (agentName: string) => void;
   onOpenSession: (sessionId: string) => void;
+  onRemoveRecent: (sessionId: string) => void;
 };
 
 /**
@@ -21,6 +22,7 @@ export function EmptyChatState({
   recentSessions,
   onPickProvider,
   onOpenSession,
+  onRemoveRecent,
 }: EmptyChatStateProps): ReactElement {
   return (
     <div className="empty-chat">
@@ -45,7 +47,7 @@ export function EmptyChatState({
         ) : (
           <ul className="empty-chat-recents" role="list">
             {recentSessions.map((session) => (
-              <li key={session.id}>
+              <li key={session.id} className="empty-chat-recent-row">
                 <button
                   type="button"
                   className="empty-chat-recent"
@@ -58,6 +60,17 @@ export function EmptyChatState({
                   <span className="empty-chat-recent-time">
                     {formatRelativeTime(session.updatedAt)}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className="empty-chat-recent-remove"
+                  aria-label={`Remove ${session.title} from recent`}
+                  title="Remove from recent"
+                  onClick={() => {
+                    onRemoveRecent(session.id);
+                  }}
+                >
+                  <span aria-hidden="true">×</span>
                 </button>
               </li>
             ))}

@@ -103,6 +103,14 @@ describe("tryParseWebviewMessage", () => {
         });
     });
 
+    it("parses a recent-session dismiss", () => {
+        expect(tryParseWebviewMessage({ type: "dismissRecentSession", sessionId: "s2" })).toEqual({
+            type: "dismissRecentSession",
+            sessionId: "s2",
+        });
+        expect(tryParseWebviewMessage({ type: "dismissRecentSession", sessionId: "" })).toBeNull();
+    });
+
     it("drops invalid image lists", () => {
         expect(tryParseWebviewMessage({ type: "send", body: "hi", images: "nope" })).toEqual({
             type: "send",

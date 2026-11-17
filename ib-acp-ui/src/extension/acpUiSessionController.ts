@@ -59,8 +59,11 @@ import {
 } from "./acpUiSessionJsonl";
 import {
     clearAcpUiSessionRuntimeSessionId,
+    dismissRecentSession,
+    dismissedRecentUpdatedAtById,
     getAcpUiSession,
     listAcpUiSessionsForAgent,
+    recentSessionIsHidden,
     persistAcpUiSessionTitleHeader,
     renameAcpUiSession,
     setAcpUiSessionAgentName,
@@ -258,8 +261,13 @@ export class AcpUiSessionController {
         if (agentName === undefined) {
             return [];
         }
+        const dismissed = dismissedRecentUpdatedAtById();
         return listAcpUiSessionsForAgent(agentName)
-            .filter((row) => row.id !== excludeSessionId)
+            .filter(
+                (row) =>
+                    row.id !== excludeSessionId &&
+                    !recentSessionIsHidden(row.updatedAt, dismissed[row.id]),
+            )
             .sort((a, b) => b.updatedAt - a.updatedAt)
             .slice(0, maxRecentSessionsInEmptyState)
             .map((row) => ({ id: row.id, title: row.title, updatedAt: row.updatedAt }));
@@ -684,6 +692,15 @@ export class AcpUiSessionController {
 
         if (parsed.type === "openSession") {
             await openOrRevealAcpUiEditor(this.options.context, parsed.sessionId, "");
+            return;
+        }
+
+        if (parsed.type === "dismissRecentSession") {
+            await dismissRecentSession(parsed.sessionId);
+            this.post({
+                type: "recentSessions",
+                sessions: this.recentSessionsForAgent(this.agentConfig?.name, this.sessionId),
+            });
             return;
         }
 
