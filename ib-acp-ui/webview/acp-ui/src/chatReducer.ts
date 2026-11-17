@@ -53,7 +53,7 @@ export type TraceToolItem = {
   content: string | undefined;
   /** Structured diff when the agent sent `diff` content (preferred over plain `content`). */
   diffRows: ToolCallDiffRow[] | undefined;
-  /** Image the agent read. Shown as a small preview on the tool row. */
+  /** Image the agent read. Shown below the path on the tool row. */
   image?: AcpUiPromptImage;
   detailVisible: boolean;
   durationMs?: number;

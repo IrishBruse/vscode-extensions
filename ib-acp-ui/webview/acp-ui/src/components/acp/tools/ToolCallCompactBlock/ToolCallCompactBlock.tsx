@@ -272,22 +272,32 @@ function CompactDetailLine({
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
   onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
-  const text = compactToolShowsDiffStats(item) ? (
+  if (item.image === undefined) {
+    return compactToolShowsDiffStats(item) ? (
+      <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />
+    ) : (
+      <CompactVerbDetail
+        parts={compactToolDetailParts(item)}
+        onOpenWorkspacePath={onOpenWorkspacePath}
+      />
+    );
+  }
+  const parts = compactToolDetailParts(item);
+  const line = compactToolShowsDiffStats(item) ? (
     <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />
   ) : (
-    <CompactVerbDetail
-      parts={compactToolDetailParts(item)}
-      onOpenWorkspacePath={onOpenWorkspacePath}
-    />
-  );
-  if (item.image === undefined) {
-    return text;
-  }
-  return (
     <>
-      {text}
-      <CompactImagePreview image={item.image} onOpenImage={onOpenImage} />
+      <span className="tool-call-compact-verb">{parts.verb}</span>
+      {parts.detail.length > 0 ? (
+        <CompactDetailText parts={parts} onOpenWorkspacePath={onOpenWorkspacePath} />
+      ) : null}
     </>
+  );
+  return (
+    <div className="tool-call-compact-detail-with-image">
+      {line}
+      <CompactImagePreview image={item.image} onOpenImage={onOpenImage} />
+    </div>
   );
 }
 

@@ -37,9 +37,14 @@ describe("ToolCallCompactBlock image preview", () => {
     const html = await renderBlock(item);
     expect(html).toContain("Read");
     expect(html).toContain(".tmp/playtest/06-continue-a.png");
+    expect(html).toContain('class="tool-call-compact-detail-with-image"');
     expect(html).toContain('class="tool-call-compact-image"');
     expect(html).toContain("data:image/png;base64,QUJD");
     expect(html).toContain('aria-label="View image"');
+    const pathAt = html.indexOf(".tmp/playtest/06-continue-a.png");
+    const imageAt = html.indexOf('class="tool-call-compact-image"');
+    expect(pathAt).toBeGreaterThanOrEqual(0);
+    expect(imageAt).toBeGreaterThan(pathAt);
   });
 });
 

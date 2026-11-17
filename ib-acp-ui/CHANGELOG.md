@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: Read-image previews sit below the file path (aligned with the URL) and render larger.
 - **Fix**: Execute tools whose command mentions `globalStorage` no longer render as glob/grep-style `"pattern" in path` lines.
 - **Add**: Long multiline shell commands in the trace offer **Show full command** separate from **Show output**.
 - **Add**: Hover a recent chat on an empty chat and use × to remove it from that list.
