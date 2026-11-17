@@ -8,7 +8,9 @@ import "./ToolCallCompactExecuteBlock.css";
 import { ShellCommandHighlight } from "../../../../ShellCommandHighlight";
 import type { TraceToolItem } from "../../../../chatReducer";
 import {
+  compactExecuteCommandLineCount,
   compactExecutePreviewLineCount,
+  executeCommandPreview,
   executeCommandText,
   executeOutputPreview,
   executeWorkingDirectoryLabel,
@@ -24,7 +26,7 @@ function BashRunTimer({ startedAtMs }: { startedAtMs: number }): ReactElement {
 /**
  * Compact terminal tool.
  * The working directory and elapsed time sit on the first line, then the command under `$`.
- * Output sits in a separate block. A long result opens from Show output, and that control stays under the text.
+ * Output sits in a separate block. Long commands and results each have their own Show control.
  */
 export function ToolCallCompactExecuteBlock({
   item,
@@ -37,19 +39,28 @@ export function ToolCallCompactExecuteBlock({
   onCollapseExpandAll?: () => void;
   className?: string;
 }): ReactElement {
-  const [localExpanded, setLocalExpanded] = useState(false);
+  const [localOutputExpanded, setLocalOutputExpanded] = useState(false);
+  const [localCommandExpanded, setLocalCommandExpanded] = useState(false);
   const prevExpandAllRef = useRef(expandAllToolOutputs);
   useEffect(() => {
     if (prevExpandAllRef.current && !expandAllToolOutputs) {
-      setLocalExpanded(false);
+      setLocalOutputExpanded(false);
+      setLocalCommandExpanded(false);
     }
     prevExpandAllRef.current = expandAllToolOutputs;
   }, [expandAllToolOutputs]);
 
-  const expanded = expandAllToolOutputs || localExpanded;
+  const outputExpanded = expandAllToolOutputs || localOutputExpanded;
+  const commandExpanded = expandAllToolOutputs || localCommandExpanded;
   const command = executeCommandText(item);
-  const { previewLines, totalLineCount } = executeOutputPreview(item, expanded);
-  const canToggle = totalLineCount > compactExecutePreviewLineCount;
+  const {
+    previewLines: commandLines,
+    totalLineCount: commandLineCount,
+  } = executeCommandPreview(command, commandExpanded);
+  const commandPreviewText = commandLines.join("\n");
+  const { previewLines, totalLineCount } = executeOutputPreview(item, outputExpanded);
+  const canToggleOutput = totalLineCount > compactExecutePreviewLineCount;
+  const canToggleCommand = commandLineCount > compactExecuteCommandLineCount;
   const inProgress = item.status === "pending" || item.status === "in_progress";
   const durationLabel =
     item.durationMs !== undefined ? formatCompactDurationMs(item.durationMs) : "";
@@ -62,14 +73,25 @@ export function ToolCallCompactExecuteBlock({
       <span className="tool-call-compact-execute-duration">{durationLabel}</span>
     ) : null;
   const toggleOutput = (): void => {
-    if (expanded) {
-      setLocalExpanded(false);
+    if (outputExpanded) {
+      setLocalOutputExpanded(false);
       if (expandAllToolOutputs) {
         onCollapseExpandAll?.();
       }
       return;
     }
-    setLocalExpanded(true);
+    setLocalOutputExpanded(true);
+  };
+
+  const toggleCommand = (): void => {
+    if (commandExpanded) {
+      setLocalCommandExpanded(false);
+      if (expandAllToolOutputs) {
+        onCollapseExpandAll?.();
+      }
+      return;
+    }
+    setLocalCommandExpanded(true);
   };
 
   return (
@@ -97,10 +119,34 @@ export function ToolCallCompactExecuteBlock({
           $
         </span>
         <span className="tool-call-compact-execute-command-text">
-          {command.length > 0 ? <ShellCommandHighlight command={command} /> : "Terminal"}
+          {commandPreviewText.length > 0 ? (
+            <ShellCommandHighlight command={commandPreviewText} />
+          ) : (
+            "Terminal"
+          )}
         </span>
       </div>
-      {canToggle && !expanded ? (
+      {canToggleCommand && !commandExpanded ? (
+        <button
+          type="button"
+          className="tool-call-compact-execute-toggle"
+          aria-expanded={false}
+          onClick={toggleCommand}
+        >
+          Show full command
+        </button>
+      ) : null}
+      {canToggleCommand && commandExpanded ? (
+        <button
+          type="button"
+          className="tool-call-compact-execute-toggle"
+          aria-expanded={true}
+          onClick={toggleCommand}
+        >
+          Hide full command
+        </button>
+      ) : null}
+      {canToggleOutput && !outputExpanded ? (
         <button
           type="button"
           className="tool-call-compact-execute-toggle"
@@ -115,7 +161,7 @@ export function ToolCallCompactExecuteBlock({
           {previewLines.join("\n")}
         </pre>
       ) : null}
-      {canToggle && expanded ? (
+      {canToggleOutput && outputExpanded ? (
         <button
           type="button"
           className="tool-call-compact-execute-toggle"

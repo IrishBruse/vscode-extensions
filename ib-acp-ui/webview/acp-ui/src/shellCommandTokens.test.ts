@@ -102,4 +102,14 @@ describe("tokenizeShellCommand", () => {
     expect(comment?.text).toBe("# note");
     expect(texts(tokens)).toContain("next");
   });
+
+  it("keeps multiline python heredocs intact", () => {
+    const command = `python3 - <<'PY'
+path="/tmp/example.rpc.ndjson"
+for i,line in enumerate(lines,1):
+    print(i)
+PY`;
+    const tokens = tokenizeShellCommand(command);
+    expect(texts(tokens).join("")).toBe(command);
+  });
 });

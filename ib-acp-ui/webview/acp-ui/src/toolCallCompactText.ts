@@ -344,19 +344,50 @@ function isWebFetchTitle(title: string): boolean {
 
 function isGlobTool(item: TraceToolItem): boolean {
   const kind = normalizedKind(item);
+  if (kind === "execute" || kind === "terminal") {
+    return false;
+  }
   if (kind === "glob") {
     return true;
   }
-  return item.title.toLowerCase().includes("glob");
+  return /\bglob\b/i.test(item.title);
 }
 
 function isSearchTool(item: TraceToolItem): boolean {
   const kind = normalizedKind(item);
+  if (kind === "execute" || kind === "terminal") {
+    return false;
+  }
   if (kind === "search" || kind === "grep") {
     return true;
   }
   const title = item.title.toLowerCase();
-  return title.includes("grep") || title.includes("search");
+  return /\bgrep\b/.test(title) || /\bsearch\b/.test(title);
+}
+
+function shellCommandLineFromBacktickTitle(title: string): string | undefined {
+  const trimmed = title.trim();
+  if (trimmed.length >= 2 && trimmed.startsWith("`") && trimmed.endsWith("`")) {
+    const inner = trimmed.slice(1, -1).trim();
+    return inner.length > 0 ? inner : undefined;
+  }
+  return undefined;
+}
+
+function resolvedExecuteCommandText(item: TraceToolItem): string {
+  const subtitle = item.subtitle?.trim() ?? "";
+  if (subtitle.length > 0) {
+    const fromPayload = extractShellCommandLine(subtitle);
+    const raw = fromPayload ?? (subtitle.startsWith("{") ? "" : subtitle);
+    if (raw.length > 0) {
+      return raw.startsWith("$") ? raw.slice(1).trimStart() : raw;
+    }
+  }
+  const fromTitle = shellCommandLineFromBacktickTitle(item.title);
+  if (fromTitle !== undefined) {
+    return fromTitle;
+  }
+  return "";
 }
 
 function pluralCount(count: number, singular: string, plural: string): string {
@@ -537,6 +568,14 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
     };
   }
 
+  if (kind === "execute" || kind === "terminal") {
+    const resolved = resolvedExecuteCommandText(item);
+    if (resolved.length === 0) {
+      return { verb: "Ran", detail: "" };
+    }
+    return { verb: "Ran", detail: resolved };
+  }
+
   if (isGlobTool(item)) {
     const pattern = globPatternFromItem(item);
     const scope = globScopeFromItem(item);
@@ -596,20 +635,6 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
       return { verb: "Grepped", detail: stats };
     }
     return { verb: "Grepped", detail: "" };
-  }
-
-  if (kind === "execute" || kind === "terminal") {
-    const raw = subtitle.length > 0 ? subtitle : item.title.trim();
-    const resolved =
-      extractShellCommandLine(raw) ??
-      (raw.startsWith("{") ? undefined : raw.length > 0 ? raw : undefined);
-    if (resolved === undefined || resolved.length === 0) {
-      return { verb: "Ran", detail: "" };
-    }
-    return {
-      verb: "Ran",
-      detail: resolved.startsWith("$") ? resolved.slice(1).trimStart() : resolved,
-    };
   }
 
   const markdownPath =
@@ -703,6 +728,9 @@ export function toolCallDetailKind(item: TraceToolItem): ToolCallDetailKind {
 
 export const compactExecutePreviewLineCount = 3;
 
+/** How many command lines show before "Show full command". */
+export const compactExecuteCommandLineCount = 3;
+
 /** Grouped minimal mode shows only the last N per-tool detail lines. */
 export const compactGroupMaxVisibleDetails = 3;
 
@@ -729,8 +757,36 @@ export function isCompactGroupableTool(item: TraceToolItem): boolean {
 }
 
 export function executeCommandText(item: TraceToolItem): string {
+  if (isExecuteTool(item)) {
+    return resolvedExecuteCommandText(item);
+  }
   const { detail } = compactToolDetailParts(item);
   return detail;
+}
+
+export function executeCommandPreview(
+  command: string,
+  expanded: boolean,
+): {
+  previewLines: string[];
+  hiddenLineCount: number;
+  totalLineCount: number;
+} {
+  const normalized = command.replace(/\r\n/g, "\n");
+  const lines = normalized.length === 0 ? [] : normalized.split("\n");
+  const totalLineCount = lines.length;
+  if (expanded || totalLineCount <= compactExecuteCommandLineCount) {
+    return {
+      previewLines: lines,
+      hiddenLineCount: 0,
+      totalLineCount,
+    };
+  }
+  return {
+    previewLines: lines.slice(0, compactExecuteCommandLineCount),
+    hiddenLineCount: totalLineCount - compactExecuteCommandLineCount,
+    totalLineCount,
+  };
 }
 
 /** Bash prompt path: the command directory, or the workspace folder, as `~/…` when it is under home. */

@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Execute tools whose command mentions `globalStorage` no longer render as glob/grep-style `"pattern" in path` lines.
+- **Add**: Long multiline shell commands in the trace offer **Show full command** separate from **Show output**.
 - **Add**: Hover a recent chat on an empty chat and use × to remove it from that list.
 - **Fix**: The composer top-left label stays on the workspace folder instead of switching to the chat title.
 - **Fix**: The title from the ACP connection stays on the chat and is stored in the `.acp` file.

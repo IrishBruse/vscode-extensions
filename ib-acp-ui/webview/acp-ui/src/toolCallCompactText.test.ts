@@ -7,6 +7,7 @@ import {
   compactToolGroupSummary,
   compactToolGroupSummaryParts,
   diffLineStats,
+  executeCommandPreview,
   executeCommandText,
   executeOutputPreview,
   executeWorkingDirectoryLabel,
@@ -347,6 +348,42 @@ describe("toolCallCompactText", () => {
     );
   });
 
+  it("does not treat globalStorage in a shell command as a glob tool", () => {
+    const subtitle = `python3 - <<'PY'
+path="/home/econn/.config/Code/User/globalStorage/irishbruse.ib-acp-ui/chats/foo.rpc.ndjson"
+for i,line in enumerate(lines,1):
+    print(i)
+PY`;
+    const item = toolItem({
+      toolCallId: "py-global",
+      kind: "execute",
+      title: "`python3 - <<'PY' ... globalStorage ...`",
+      subtitle,
+    });
+    expect(compactToolDetailLine(item)).toContain("python3 - <<'PY'");
+    expect(executeCommandText(item)).toBe(subtitle);
+    expect(executeCommandText(item)).not.toContain('" in enumerate');
+  });
+
+  it("keeps full multiline Cursor backtick shell commands", () => {
+    const subtitle = `python3 - <<'PY'
+import json
+path="/home/econn/.config/Code/User/globalStorage/irishbruse.ib-acp-ui/chats/29e961a6-3464-4383-99bc-89ffe05e752e.rpc.ndjson"
+with open(path) as f:
+    lines=f.readlines()
+for i,line in enumerate(lines,1):
+    print(i)
+PY`;
+    const item = toolItem({
+      toolCallId: "py-heredoc",
+      kind: "execute",
+      subtitle,
+    });
+    expect(executeCommandText(item)).toBe(subtitle);
+    expect(executeCommandText(item)).toContain("enumerate(lines,1)");
+    expect(executeCommandText(item)).not.toContain('" in enumerate');
+  });
+
   it("renders Antigravity shell JSON as the command line", () => {
     const item = toolItem({
       toolCallId: "ag-run",
@@ -369,6 +406,16 @@ describe("toolCallCompactText", () => {
       previewLines: ["PASS"],
       totalLineCount: 1,
     });
+  });
+
+  it("keeps long shell commands collapsed until expanded", () => {
+    const command = Array.from({ length: 8 }, (_, index) => `line ${index + 1}`).join("\n");
+    expect(executeCommandPreview(command, false)).toEqual({
+      previewLines: ["line 1", "line 2", "line 3"],
+      hiddenLineCount: 5,
+      totalLineCount: 8,
+    });
+    expect(executeCommandPreview(command, true).previewLines).toHaveLength(8);
   });
 
   it("keeps long terminal output closed until it is opened", () => {

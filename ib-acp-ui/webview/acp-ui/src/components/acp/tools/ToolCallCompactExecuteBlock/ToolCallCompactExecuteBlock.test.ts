@@ -98,6 +98,14 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).toContain(">from</span>");
   });
 
+  it("offers Show full command for long multiline shell scripts", async () => {
+    const command = Array.from({ length: 6 }, (_, index) => `cmd line ${index + 1}`).join("\n");
+    const html = await renderBlock(executeItem("done", command));
+    expect(html).toContain("Show full command");
+    expect(html).toContain('shell-hl--argument">3</span>');
+    expect(html).not.toContain('shell-hl--argument">6</span>');
+  });
+
   it("shows command output without a left bar", () => {
     const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
     const rule = css.match(/\.tool-call-compact-execute-output\s*\{[^}]*\}/)?.[0] ?? "";
