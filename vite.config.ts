@@ -11,6 +11,7 @@ export default defineConfig({
         ignorePatterns: [
             "**/media/**",
             "**/dist/**",
+            "agent-canvas/**",
             "ib-acp-ui/webview/**",
             "ib-acp-ui/playground/**",
             "ib-acp-ui/docs/acp/**",
@@ -19,7 +20,7 @@ export default defineConfig({
         ],
     },
     lint: {
-        ignorePatterns: ["**/media/**", "**/dist/**"],
+        ignorePatterns: ["**/media/**", "**/dist/**", "agent-canvas/**"],
         plugins: ["oxc", "typescript", "unicorn", "import", "node"],
         options: {
             typeAware: true,
