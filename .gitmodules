@@ -1,0 +1,3 @@
+[submodule "agent-canvas"]
+	path = agent-canvas
+	url = https://github.com/IrishBruse/agent-canvas.git
