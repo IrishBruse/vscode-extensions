@@ -189,11 +189,12 @@ describe("buildAcpClientCapabilities", () => {
         ).toEqual({
             fs: { readTextFile: true, writeTextFile: true },
             subagents: {},
-            _meta: { parameterizedModelPicker: true, subagents: {} },
+            terminal: true,
+            _meta: { terminal_output: true, parameterizedModelPicker: true, subagents: {} },
         });
     });
 
-    it("omits Cursor meta for other agents", () => {
+    it("advertises terminal support for other agents", () => {
         expect(
             buildAcpClientCapabilities({
                 name: "Gemini",
@@ -203,6 +204,8 @@ describe("buildAcpClientCapabilities", () => {
         ).toEqual({
             fs: { readTextFile: true, writeTextFile: true },
             subagents: {},
+            terminal: true,
+            _meta: { terminal_output: true },
         });
     });
 });

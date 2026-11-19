@@ -16,6 +16,7 @@ import {
     assertNegotiatedProtocolVersion,
     buildAcpClientInfoFromPackage,
 } from "./acpAgentProcess";
+import { createTestAcpHostTerminal } from "./testAcpHostTerminal";
 
 function createTestAcpAgentProcess(command = "/missing/agent"): AcpAgentProcess {
     return new AcpAgentProcess({
@@ -27,6 +28,7 @@ function createTestAcpAgentProcess(command = "/missing/agent"): AcpAgentProcess 
             readTextFile: async () => "",
             writeTextFile: async () => {},
         },
+        hostTerminal: createTestAcpHostTerminal(),
         rpcNdjsonSink: {
             isLoggingEnabled: false,
             appendRawNdjsonLine: () => {},
@@ -59,6 +61,7 @@ function probeFromInit(init: {
             readTextFile: async () => "",
             writeTextFile: async () => {},
         },
+        hostTerminal: createTestAcpHostTerminal(),
         rpcNdjsonSink: {
             isLoggingEnabled: false,
             appendRawNdjsonLine: () => {},

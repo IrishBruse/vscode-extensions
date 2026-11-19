@@ -18,6 +18,7 @@ import {
     type ToolCallKindTracking,
 } from "../mapping/sessionUpdateMapping";
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
+import type { AcpHostTerminal } from "../ports/hostTerminal";
 import { isImageFilePath } from "../../platform/imageFilePath";
 import { readWorkspaceImage } from "../../platform/readWorkspaceImage";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
@@ -65,6 +66,7 @@ export type PostToWebview = (message: ExtensionToWebviewMessage) => void;
  */
 export type AcpSessionHostRuntime = {
     hostFilesystem: AcpHostFilesystem;
+    hostTerminal: AcpHostTerminal;
     rpcNdjsonSink: AcpRpcNdjsonSink;
     getWorkspaceRoot: () => string | undefined;
 };
@@ -137,6 +139,7 @@ export class AcpSessionBridge {
             extMethod: (method, params) => this.handleExtensionMethod(method, params),
             extNotification: (method, params) => this.handleExtensionNotification(method, params),
             hostFilesystem: host.hostFilesystem,
+            hostTerminal: host.hostTerminal,
             rpcNdjsonSink: host.rpcNdjsonSink,
             getWorkspaceRoot: host.getWorkspaceRoot,
             onHostFilesystemRead: (path) => this.handleHostFilesystemRead(path),

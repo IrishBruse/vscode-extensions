@@ -40,6 +40,7 @@ export {
 } from "./mapping/sessionUpdateMapping";
 export { computeToolCallDiffRows } from "./mapping/toolCallDiffLines";
 export type { AcpHostFilesystem } from "./ports/hostFilesystem";
+export type { AcpHostTerminal } from "./ports/hostTerminal";
 export type { AcpRpcNdjsonSink } from "./ports/rpcNdjsonSink";
 export {
     CompositeAcpRpcNdjsonSink,

@@ -21,6 +21,9 @@ export type AcpAuthMethodRef = {
 /** Cursor ACP `_meta` key that requests separate model-parameter config options. */
 export const PARAMETERIZED_MODEL_PICKER_META_KEY = "parameterizedModelPicker";
 
+/** Zed-style `_meta` key: agent may stream terminal output via `tool_call_update` `_meta`. */
+export const TERMINAL_OUTPUT_META_KEY = "terminal_output";
+
 /**
  * Cursor's bundled ACP schema drops a top-level `clientCapabilities.subagents`.
  * The same empty object under `_meta` is what that agent actually reads.

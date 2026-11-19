@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: ACP `terminal/*` client methods run commands in a VS Code terminal and stream captured output back to the agent; `initialize` advertises `terminal: true` and `_meta.terminal_output`.
 - **Fix**: Cursor tasks no longer leave duplicate running Subagent rows when `cursor/task` `agentId` differs from `subagent_spawned` `subagentSessionId`.
 - **Fix**: Prune placeholder Subagent rows once the linked task card owns that child session.
 - **Fix**: Opening the ACP tab no longer flashes protocol rows expanded before they collapse.

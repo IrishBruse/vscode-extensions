@@ -12,7 +12,7 @@ The client also advertises subagent support, so an agent can report child sessio
 Child messages, tool calls, and work-state updates arrive on that same connection.
 A nested child stays inside the child that owns it.
 A lost connection shows a child that was running as Unknown.
-Other capability flags (terminals, terminal auth, boolean config options, elicitation) are planned.
+Client-hosted terminals are shipped; terminal auth, boolean config options, and elicitation remain planned.
 See [session-config](../ui/session-config.md) for the shipped model toolbar.
 
 ## Implementation
@@ -28,7 +28,8 @@ The same function also sets `_meta.subagents` to an empty object for Cursor, whi
 For Cursor spawn configs, [isCursorAcpAgent](../../../src/acp/domain/agentSpawnConfig.ts) gates `_meta.parameterizedModelPicker: true`.
 That unlocks agent-ordered `configOptions` rendered in [ConfigOptionControls](../../../webview/acp-ui/src/components/acp/composer/ConfigOptionControls/ConfigOptionControls.tsx).
 
-Remaining Zed parity gaps (terminal, terminal auth, boolean config options, elicitation) are listed in the task checklist.
+[buildAcpClientCapabilities](../../../src/acp/infrastructure/acpAgentProcess.ts#L158-L176) advertises `terminal: true` and `_meta.terminal_output: true` now that [AcpHostTerminal](../../../src/acp/ports/hostTerminal.ts) is wired.
+Remaining Zed parity gaps (terminal auth, boolean config options, elicitation) are listed in the task checklist.
 Do not advertise a capability until the matching client callback exists.
 
 Task: [client-capabilities](../../tasks/client-capabilities.md).

@@ -1,6 +1,7 @@
 import type { AcpRpcNdjsonSink } from "../../acp/ports/rpcNdjsonSink";
 import type { AcpSessionHostRuntime } from "../../acp/session/acpSessionBridge";
 import { createNodeAcpHostFilesystem } from "./nodeHostFilesystem";
+import { createNodeAcpHostTerminal } from "./nodeAcpHostTerminal";
 
 export type NodeAcpSessionHostOptions = {
     rpcNdjsonSink: AcpRpcNdjsonSink;
@@ -15,9 +16,11 @@ export function createNodeAcpSessionHostRuntime(
     options: NodeAcpSessionHostOptions,
 ): AcpSessionHostRuntime {
     const root = options.workspaceRoot ?? process.cwd();
+    const getWorkspaceRoot = () => root;
     return {
         hostFilesystem: createNodeAcpHostFilesystem(),
+        hostTerminal: createNodeAcpHostTerminal({ getWorkspaceRoot }),
         rpcNdjsonSink: options.rpcNdjsonSink,
-        getWorkspaceRoot: () => root,
+        getWorkspaceRoot,
     };
 }

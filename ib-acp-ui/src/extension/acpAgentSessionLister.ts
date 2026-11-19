@@ -73,6 +73,7 @@ export async function fetchAgentSessionsForWorkspace(
         config,
         requestPermission: cancelledPermission,
         hostFilesystem: host.hostFilesystem,
+        hostTerminal: host.hostTerminal,
         rpcNdjsonSink: host.rpcNdjsonSink,
         getWorkspaceRoot: host.getWorkspaceRoot,
     });
@@ -110,6 +111,7 @@ export async function deleteAgentSession(
         config,
         requestPermission: cancelledPermission,
         hostFilesystem: host.hostFilesystem,
+        hostTerminal: host.hostTerminal,
         rpcNdjsonSink: host.rpcNdjsonSink,
         getWorkspaceRoot: host.getWorkspaceRoot,
     });

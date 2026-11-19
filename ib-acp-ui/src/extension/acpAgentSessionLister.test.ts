@@ -32,6 +32,24 @@ vi.mock("../platform/vscode/defaultHostRuntime", () => ({
             readTextFile: async () => "",
             writeTextFile: async () => {},
         },
+        hostTerminal: {
+            createTerminal: async () => {
+                throw new Error("not expected");
+            },
+            terminalOutput: async () => {
+                throw new Error("not expected");
+            },
+            waitForTerminalExit: async () => {
+                throw new Error("not expected");
+            },
+            killTerminal: async () => {
+                throw new Error("not expected");
+            },
+            releaseTerminal: async () => {
+                throw new Error("not expected");
+            },
+            dispose() {},
+        },
         rpcNdjsonSink: {
             isLoggingEnabled: false,
             appendRawNdjsonLine: () => {},

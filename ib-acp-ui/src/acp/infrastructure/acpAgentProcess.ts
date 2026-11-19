@@ -6,8 +6,10 @@ import {
     CURSOR_SUBAGENTS_META_KEY,
     isCursorAcpAgent,
     PARAMETERIZED_MODEL_PICKER_META_KEY,
+    TERMINAL_OUTPUT_META_KEY,
 } from "../domain/agentSpawnConfig";
 import type { AcpHostFilesystem } from "../ports/hostFilesystem";
+import type { AcpHostTerminal } from "../ports/hostTerminal";
 import type { AcpRpcNdjsonDirection, AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
 import type { AcpUiPromptImage } from "../../protocol/extensionHostMessages";
 import type { AgentProcessExitDetails } from "../session/agentDisconnect";
@@ -158,9 +160,14 @@ export function buildAcpClientCapabilities(config: AcpAgentSpawnConfig): acp.Cli
     const capabilities: acp.ClientCapabilities = {
         fs: { readTextFile: true, writeTextFile: true },
         subagents: {},
+        terminal: true,
+        _meta: {
+            [TERMINAL_OUTPUT_META_KEY]: true,
+        },
     };
     if (isCursorAcpAgent(config)) {
         capabilities._meta = {
+            ...capabilities._meta,
             [PARAMETERIZED_MODEL_PICKER_META_KEY]: true,
             [CURSOR_SUBAGENTS_META_KEY]: {},
         };
@@ -186,6 +193,7 @@ export type AcpAgentProcessOptions = {
     /** Called after the agent reads a workspace file via ACP `fs/readTextFile`. */
     onHostFilesystemRead?: (path: string) => void;
     hostFilesystem: AcpHostFilesystem;
+    hostTerminal: AcpHostTerminal;
     rpcNdjsonSink: AcpRpcNdjsonSink;
     /** Workspace folder used for spawn `cwd` and `session/new` `cwd` metadata. */
     getWorkspaceRoot: () => string | undefined;
@@ -310,6 +318,12 @@ export class AcpAgentProcess {
             },
             readTextFile: async (params) => this.handleReadTextFile(params),
             writeTextFile: async (params) => this.handleWriteTextFile(params),
+            createTerminal: async (params) => this.options.hostTerminal.createTerminal(params),
+            terminalOutput: async (params) => this.options.hostTerminal.terminalOutput(params),
+            waitForTerminalExit: async (params) =>
+                this.options.hostTerminal.waitForTerminalExit(params),
+            killTerminal: async (params) => this.options.hostTerminal.killTerminal(params),
+            releaseTerminal: async (params) => this.options.hostTerminal.releaseTerminal(params),
         };
 
         this.connection = new acp.ClientSideConnection((_agent) => client, stream);
@@ -479,6 +493,7 @@ export class AcpAgentProcess {
 
     dispose(): void {
         this.processExited = true;
+        this.options.hostTerminal.dispose();
         if (this.child) {
             this.child.kill();
             this.child = null;
