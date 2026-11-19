@@ -1670,6 +1670,25 @@ export function traceCoversSubagentSession(
   return false;
 }
 
+/** Removes child-session rows that a linked task card already owns. */
+export function pruneCoveredSubagentRows(
+  trace: TraceItem[],
+  sessionByToolId: ReadonlyMap<string, string>,
+): TraceItem[] {
+  let changed = false;
+  const next = trace.filter((item) => {
+    if (item.type !== "subagent") {
+      return true;
+    }
+    if (traceCoversSubagentSession(trace, sessionByToolId, item.sessionId)) {
+      changed = true;
+      return false;
+    }
+    return true;
+  });
+  return changed ? next : trace;
+}
+
 function sessionHasToolLink(map: Map<string, string>, sessionId: string): boolean {
   for (const id of map.values()) {
     if (sessionIdsReferToSameChild(id, sessionId)) {
@@ -1873,7 +1892,8 @@ function applySubagentUpdate(
       visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
     };
   }
-  const nextTrace = placeSubagent(state.trace, action);
+  const placed = placeSubagent(state.trace, action);
+  const nextTrace = pruneCoveredSubagentRows(placed, subagentSessionByToolId);
   return {
     ...state,
     trace: nextTrace,
@@ -1942,24 +1962,26 @@ function applySubagentActivity(
     openStreamIndex: shadow.openStreamIndex,
   });
   const linked = sessionHasToolLink(state.subagentSessionByToolId, sessionId);
+  const baseTrace = pruneCoveredSubagentRows(state.trace, state.subagentSessionByToolId);
+  const pruned = baseTrace.length !== state.trace.length;
   const hasCard =
     linked ||
-    traceCoversSubagentSession(state.trace, state.subagentSessionByToolId, sessionId) ||
-    state.trace.some(
+    traceCoversSubagentSession(baseTrace, state.subagentSessionByToolId, sessionId) ||
+    baseTrace.some(
       (item) =>
         item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId),
     );
   const trace = hasCard
-    ? state.trace
+    ? baseTrace
     : [
-        ...state.trace,
+        ...baseTrace,
         { ...blankSubagent(sessionId), state: "running" as const, startedAtMs: Date.now() },
       ];
   return {
     ...state,
     trace,
     subagentActivity,
-    ...(hasCard ? {} : { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) }),
+    ...(!pruned && hasCard ? {} : { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) }),
   };
 }
 

@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+    type ReactElement,
+    type ReactNode,
+} from "react";
 import { formatPathWithTilde } from "../../../../../../src/platform/pathDisplay";
 import type { AcpRpcDisplayField, AcpRpcDisplayMessage, AcpRpcLogEntry } from "../../../../../../src/protocol/acpRpcLog";
 import { formatAcpRpcDisplay, groupAcpRpcLogEntries } from "../../../../../../src/protocol/acpRpcLog";
@@ -158,7 +167,7 @@ export function AcpRpcLogView({ entries, logPath, homeDir }: AcpRpcLogViewProps)
     const [pathCopied, setPathCopied] = useState(false);
     const listItems = useMemo(() => groupAcpRpcLogEntries(entries), [entries]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (entries.length === 0) {
             seenEntryIdsRef.current = new Set();
             seenGroupKeysRef.current = new Set();

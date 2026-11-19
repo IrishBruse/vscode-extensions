@@ -1631,6 +1631,45 @@ describe("chatReducer", () => {
     expect(state.trace.find((item) => item.type === "tool")).toMatchObject({ status: "completed" });
   });
 
+  it("prunes a placeholder subagent row once the task card covers that session", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "call-map-task",
+      title: "Task: Map return root cause",
+      kind: "other",
+      status: "in_progress",
+      subtitle: "generalPurpose",
+      content: "prompt",
+    });
+    state = {
+      ...state,
+      trace: [
+        ...state.trace,
+        {
+          type: "subagent",
+          sessionId: "child",
+          title: "Subagent",
+          description: "",
+          state: "running",
+          stopReason: null,
+          startedAtMs: Date.now(),
+        },
+      ],
+      subagentSessionByToolId: new Map([["call-map-task", "child"]]),
+    };
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: "child",
+      event: { type: "appendAgentText", text: "Still investigating" },
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      title: "Task: Map return root cause",
+      status: "in_progress",
+    });
+  });
+
   it("keeps the spawn session id when cursor/task reports a different agentId", () => {
     const tool =
       "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-239\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_3";
