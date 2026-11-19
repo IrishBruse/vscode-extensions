@@ -29,6 +29,7 @@ import {
   type ExtensionMessageAfterInit,
   type InitPayload,
   thoughtDurationsFromTrace,
+  traceCoversSubagentSession,
   type TraceItem,
 } from "./chatReducer";
 import { visibleTraceTail, type VisibleTraceRow } from "./visibleTraceTail";
@@ -331,7 +332,15 @@ export function AcpUiApp({
           rows.push({ start, end, height: node.offsetHeight });
         }
       }
-      const items = visibleTraceTail(state.trace, rows, el?.clientHeight ?? 0);
+      const items = visibleTraceTail(state.trace, rows, el?.clientHeight ?? 0).filter(
+        (item) =>
+          item.type !== "subagent" ||
+          !traceCoversSubagentSession(
+            state.trace,
+            state.subagentSessionByToolId,
+            item.sessionId,
+          ),
+      );
       const thoughtDurations = thoughtDurationsFromTrace(state.trace);
       const bashDurations = bashDurationsFromTrace(state.trace);
       const serialized = JSON.stringify({ items, thoughtDurations, bashDurations });
@@ -350,6 +359,7 @@ export function AcpUiApp({
     postSaveVisibleTrace,
     state.promptInFlight,
     state.sessionHistoryLoading,
+    state.subagentSessionByToolId,
     state.trace,
     state.visibleTraceCacheEpoch,
   ]);

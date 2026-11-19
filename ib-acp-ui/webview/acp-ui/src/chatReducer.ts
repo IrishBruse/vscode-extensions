@@ -1527,20 +1527,33 @@ function finishCursorTask(
   toolCallId: string,
   agentId: string,
 ): ChatState {
-  const dropped = traceWithoutChildSession(trace, agentId);
+  const mapped = base.subagentSessionByToolId.get(canonicalToolCallId(toolCallId));
+  let nextTrace = trace;
+  let nextIndex = reindexTools(trace);
+  let dropped = false;
+  for (const sessionId of [mapped, agentId]) {
+    if (sessionId === undefined || sessionId.length === 0) {
+      continue;
+    }
+    const without = traceWithoutChildSession(nextTrace, sessionId);
+    if (without === undefined) {
+      continue;
+    }
+    nextTrace = without.trace;
+    nextIndex = without.toolIndexById;
+    dropped = true;
+  }
   return {
     ...base,
-    trace: dropped?.trace ?? trace,
-    toolIndexById: dropped?.toolIndexById ?? reindexTools(trace),
+    trace: nextTrace,
+    toolIndexById: nextIndex,
     openStreamIndex: null,
     subagentSessionByToolId: rememberSubagentTool(
       base.subagentSessionByToolId,
       toolCallId,
       agentId,
     ),
-    ...(dropped !== undefined
-      ? { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base) }
-      : {}),
+    ...(dropped ? { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base) } : {}),
   };
 }
 
@@ -1587,6 +1600,14 @@ function rememberSubagentTool(
   }
   // Cursor's live session id is `agentId.run`. A later `cursor/task` agentId must not replace it.
   if (existing !== undefined && existing.startsWith(`${sessionId}.`)) {
+    return map;
+  }
+  // `subagent_spawned` uses subagentSessionId; `cursor/task` agentId is often a different id.
+  if (
+    existing !== undefined &&
+    sessionId.length > 0 &&
+    !sessionIdsReferToSameChild(existing, sessionId)
+  ) {
     return map;
   }
   const next = new Map(map);
@@ -1923,7 +1944,11 @@ function applySubagentActivity(
   const linked = sessionHasToolLink(state.subagentSessionByToolId, sessionId);
   const hasCard =
     linked ||
-    state.trace.some((item) => item.type === "subagent" && item.sessionId === sessionId);
+    traceCoversSubagentSession(state.trace, state.subagentSessionByToolId, sessionId) ||
+    state.trace.some(
+      (item) =>
+        item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId),
+    );
   const trace = hasCard
     ? state.trace
     : [

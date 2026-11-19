@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { cursorSubagentUpdateMessage } from "../../../src/acp/mapping/sessionUpdateMapping";
+import { canonicalToolCallId } from "../../../src/acp/mapping/canonicalToolCallId";
 import {
+  type ChatAction,
   chatReducer,
   createChatStateFromInit,
   createInitialChatState,
@@ -7,6 +10,7 @@ import {
   mergeThoughtDurationsFromCache,
   replayChatState,
   runningBashStartedAtMs,
+  traceCoversSubagentSession,
 } from "./chatReducer";
 import {
   writeCachedModelParamOptions,
@@ -1460,6 +1464,231 @@ describe("chatReducer", () => {
       sessionId: "grandchild",
       title: "Nested",
     });
+  });
+
+  it("drops duplicate subagent rows after parallel Cursor tasks complete", () => {
+    const tasks = [
+      {
+        tool: "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-238\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_2",
+        sid: "6713a299-4a13-4f31-842e-818ace8f882c",
+        desc: "CLI skill log trial",
+      },
+      {
+        tool: "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-239\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_3",
+        sid: "23558938-4415-48a9-9b0c-fd7f024cd619",
+        desc: "CLI skill screen trial",
+      },
+      {
+        tool: "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-240\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_4",
+        sid: "29351b51-4a3f-4bc9-bc3c-d70175ba370e",
+        desc: "CLI skill warm-build trial",
+      },
+    ] as const;
+    let state = createInitialChatState();
+    for (const task of tasks) {
+      const toolCallId = canonicalToolCallId(task.tool);
+      state = chatReducer(state, {
+        type: "appendToolCall",
+        toolCallId,
+        title: `Task: ${task.desc}`,
+        kind: "other",
+        status: "pending",
+        subtitle: "generalPurpose",
+        content: "prompt",
+      });
+      state = chatReducer(state, {
+        type: "updateToolCall",
+        toolCallId,
+        status: "in_progress",
+      });
+      const spawned = cursorSubagentUpdateMessage({
+        sessionUpdate: "subagent_spawned",
+        subagentSessionId: task.sid,
+        name: "generalPurpose",
+        task: "Follow skill",
+        _meta: { cursor: { toolCallId: task.tool, agentId: task.sid } },
+      } as never);
+      expect(spawned).toBeDefined();
+      state = chatReducer(state, spawned! as ChatAction);
+      state = chatReducer(state, {
+        type: "subagentActivity",
+        sessionId: task.sid,
+        event: { type: "appendAgentText", text: `Working on ${task.desc}` },
+      });
+    }
+    for (const task of tasks) {
+      const completed = cursorSubagentUpdateMessage({
+        sessionUpdate: "subagent_state_update",
+        subagentSessionId: task.sid,
+        state: "completed",
+        _meta: { cursor: { toolCallId: task.tool, agentId: task.sid } },
+      } as never);
+      expect(completed).toBeDefined();
+      state = chatReducer(state, completed! as ChatAction);
+      state = chatReducer(state, {
+        type: "updateToolCall",
+        toolCallId: canonicalToolCallId(task.tool),
+        status: "completed",
+        content: JSON.stringify({ durationMs: 1000 }),
+      });
+      state = chatReducer(state, {
+        type: "cursorTask",
+        toolCallId: task.tool,
+        description: task.desc,
+        prompt: "prompt",
+        subagentType: "generalPurpose",
+        agentId: task.sid,
+        durationMs: 1000,
+      });
+    }
+    for (const item of state.trace) {
+      if (item.type !== "subagent") continue;
+      expect(
+        traceCoversSubagentSession(state.trace, state.subagentSessionByToolId, item.sessionId),
+      ).toBe(true);
+      expect(item.state).not.toBe("running");
+    }
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+  });
+
+  it("drops the placeholder subagent row when activity beats subagent_spawned", () => {
+    const tool =
+      "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-238\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_2";
+    const sid = "6713a299-4a13-4f31-842e-818ace8f882c";
+    const toolCallId = canonicalToolCallId(tool);
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId,
+      title: "Task: CLI skill log trial",
+      kind: "other",
+      status: "in_progress",
+      subtitle: "generalPurpose",
+      content: "prompt",
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: sid,
+      event: { type: "appendAgentText", text: "Working" },
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(1);
+    const spawned = cursorSubagentUpdateMessage({
+      sessionUpdate: "subagent_spawned",
+      subagentSessionId: sid,
+      name: "generalPurpose",
+      task: "Follow skill",
+      _meta: { cursor: { toolCallId: tool, agentId: sid } },
+    } as never);
+    state = chatReducer(state, spawned! as ChatAction);
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    const completed = cursorSubagentUpdateMessage({
+      sessionUpdate: "subagent_state_update",
+      subagentSessionId: sid,
+      state: "completed",
+      _meta: { cursor: { toolCallId: tool, agentId: sid } },
+    } as never);
+    state = chatReducer(state, completed! as ChatAction);
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({ status: "completed" });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+  });
+
+  it("does not resurrect a running placeholder after the linked task completes", () => {
+    const tool =
+      "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-239\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_3";
+    const sid = "23558938-4415-48a9-9b0c-fd7f024cd619";
+    const toolCallId = canonicalToolCallId(tool);
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId,
+      title: "Task: CLI skill screen trial",
+      kind: "other",
+      status: "in_progress",
+      subtitle: "generalPurpose",
+      content: "prompt",
+    });
+    const spawned = cursorSubagentUpdateMessage({
+      sessionUpdate: "subagent_spawned",
+      subagentSessionId: sid,
+      name: "generalPurpose",
+      task: "Follow skill",
+      _meta: { cursor: { toolCallId: tool, agentId: sid } },
+    } as never);
+    state = chatReducer(state, spawned! as ChatAction);
+    const completed = cursorSubagentUpdateMessage({
+      sessionUpdate: "subagent_state_update",
+      subagentSessionId: sid,
+      state: "completed",
+      _meta: { cursor: { toolCallId: tool, agentId: sid } },
+    } as never);
+    state = chatReducer(state, completed! as ChatAction);
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: sid,
+      event: { type: "appendAgentText", text: "Late chunk" },
+    });
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({ status: "completed" });
+  });
+
+  it("keeps the spawn session id when cursor/task reports a different agentId", () => {
+    const tool =
+      "call-e44cf5b4-e74b-4ffd-921c-d9f978c8c887-239\nfc_258cd7aa-21ea-9c27-ba48-60cf574bb93b_3";
+    const spawnId = "23558938-4415-48a9-9b0c-fd7f024cd619";
+    const taskAgentId = "4edb31e4-726d-4645-b763-676b67e69871";
+    const toolCallId = canonicalToolCallId(tool);
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId,
+      title: "Task: CLI skill screen trial",
+      kind: "other",
+      status: "in_progress",
+      subtitle: "generalPurpose",
+      content: "prompt",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: spawnId,
+      toolCallId: tool,
+      title: "generalPurpose",
+      state: "running",
+    });
+    state = chatReducer(state, {
+      type: "subagentUpdate",
+      sessionId: spawnId,
+      toolCallId: tool,
+      state: "idle",
+      stopReason: "end_turn",
+    });
+    state = chatReducer(state, {
+      type: "updateToolCall",
+      toolCallId,
+      status: "completed",
+      content: JSON.stringify({ durationMs: 82844 }),
+    });
+    state = chatReducer(state, {
+      type: "cursorTask",
+      toolCallId: tool,
+      description: "CLI skill screen trial",
+      prompt: "prompt",
+      subagentType: "generalPurpose",
+      agentId: taskAgentId,
+      durationMs: 82844,
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: spawnId,
+      event: { type: "appendAgentText", text: "Late chunk on the real child" },
+    });
+    expect(state.subagentSessionByToolId.get(toolCallId)).toBe(spawnId);
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    for (const item of state.trace) {
+      if (item.type !== "subagent") continue;
+      expect(traceCoversSubagentSession(state.trace, state.subagentSessionByToolId, item.sessionId)).toBe(
+        true,
+      );
+    }
   });
 
   it("marks a running child unknown after the agent disconnects", () => {

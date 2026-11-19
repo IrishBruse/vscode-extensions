@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Cursor tasks no longer leave duplicate running Subagent rows when `cursor/task` `agentId` differs from `subagent_spawned` `subagentSessionId`.
 - **Change**: Read-image previews sit below the file path (aligned with the URL) and render larger.
 - **Fix**: Execute tools whose command mentions `globalStorage` no longer render as glob/grep-style `"pattern" in path` lines.
 - **Add**: Long multiline shell commands in the trace offer **Show full command** separate from **Show output**.
