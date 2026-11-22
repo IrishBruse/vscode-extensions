@@ -163,6 +163,24 @@ export function AcpUiApp({
         : `session:${openAgent.sessionId}`;
   const openAgentSeenRef = useRef(openAgentKey);
   const appendDroppedPathsRef = useRef<(paths: string[]) => void>(() => {});
+  const sentAutoPermissionIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const pending = state.autoPermissionResponse;
+    if (pending === null) {
+      sentAutoPermissionIdRef.current = null;
+      return;
+    }
+    if (sentAutoPermissionIdRef.current === pending.requestId) {
+      return;
+    }
+    sentAutoPermissionIdRef.current = pending.requestId;
+    postPermissionResponse({
+      requestId: pending.requestId,
+      selectedOptionId: pending.selectedOptionId,
+    });
+    dispatch({ type: "clearAutoPermission" });
+  }, [postPermissionResponse, state.autoPermissionResponse]);
 
   const traceLayoutIsLive = useCallback((): boolean => {
     const el = traceRef.current;
@@ -724,11 +742,17 @@ export function AcpUiApp({
                 options={permission.options}
                 onOpenPath={postOpenWorkspacePath}
                 onSelect={(optionId) => {
+                  const option = permission.options.find((entry) => entry.optionId === optionId);
                   postPermissionResponse({
                     requestId: permission.requestId,
                     selectedOptionId: optionId,
                   });
-                  dispatch({ type: "clearPermissionPrompt" });
+                  dispatch({
+                    type: "answerPermission",
+                    optionId,
+                    optionName: option?.name ?? "",
+                    ...(permission.toolKind !== undefined ? { toolKind: permission.toolKind } : {}),
+                  });
                 }}
                 onDismiss={() => {
                   postPermissionResponse({

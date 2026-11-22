@@ -24,12 +24,12 @@ While a permission prompt is open, the composer is blocked so you cannot send an
 ### ACP callback
 
 [AcpAgentProcess](../../../src/acp/infrastructure/acpAgentProcess.ts#L303-L304) registers `requestPermission` on the SDK client connection.
-[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L147-L166) assigns a request id, posts webview messages, and waits on a promise.
+[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L165-L186) assigns a request id, posts webview messages, and waits on a promise.
 
-[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L186-L221) resolves the waiter when the webview replies.
-[resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L224-L236) applies Allow always or Reject always to other requests that are already waiting.
-[resolveToolCallKind](../../../src/acp/session/permissionMemory.ts#L14-L41) and [enrichPermissionRequest](../../../src/acp/session/permissionMemory.ts#L62-L78) fill a missing permission `toolCall.kind` from the live trace or the title before scoping a grant.
-[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L136-L157) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
+[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L205-L244) resolves the waiter when the webview replies.
+[resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L247-L261) applies Allow always or Reject always to other requests that are already waiting.
+[resolveToolCallKind](../../../src/acp/session/permissionMemory.ts#L15-L40) and [enrichPermissionRequest](../../../src/acp/session/permissionMemory.ts#L62-L76) fill a missing permission `toolCall.kind` from the live trace or the title before scoping a grant.
+[stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L135-L154) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
 The grants are `permissionGrants` on the session document.
 Dispose cancels all pending waiters.
 

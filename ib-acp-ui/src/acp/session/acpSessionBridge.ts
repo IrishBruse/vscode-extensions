@@ -26,11 +26,13 @@ import { buildModelId, parseModelIdBracketParams } from "./modelVariantPicker";
 import {
     type AcpUiSessionConfigOption,
     type AcpUiSessionConfigState,
+    modeConfigOption,
     modelSelectOptionFromModels,
     resolveAdvertisedModelOptionValue,
     resolveModelConfigWireValue,
     sessionConfigOptionsFromAgent,
 } from "./sessionConfigOptions";
+import { type AcceptedPlan, agentModeConfigValue, implementPlanPrompt } from "./implementPlan";
 import {
     readCachedComposerSeed,
     writeCachedSessionConfigOptions,
@@ -125,6 +127,9 @@ export class AcpSessionBridge {
     private nextCursorExtensionRequestId = 0;
     private askQuestionWaiters = new Map<string, (result: Record<string, unknown>) => void>();
     private createPlanWaiters = new Map<string, (result: Record<string, unknown>) => void>();
+    private pendingCreatePlans = new Map<string, AcceptedPlan>();
+    /** Set when the user accepts a plan. The next completed turn implements it in agent mode. */
+    private planToImplement: AcceptedPlan | undefined;
 
     constructor(
         private readonly config: AcpAgentSpawnConfig,
@@ -256,6 +261,7 @@ export class AcpSessionBridge {
             this.permissionWaiters.delete(match.requestId);
             this.pendingPermissionRequests.delete(match.requestId);
             resolve?.(match.outcome);
+            this.postToWebview({ type: "permissionSettled", requestId: match.requestId });
         }
     }
 
@@ -300,6 +306,11 @@ export class AcpSessionBridge {
             return;
         }
         this.createPlanWaiters.delete(message.requestId);
+        const plan = this.pendingCreatePlans.get(message.requestId);
+        this.pendingCreatePlans.delete(message.requestId);
+        if (message.outcome.outcome === "accepted" && plan !== undefined) {
+            this.planToImplement = plan;
+        }
         resolve({ outcome: message.outcome });
     }
 
@@ -320,6 +331,8 @@ export class AcpSessionBridge {
             resolve({ outcome: { outcome: "cancelled" } });
         }
         this.createPlanWaiters.clear();
+        this.pendingCreatePlans.clear();
+        this.planToImplement = undefined;
     }
 
     private nextCursorRequestId(prefix: string): string {
@@ -431,6 +444,12 @@ export class AcpSessionBridge {
                       })
                       .filter((todo): todo is NonNullable<typeof todo> => todo !== null)
                 : [];
+            this.pendingCreatePlans.set(requestId, {
+                plan,
+                ...(typeof params.name === "string" && params.name.trim().length > 0
+                    ? { name: params.name.trim() }
+                    : {}),
+            });
             this.postToWebview({
                 type: "cursorCreatePlanRequest",
                 requestId,
@@ -896,6 +915,13 @@ export class AcpSessionBridge {
         this.prompting = true;
         try {
             const result = await this.agentProcess.prompt(this.acpSessionId, text, images);
+            const followUp = result.stopReason === "cancelled" ? undefined : this.planToImplement;
+            this.planToImplement = undefined;
+            if (followUp !== undefined) {
+                await this.switchSessionToAgentMode();
+                await this.prompt(implementPlanPrompt(followUp));
+                return;
+            }
             const reportedTokens = promptTurnTokenCount(result.usage);
             const inferredSize = this.contextWindowKnown
                 ? null
@@ -928,8 +954,21 @@ export class AcpSessionBridge {
         }
     }
 
+    /** Moves a plan-mode session to the agent mode that can edit and run tools. */
+    private async switchSessionToAgentMode(): Promise<void> {
+        const mode = modeConfigOption(this.lastConfigOptions);
+        const value = agentModeConfigValue(
+            mode?.options.map((option) => option.value) ?? ["agent"],
+        );
+        if (mode !== undefined && mode.currentValue === value) {
+            return;
+        }
+        await this.setSessionConfigOption(mode?.configId ?? "mode", value);
+    }
+
     /** Cancels the current prompt turn, if one is in progress. */
     async cancel(): Promise<void> {
+        this.planToImplement = undefined;
         this.cancelPendingPermissions();
         this.cancelPendingExtensionRequests();
         if (!this.prompting || !this.acpSessionId) {

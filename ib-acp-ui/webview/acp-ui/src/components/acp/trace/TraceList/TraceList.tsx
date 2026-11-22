@@ -95,6 +95,16 @@ function traceRow(start: number, end: number, child: ReactElement): ReactElement
   );
 }
 
+const TRACE_LIST_LEADING_GAP_CLASS = "trace-list-leading-gap";
+
+function withLeadingGap(row: ReactElement): ReactElement {
+  return (
+    <div key={row.key ?? undefined} className={TRACE_LIST_LEADING_GAP_CLASS}>
+      {row}
+    </div>
+  );
+}
+
 function thoughtIndexes(items: readonly TraceItem[]): number[] {
   const indexes: number[] = [];
   for (let index = 0; index < items.length; index++) {
@@ -452,13 +462,18 @@ export const TraceList = memo(function TraceList({
   );
   const rows: ReactElement[] = [];
   let segmentIndex = 0;
+  let isFirstVisibleRow = true;
+  const pushRow = (row: ReactElement | null): void => {
+    if (row === null) {
+      return;
+    }
+    rows.push(isFirstVisibleRow ? withLeadingGap(row) : row);
+    isFirstVisibleRow = false;
+  };
   while (segmentIndex < segments.length) {
     const range = groupByStart.get(segmentIndex);
     if (range === undefined) {
-      const row = renderSegment(segments[segmentIndex]!);
-      if (row !== null) {
-        rows.push(row);
-      }
+      pushRow(renderSegment(segments[segmentIndex]!));
       segmentIndex += 1;
       continue;
     }
@@ -469,7 +484,7 @@ export const TraceList = memo(function TraceList({
         children.push(row);
       }
     }
-    rows.push(
+    pushRow(
       <div key={`activity-${range.start}`} className="trace-activity-group">
         {children}
       </div>,

@@ -1,4 +1,5 @@
 import type * as acp from "@agentclientprotocol/sdk";
+import { resolveToolCallKind } from "../session/permissionMemory";
 import { extractShellCommandLine } from "./shellCommandLine";
 import { maxToolImageDataChars } from "../../platform/imageFilePath";
 import type {
@@ -275,11 +276,13 @@ export function extensionMessagesForPermissionRequest(
         parts.diffRows !== undefined && parts.diffRows.length > 0
             ? previewDiffRows(windowToolCallDiffRows(parts.diffRows), 12)
             : [];
+    const toolKind = resolveToolCallKind(toolCall);
     const messages: ExtensionToWebviewMessage[] = [
         {
             type: "permissionRequest",
             requestId,
             toolTitle: permissionToolTitle(toolCall),
+            ...(toolKind !== undefined ? { toolKind } : {}),
             ...(subtitle !== undefined ? { detail: subtitle } : {}),
             ...(summary !== undefined ? { summary } : {}),
             ...(previewRows.length > 0 ? { diffRows: previewRows } : {}),

@@ -1,3 +1,7 @@
+.trace-list-leading-gap {
+  padding-top: var(--acp-ui-space-16);
+}
+
 .user-prompt-bar {
   flex-shrink: 0;
   padding: var(--acp-ui-space-8) var(--acp-ui-space-12);

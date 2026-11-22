@@ -688,6 +688,60 @@ describe("chatReducer", () => {
     expect(state.historyCommit).toBe(1);
   });
 
+  it("answers a later permission of the same tool kind after Allow always", () => {
+    const searchRequest = (requestId: string, title: string): ChatAction => ({
+      type: "permissionRequest",
+      requestId,
+      toolTitle: title,
+      toolKind: "search",
+      options: [
+        { optionId: "allow-once", name: "Allow once" },
+        { optionId: "allow-always", name: "Allow always" },
+      ],
+    });
+    let state = chatReducer(createInitialChatState(), searchRequest("p1", "Web search: one"));
+    expect(state.permissionPrompt?.requestId).toBe("p1");
+    expect(state.permissionPrompt?.toolKind).toBe("search");
+
+    state = chatReducer(state, {
+      type: "answerPermission",
+      optionId: "allow-always",
+      optionName: "Allow always",
+      toolKind: "search",
+    });
+    expect(state.permissionPrompt).toBeNull();
+    expect(state.allowedToolKinds).toEqual(["search"]);
+
+    state = chatReducer(state, searchRequest("p2", "Web search: two"));
+    expect(state.permissionPrompt).toBeNull();
+    expect(state.autoPermissionResponse).toEqual({
+      requestId: "p2",
+      selectedOptionId: "allow-always",
+    });
+  });
+
+  it("drops a permission dialog the host already answered", () => {
+    let state = chatReducer(createInitialChatState(), {
+      type: "permissionRequest",
+      requestId: "p1",
+      toolTitle: "Web search: one",
+      toolKind: "search",
+      options: [{ optionId: "allow-always", name: "Allow always" }],
+    });
+    state = chatReducer(state, { type: "permissionSettled", requestId: "p1" });
+    expect(state.permissionPrompt).toBeNull();
+
+    state = chatReducer(state, {
+      type: "permissionRequest",
+      requestId: "p1",
+      toolTitle: "Web search: one",
+      toolKind: "search",
+      options: [{ optionId: "allow-always", name: "Allow always" }],
+    });
+    expect(state.permissionPrompt).toBeNull();
+    expect(state.autoPermissionResponse).toBeNull();
+  });
+
   it("keeps the saved thought duration when replay measures a shorter clock", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));

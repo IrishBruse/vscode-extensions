@@ -95,10 +95,17 @@ export type AcpAgentSelectionState = {
 export type PermissionPromptState = {
   requestId: string;
   toolTitle: string;
+  /** Tool kind for Allow always and Reject always. */
+  toolKind?: string;
   detail?: string;
   summary?: string;
   diffRows?: ToolCallDiffRow[];
   options: { optionId: string; name: string }[];
+};
+
+export type AutoPermissionResponse = {
+  requestId: string;
+  selectedOptionId: string;
 };
 
 export type AskQuestionPromptState = Extract<
@@ -153,6 +160,14 @@ export type ChatState = {
   sessionTitle: string;
   slashCommands: AcpUiSlashCommand[];
   permissionPrompt: PermissionPromptState | null;
+  /** Tool kinds the user allowed for the rest of this chat. */
+  allowedToolKinds: string[];
+  /** Tool kinds the user rejected for the rest of this chat. */
+  rejectedToolKinds: string[];
+  /** Permission request ids the host or the chat already answered. */
+  settledPermissionRequestIds: string[];
+  /** A remembered Allow always or Reject always answer waiting to be sent. */
+  autoPermissionResponse: AutoPermissionResponse | null;
   askQuestionPrompt: AskQuestionPromptState | null;
   createPlanPrompt: CreatePlanPromptState | null;
   /**
@@ -191,6 +206,13 @@ export type ChatAction =
       value: string | boolean;
     }
   | { type: "clearPermissionPrompt" }
+  | { type: "clearAutoPermission" }
+  | {
+      type: "answerPermission";
+      optionId: string;
+      optionName: string;
+      toolKind?: string;
+    }
   | { type: "clearAskQuestionPrompt" }
   | { type: "clearCreatePlanPrompt" }
   | { type: "stopTurn" };
@@ -294,6 +316,10 @@ export function createInitialChatState(): ChatState {
     sessionTitle: "",
     slashCommands: [],
     permissionPrompt: null,
+    allowedToolKinds: [],
+    rejectedToolKinds: [],
+    settledPermissionRequestIds: [],
+    autoPermissionResponse: null,
     askQuestionPrompt: null,
     createPlanPrompt: null,
     lockSessionAgent: false,
@@ -1383,6 +1409,90 @@ function attachToolImage(state: ChatState, toolCallId: string, image: AcpUiPromp
   return withLateToolImage({ ...state, trace }, true);
 }
 
+const maxSettledPermissionIds = 40;
+
+function stickyPermissionDecision(optionId: string, name: string): "allow" | "reject" | undefined {
+  const id = optionId.trim().toLowerCase();
+  const label = name.trim().toLowerCase();
+  if ((id.includes("allow") && id.includes("always")) || label === "allow always") {
+    return "allow";
+  }
+  if ((id.includes("reject") && id.includes("always")) || label === "reject always") {
+    return "reject";
+  }
+  return undefined;
+}
+
+function permissionPromptKind(action: {
+  toolKind?: string;
+  toolTitle: string;
+}): string | undefined {
+  const kind = action.toolKind?.trim().toLowerCase();
+  if (kind !== undefined && kind.length > 0) {
+    return kind;
+  }
+  const title = action.toolTitle.trim().toLowerCase();
+  if (/^web search\b/.test(title)) {
+    return "search";
+  }
+  if (/^fetch\b/.test(title)) {
+    return "fetch";
+  }
+  if (/^delete\b/.test(title)) {
+    return "delete";
+  }
+  return undefined;
+}
+
+function optionForRememberedDecision(
+  options: { optionId: string; name: string }[],
+  decision: "allow" | "reject",
+): { optionId: string; name: string } | undefined {
+  return options.find(
+    (option) => stickyPermissionDecision(option.optionId, option.name) === decision,
+  );
+}
+
+function withRememberedToolKind(
+  state: ChatState,
+  toolKind: string | undefined,
+  decision: "allow" | "reject" | undefined,
+): Pick<ChatState, "allowedToolKinds" | "rejectedToolKinds"> {
+  if (toolKind === undefined || decision === undefined) {
+    return {
+      allowedToolKinds: state.allowedToolKinds,
+      rejectedToolKinds: state.rejectedToolKinds,
+    };
+  }
+  if (decision === "allow") {
+    return {
+      allowedToolKinds: [...state.allowedToolKinds.filter((kind) => kind !== toolKind), toolKind],
+      rejectedToolKinds: state.rejectedToolKinds.filter((kind) => kind !== toolKind),
+    };
+  }
+  return {
+    rejectedToolKinds: [...state.rejectedToolKinds.filter((kind) => kind !== toolKind), toolKind],
+    allowedToolKinds: state.allowedToolKinds.filter((kind) => kind !== toolKind),
+  };
+}
+
+function withSettledPermission(state: ChatState, requestId: string): ChatState {
+  const ids = [
+    ...state.settledPermissionRequestIds.filter((id) => id !== requestId),
+    requestId,
+  ];
+  const settledPermissionRequestIds =
+    ids.length > maxSettledPermissionIds
+      ? ids.slice(ids.length - maxSettledPermissionIds)
+      : ids;
+  return {
+    ...state,
+    settledPermissionRequestIds,
+    permissionPrompt:
+      state.permissionPrompt?.requestId === requestId ? null : state.permissionPrompt,
+  };
+}
+
 /**
  * Applies extension protocol messages and local submit actions to chat UI state.
  */
@@ -1401,6 +1511,10 @@ function applySessionReset(state: ChatState): ChatState {
     errorText: null,
     agentConnected: false,
     permissionPrompt: null,
+    allowedToolKinds: [],
+    rejectedToolKinds: [],
+    settledPermissionRequestIds: [],
+    autoPermissionResponse: null,
     askQuestionPrompt: null,
     createPlanPrompt: null,
     sessionConfigOptions: null,
@@ -2104,6 +2218,17 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   if (action.type === "clearPermissionPrompt") {
     return { ...state, permissionPrompt: null };
   }
+  if (action.type === "clearAutoPermission") {
+    return { ...state, autoPermissionResponse: null };
+  }
+  if (action.type === "answerPermission") {
+    const decision = stickyPermissionDecision(action.optionId, action.optionName);
+    return {
+      ...state,
+      permissionPrompt: null,
+      ...withRememberedToolKind(state, action.toolKind, decision),
+    };
+  }
   if (action.type === "clearAskQuestionPrompt") {
     return { ...state, askQuestionPrompt: null };
   }
@@ -2283,18 +2408,45 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           size: action.size !== undefined ? action.size : (state.tokenUsage?.size ?? null),
         },
       };
-    case "permissionRequest":
+    case "permissionRequest": {
+      if (state.settledPermissionRequestIds.includes(action.requestId)) {
+        return state;
+      }
+      const toolKind = permissionPromptKind(action);
+      const remembered =
+        toolKind !== undefined && state.allowedToolKinds.includes(toolKind)
+          ? "allow"
+          : toolKind !== undefined && state.rejectedToolKinds.includes(toolKind)
+            ? "reject"
+            : undefined;
+      const rememberedOption =
+        remembered === undefined
+          ? undefined
+          : optionForRememberedDecision(action.options, remembered);
+      if (rememberedOption !== undefined) {
+        return {
+          ...withSettledPermission(state, action.requestId),
+          autoPermissionResponse: {
+            requestId: action.requestId,
+            selectedOptionId: rememberedOption.optionId,
+          },
+        };
+      }
       return {
         ...state,
         permissionPrompt: {
           requestId: action.requestId,
           toolTitle: action.toolTitle,
+          ...(toolKind !== undefined ? { toolKind } : {}),
           ...(action.detail !== undefined ? { detail: action.detail } : {}),
           ...(action.summary !== undefined ? { summary: action.summary } : {}),
           ...(action.diffRows !== undefined ? { diffRows: action.diffRows } : {}),
           options: action.options,
         },
       };
+    }
+    case "permissionSettled":
+      return withSettledPermission(state, action.requestId);
     case "cursorAskQuestionRequest":
       return { ...state, askQuestionPrompt: action };
     case "cursorCreatePlanRequest":

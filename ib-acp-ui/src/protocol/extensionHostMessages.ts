@@ -274,6 +274,8 @@ export type ExtensionToWebviewMessage =
           type: "permissionRequest";
           requestId: string;
           toolTitle: string;
+          /** Tool kind used to remember Allow always and Reject always. */
+          toolKind?: string;
           /** File path, command, or other target for this request. */
           detail?: string;
           /** Short description of the change, such as line counts. */
@@ -281,6 +283,11 @@ export type ExtensionToWebviewMessage =
           /** Short diff preview when the agent included the change. */
           diffRows?: ToolCallDiffRow[];
           options: { optionId: string; name: string }[];
+      }
+    | {
+          /** The host already answered this permission. Drop a dialog for the same id. */
+          type: "permissionSettled";
+          requestId: string;
       }
     | {
           type: "cursorAskQuestionRequest";

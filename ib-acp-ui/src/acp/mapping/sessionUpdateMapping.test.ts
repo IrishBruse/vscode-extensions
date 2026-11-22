@@ -473,6 +473,7 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages[0]).toMatchObject({
             type: "permissionRequest",
             toolTitle: title,
+            toolKind: "edit",
         });
     });
 

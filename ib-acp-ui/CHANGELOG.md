@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Accepting a Cursor plan switches the chat to agent mode and continues with the implementation.
+- **Fix**: The first message in the chat transcript no longer sits flush against the top of the panel.
 - **Add**: ACP `terminal/*` client methods run commands in a VS Code terminal and stream captured output back to the agent; `initialize` advertises `terminal: true` and `_meta.terminal_output`.
 - **Fix**: Cursor tasks no longer leave duplicate running Subagent rows when `cursor/task` `agentId` differs from `subagent_spawned` `subagentSessionId`.
 - **Fix**: Prune placeholder Subagent rows once the linked task card owns that child session.
@@ -36,6 +38,7 @@ Update any bullet that does not follow this form.
 - **Change**: Context usage sits beside the model picker and infers the window when Cursor omits ACP `usage_update`.
 - **Change**: Chat and Debug use a segmented control with a filled active segment instead of separate bordered pills.
 - **Fix**: Allow always is remembered per tool kind when the agent omits `kind` on the permission request or on the option.
+- **Fix**: Allow always answers a later request of the same tool kind without showing the dialog again, including a dialog that was already on screen.
 - **Change**: Chat and Debug sit in the bottom-right of the transcript, and Back for a subagent or task sits in the top-left.
 - **Fix**: Antigravity bash tools show the command line instead of raw JSON in the trace.
 - **Change**: Queued messages show small image thumbnails beside the text.

@@ -17,16 +17,19 @@ Cursor streams that child only after `initialize` includes `_meta.subagents`.
 Basic `cursor/create_plan` dialogs already work.
 The plan dialog covers the chat.
 Open plan writes that plan to `plan.md` and opens it in the editor.
+Accept switches the session to agent mode and sends a follow-up that implements the plan.
+Reject and Cancel leave the session in the current mode.
 
 Planned: richer UI for the remaining Cursor extension methods.
 Goals include phased plan dialogs, a dedicated todo panel, and inline generated images.
 
 ## Implementation
 
-[handleExtensionMethod](../../../src/acp/session/acpSessionBridge.ts#L264-L387) routes `cursor/*` ext methods.
+[handleExtensionMethod](../../../src/acp/session/acpSessionBridge.ts#L343-L471) routes `cursor/*` ext methods.
 [CursorAskQuestionDialog](../../../webview/acp-ui/src/components/acp/dialogs/CursorAskQuestionDialog/CursorAskQuestionDialog.tsx) handles ask-question flows.
 [CursorCreatePlanDialog](../../../webview/acp-ui/src/components/acp/dialogs/CursorCreatePlanDialog/CursorCreatePlanDialog.tsx#L7-L56) covers the chat and keeps Open plan at the bottom left.
 [openPlanMarkdownInEditor](../../../src/platform/openPlanMarkdown.ts#L17-L34) writes that plan to `plan.md` and opens it in the editor.
+[implementPlanPrompt](../../../src/acp/session/implementPlan.ts#L23-L35) is the follow-up sent after Accept, once the session mode is agent.
 
 [taskToolFieldsFromRaw](../../../src/acp/mapping/taskToolPresentation.ts#L34-L63) reads a Cursor task `rawInput` (`_toolName: "task"`, prompt, description, subagent type).
 [sessionUpdateToWebviewMessages](../../../src/acp/mapping/sessionUpdateMapping.ts#L1085-L1119) stores the subagent type as the subtitle and the prompt as the tool content.
