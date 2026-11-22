@@ -12,6 +12,10 @@ import type { AcpHostFilesystem } from "../ports/hostFilesystem";
 import type { AcpHostTerminal } from "../ports/hostTerminal";
 import type { AcpRpcNdjsonDirection, AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
 import type { AcpUiPromptImage } from "../../protocol/extensionHostMessages";
+import {
+    type CursorChildSessionNotification,
+    cursorChildSessionNotificationFromLine,
+} from "../mapping/sessionUpdateMapping";
 import type { AgentProcessExitDetails } from "../session/agentDisconnect";
 
 /** Node `fs` and VS Code `FileSystemError` both use distinct codes for a missing path. */
@@ -26,12 +30,26 @@ function isFileNotFoundError(error: unknown): boolean {
 /**
  * Passes bytes through while appending each complete NDJSON line to the configured sink.
  */
-function createNdjsonRpcLogTap(
-    sink: AcpRpcNdjsonSink,
-    direction: AcpRpcNdjsonDirection,
-    agentName: string,
+function createNdjsonLineTap(
+    onLine: (line: string) => void,
+    log?: {
+        sink: AcpRpcNdjsonSink;
+        direction: AcpRpcNdjsonDirection;
+        agentName: string;
+    },
 ): Transform {
     let buffer = "";
+    const take = (line: string): void => {
+        const trimmed = line.trim();
+        if (trimmed.length === 0) {
+            return;
+        }
+        onLine(trimmed);
+        log?.sink.appendRawNdjsonLine(trimmed, {
+            direction: log.direction,
+            agentName: log.agentName,
+        });
+    };
     return new Transform({
         transform(chunk: Buffer, chunkEncoding: BufferEncoding, callback): void {
             void chunkEncoding;
@@ -39,21 +57,12 @@ function createNdjsonRpcLogTap(
             const parts = buffer.split("\n");
             buffer = parts.pop() ?? "";
             for (const part of parts) {
-                const trimmed = part.trim();
-                if (trimmed.length > 0) {
-                    sink.appendRawNdjsonLine(trimmed, {
-                        direction,
-                        agentName,
-                    });
-                }
+                take(part);
             }
             callback(null, chunk);
         },
         flush(callback): void {
-            const trimmed = buffer.trim();
-            if (trimmed.length > 0) {
-                sink.appendRawNdjsonLine(trimmed, { direction, agentName });
-            }
+            take(buffer);
             buffer = "";
             callback();
         },
@@ -64,20 +73,29 @@ function ndJsonStreamTapsForChild(
     child: ChildProcess,
     rpcNdjsonSink: AcpRpcNdjsonSink,
     agentName: string,
+    onAgentLine: (line: string) => void,
 ): {
     stdinWeb: WritableStream;
     stdoutWeb: ReadableStream<Uint8Array>;
 } {
-    if (!rpcNdjsonSink.isLoggingEnabled) {
+    const logging = rpcNdjsonSink.isLoggingEnabled;
+    const fromAgent = createNdjsonLineTap(
+        onAgentLine,
+        logging ? { sink: rpcNdjsonSink, direction: "fromAgent", agentName } : undefined,
+    );
+    child.stdout!.pipe(fromAgent);
+    if (!logging) {
         return {
             stdinWeb: Writable.toWeb(child.stdin!),
-            stdoutWeb: Readable.toWeb(child.stdout!) as ReadableStream<Uint8Array>,
+            stdoutWeb: Readable.toWeb(fromAgent) as ReadableStream<Uint8Array>,
         };
     }
-    const towardAgent = createNdjsonRpcLogTap(rpcNdjsonSink, "toAgent", agentName);
-    const fromAgent = createNdjsonRpcLogTap(rpcNdjsonSink, "fromAgent", agentName);
+    const towardAgent = createNdjsonLineTap(() => {}, {
+        sink: rpcNdjsonSink,
+        direction: "toAgent",
+        agentName,
+    });
     towardAgent.pipe(child.stdin!);
-    child.stdout!.pipe(fromAgent);
     return {
         stdinWeb: Writable.toWeb(towardAgent),
         stdoutWeb: Readable.toWeb(fromAgent) as ReadableStream<Uint8Array>,
@@ -212,6 +230,9 @@ export class AcpAgentProcess {
     private connection: acp.ClientSideConnection | null = null;
     private initResponse: acp.InitializeResponse | null = null;
     private sessionUpdateHandler: SessionUpdateHandler | null = null;
+    private cursorChildSessionHandler: ((params: CursorChildSessionNotification) => void) | null =
+        null;
+    private pendingCursorChildSessions: CursorChildSessionNotification[] = [];
     private processExited = false;
     private stderrTail = "";
 
@@ -220,6 +241,32 @@ export class AcpAgentProcess {
     /** Registers a handler that receives every `session/update` notification. */
     onSessionUpdate(handler: SessionUpdateHandler): void {
         this.sessionUpdateHandler = handler;
+    }
+
+    /**
+     * Cursor child-session notices that the ACP v1 schema drops.
+     * The handler receives each `subagent_spawned` and `subagent_state_update`.
+     */
+    onCursorChildSession(handler: (params: CursorChildSessionNotification) => void): void {
+        this.cursorChildSessionHandler = handler;
+        const pending = this.pendingCursorChildSessions;
+        this.pendingCursorChildSessions = [];
+        for (const notice of pending) {
+            handler(notice);
+        }
+    }
+
+    private noteAgentStdoutLine(line: string): void {
+        const notice = cursorChildSessionNotificationFromLine(line);
+        if (notice === undefined) {
+            return;
+        }
+        const handler = this.cursorChildSessionHandler;
+        if (handler === null) {
+            this.pendingCursorChildSessions.push(notice);
+            return;
+        }
+        handler(notice);
     }
 
     /** False after the subprocess exits or is disposed. */
@@ -296,6 +343,7 @@ export class AcpAgentProcess {
             this.child,
             this.options.rpcNdjsonSink,
             this.options.config.name,
+            (line) => this.noteAgentStdoutLine(line),
         );
         const stream = acp.ndJsonStream(stdinWeb, stdoutWeb);
 

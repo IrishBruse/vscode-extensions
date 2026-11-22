@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { cursorSubagentUpdateMessage } from "../../../src/acp/mapping/sessionUpdateMapping";
+import {
+  cursorChildSessionNotificationFromLine,
+  cursorSubagentUpdateMessage,
+} from "../../../src/acp/mapping/sessionUpdateMapping";
 import { canonicalToolCallId } from "../../../src/acp/mapping/canonicalToolCallId";
 import {
   type ChatAction,
@@ -1721,6 +1724,78 @@ describe("chatReducer", () => {
     expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
       title: "Task: Map return root cause",
       status: "in_progress",
+    });
+  });
+
+  it("shows one openable task card for a Cursor child session", () => {
+    const tool =
+      "call-d2f4206e-da79-4b84-9e49-75cc1a738982-94\nfc_8427ff20-9572-4d84-a243-78b827807b83_2";
+    const sid = "0ec8e1e2-3379-40bc-8507-171683fa821b";
+    const toolCallId = canonicalToolCallId(tool);
+    const spawnLine = JSON.stringify({
+      jsonrpc: "2.0",
+      method: "session/update",
+      params: {
+        sessionId: "parent",
+        update: {
+          sessionUpdate: "subagent_spawned",
+          subagentSessionId: sid,
+          name: "generalPurpose",
+          task: "Map castle cannon crash",
+          _meta: { cursor: { toolCallId: tool, agentId: sid } },
+        },
+      },
+    });
+    const doneLine = JSON.stringify({
+      jsonrpc: "2.0",
+      method: "session/update",
+      params: {
+        sessionId: "parent",
+        update: {
+          sessionUpdate: "subagent_state_update",
+          subagentSessionId: sid,
+          state: "completed",
+          _meta: { cursor: { toolCallId: tool, agentId: sid } },
+        },
+      },
+    });
+    let state = chatReducer(createInitialChatState(), {
+      type: "appendToolCall",
+      toolCallId,
+      title: "Task: Map castle cannon crash",
+      kind: "other",
+      status: "pending",
+      content: "Map the crash",
+    });
+    state = chatReducer(state, {
+      type: "subagentActivity",
+      sessionId: sid,
+      event: { type: "appendAgentText", text: "Looking at the cannon" },
+    });
+    const spawned = cursorSubagentUpdateMessage(
+      cursorChildSessionNotificationFromLine(spawnLine)?.update,
+    );
+    expect(spawned?.type).toBe("subagentUpdate");
+    if (spawned?.type !== "subagentUpdate") {
+      return;
+    }
+    state = chatReducer(state, spawned);
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    expect(state.trace.filter((item) => item.type === "tool")).toHaveLength(1);
+    expect(state.subagentActivity.get(sid)?.trace).toEqual([
+      { type: "agent", text: "Looking at the cannon" },
+    ]);
+    const completed = cursorSubagentUpdateMessage(
+      cursorChildSessionNotificationFromLine(doneLine)?.update,
+    );
+    if (completed?.type !== "subagentUpdate") {
+      throw new Error("missing completion");
+    }
+    state = chatReducer(state, completed);
+    expect(state.trace.filter((item) => item.type === "subagent")).toHaveLength(0);
+    expect(state.trace.find((item) => item.type === "tool")).toMatchObject({
+      toolCallId,
+      status: "completed",
     });
   });
 

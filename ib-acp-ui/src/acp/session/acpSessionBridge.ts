@@ -11,9 +11,11 @@ import { AcpAgentProcess } from "../infrastructure/acpAgentProcess";
 import { imagePreviewTargetFromMessage } from "../mapping/imageToolPreview";
 import { canonicalToolCallId } from "../mapping/canonicalToolCallId";
 import {
+    type CursorChildSessionNotification,
     createToolCallKindTracking,
     extensionMessagesForPermissionRequest,
     isSubagentActivityMessage,
+    messagesForCursorChildSession,
     messagesForSessionNotification,
     type ToolCallKindTracking,
 } from "../mapping/sessionUpdateMapping";
@@ -151,6 +153,7 @@ export class AcpSessionBridge {
             onProcessExit: (details) => this.handleAgentProcessExit(details),
         });
         this.agentProcess.onSessionUpdate((params) => this.handleSessionUpdate(params));
+        this.agentProcess.onCursorChildSession((params) => this.handleCursorChildSession(params));
     }
 
     /** Whether the underlying ACP agent subprocess is still running. */
@@ -1077,6 +1080,13 @@ export class AcpSessionBridge {
         const created = createToolCallKindTracking();
         this.childToolCallKindTracking.set(sessionId, created);
         return created;
+    }
+
+    /** Cursor child sessions the ACP v1 schema drops. One child stays on its task card. */
+    private handleCursorChildSession(params: CursorChildSessionNotification): void {
+        for (const message of messagesForCursorChildSession(params, this.acpSessionId)) {
+            this.postToWebview(message);
+        }
     }
 
     private handleSessionUpdate(params: acp.SessionNotification): void {

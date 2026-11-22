@@ -3,6 +3,8 @@
 ## User facing
 
 A subagent shows as one card.
+The task row and the child session are that same card.
+Opening the card shows that subagent.
 The card shows the status, the short description, and the subagent type.
 A background subagent stays Running until it finishes.
 A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.

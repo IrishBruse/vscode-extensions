@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { canonicalToolCallId } from "./canonicalToolCallId";
 import {
     createToolCallKindTracking,
+    cursorChildSessionNotificationFromLine,
     cursorSubagentUpdateMessage,
     extensionMessagesForPermissionRequest,
     messagesForSessionNotification,
@@ -515,6 +516,37 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(update.subtitle).toBe("docs/test.md");
         expect(update.diffRows).toBeDefined();
         expect(update.diffRows!.length).toBeGreaterThan(0);
+    });
+});
+
+describe("cursorChildSessionNotificationFromLine", () => {
+    it("reads the child session and the task tool from a raw session update", () => {
+        const tool = "call-task-94\nfc_extra";
+        const line = JSON.stringify({
+            jsonrpc: "2.0",
+            method: "session/update",
+            params: {
+                sessionId: "parent",
+                update: {
+                    sessionUpdate: "subagent_spawned",
+                    subagentSessionId: "child-1",
+                    name: "generalPurpose",
+                    task: "Map the crash",
+                    _meta: { cursor: { toolCallId: tool, agentId: "child-1" } },
+                },
+            },
+        });
+        const notice = cursorChildSessionNotificationFromLine(line);
+        expect(notice?.sessionId).toBe("parent");
+        expect(cursorSubagentUpdateMessage(notice?.update)).toMatchObject({
+            type: "subagentUpdate",
+            sessionId: "child-1",
+            toolCallId: tool,
+            state: "running",
+        });
+        expect(
+            cursorChildSessionNotificationFromLine('{"method":"session/update"}'),
+        ).toBeUndefined();
     });
 });
 

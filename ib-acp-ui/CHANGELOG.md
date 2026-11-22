@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: Each Cursor subagent is one card, and opening that card shows that subagent.
 - **Fix**: Accepting a Cursor plan switches the chat to agent mode and continues with the implementation.
 - **Fix**: The first message in the chat transcript no longer sits flush against the top of the panel.
 - **Add**: ACP `terminal/*` client methods run commands in a VS Code terminal and stream captured output back to the agent; `initialize` advertises `terminal: true` and `_meta.terminal_output`.

@@ -1418,6 +1418,79 @@ export function subagentUpdateMessage(update: acp.SubagentUpdate): ExtensionToWe
     };
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Cursor child-session notice the ACP v1 schema does not accept. */
+export type CursorChildSessionNotification = {
+    sessionId: string;
+    update: {
+        sessionUpdate: "subagent_spawned" | "subagent_state_update";
+        subagentSessionId: string;
+        name?: string;
+        task?: string;
+        state?: string;
+        _meta?: Record<string, unknown>;
+    };
+};
+
+/**
+ * Reads a Cursor `subagent_spawned` or `subagent_state_update` from one agent stdout line.
+ * The ACP v1 client schema rejects these notices, so the raw line is the source.
+ */
+export function cursorChildSessionNotificationFromLine(
+    line: string,
+): CursorChildSessionNotification | undefined {
+    if (!line.includes("subagent_")) {
+        return undefined;
+    }
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(line);
+    } catch {
+        return undefined;
+    }
+    if (
+        !isPlainRecord(parsed) ||
+        parsed.method !== "session/update" ||
+        !isPlainRecord(parsed.params)
+    ) {
+        return undefined;
+    }
+    const params = parsed.params;
+    const update = params.update;
+    if (
+        typeof params.sessionId !== "string" ||
+        params.sessionId.length === 0 ||
+        !isPlainRecord(update)
+    ) {
+        return undefined;
+    }
+    const kind = update.sessionUpdate;
+    if (kind !== "subagent_spawned" && kind !== "subagent_state_update") {
+        return undefined;
+    }
+    if (typeof update.subagentSessionId !== "string" || update.subagentSessionId.length === 0) {
+        return undefined;
+    }
+    const name = typeof update.name === "string" ? update.name : undefined;
+    const task = typeof update.task === "string" ? update.task : undefined;
+    const state = typeof update.state === "string" ? update.state : undefined;
+    const meta = isPlainRecord(update._meta) ? update._meta : undefined;
+    return {
+        sessionId: params.sessionId,
+        update: {
+            sessionUpdate: kind,
+            subagentSessionId: update.subagentSessionId,
+            ...(name !== undefined ? { name } : {}),
+            ...(task !== undefined ? { task } : {}),
+            ...(state !== undefined ? { state } : {}),
+            ...(meta !== undefined ? { _meta: meta } : {}),
+        },
+    };
+}
+
 function cursorMetaToolCallId(update: object): string | undefined {
     const meta = "_meta" in update ? update._meta : undefined;
     if (meta === null || typeof meta !== "object" || Array.isArray(meta)) {
@@ -1436,14 +1509,12 @@ function cursorMetaToolCallId(update: object): string | undefined {
  * `disconnected` means the subagent is still running in the background.
  */
 export function cursorSubagentUpdateMessage(
-    update: acp.SessionUpdate,
+    update: unknown,
 ): ExtensionToWebviewMessage | undefined {
-    const raw = update as acp.SessionUpdate & {
-        subagentSessionId?: unknown;
-        name?: unknown;
-        task?: unknown;
-        state?: unknown;
-    };
+    if (!isPlainRecord(update)) {
+        return undefined;
+    }
+    const raw = update;
     const kind = String(raw.sessionUpdate);
     if (kind !== "subagent_spawned" && kind !== "subagent_state_update") {
         return undefined;
@@ -1554,6 +1625,18 @@ function childStateUpdateMessage(
         state,
         stopReason,
     };
+}
+
+/** Webview messages for a Cursor child-session notice read from the agent stdout. */
+export function messagesForCursorChildSession(
+    params: CursorChildSessionNotification,
+    rootSessionId: string | null,
+): ExtensionToWebviewMessage[] {
+    const message = cursorSubagentUpdateMessage(params.update);
+    if (message === undefined) {
+        return [];
+    }
+    return [nestUnderOuterSession(message, params.sessionId, rootSessionId)];
 }
 
 export function messagesForSessionNotification(
