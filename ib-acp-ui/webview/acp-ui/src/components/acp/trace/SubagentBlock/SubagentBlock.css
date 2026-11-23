@@ -38,8 +38,7 @@
   word-break: break-word;
 }
 
-.subagent-block-detail,
-.subagent-block-activity {
+.subagent-block-detail {
   display: block;
   margin-top: 2px;
   padding-left: 1.05rem;
@@ -49,5 +48,17 @@
 }
 
 .subagent-block-activity {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 6lh;
+  margin-top: 2px;
+  padding-left: 1.05rem;
+  overflow: hidden;
   color: var(--acp-ui-text-primary);
+}
+
+.subagent-block-activity-text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }

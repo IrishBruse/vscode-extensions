@@ -69,6 +69,8 @@ An http link opens outside the chat.
 A subagent task shows as its own card.
 The card shows the status, the short description, the subagent type, and the prompt.
 A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
+The card also shows the latest six lines of that subagent.
+The preview stays six lines tall, so the card height does not change while the text updates.
 A nested child shows inside the child that owns it.
 Open the card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, Cancelled, or Unknown.
@@ -133,7 +135,9 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   [activityGroupRanges](../../../webview/acp-ui/src/components/acp/trace/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
   [trace-activity-group](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.css#L91-L96) adds padding around that run.
 - TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
-- Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L164-L213) is the card for a Cursor task and for an ACP child session.
+- Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L180-L229) is the card for a Cursor task and for an ACP child session.
+  [activityPreview](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L37-L53) keeps the latest six lines.
+  [subagent-block-activity](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.css#L50-L59) holds that preview at `height: 6lh` and aligns the text to the bottom.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L88) skips the child row when a task card already owns that session.
   [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) shows the prompt and that subagent.
   [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx) draws Back in the top-left chrome to return to the parent.

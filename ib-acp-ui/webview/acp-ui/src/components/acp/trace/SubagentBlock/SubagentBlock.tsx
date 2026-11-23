@@ -8,32 +8,48 @@ import { SubagentRunTimer } from "./SubagentRunTimer";
 import { subagentStatusLabel, taskStatusLabel } from "./subagentStatus";
 import "./SubagentBlock.css";
 
-const activityPreviewLineCount = 3;
+const activityPreviewLineCount = 6;
+const activityPreviewCharTail = 600;
 
-function activityLine(item: TraceItem): string | undefined {
-  if (item.type === "agent" || item.type === "thought") {
-    const text = item.text.replace(/\s+/g, " ").trim();
-    if (text.length === 0) {
-      return undefined;
+function activityText(item: TraceItem): string | undefined {
+  switch (item.type) {
+    case "agent":
+    case "thought": {
+      const text = item.text.trim();
+      return text.length > 0 ? text : undefined;
     }
-    return text.length > 160 ? `${text.slice(0, 157)}...` : text;
+    case "tool": {
+      const title = item.title.trim();
+      return title.length > 0 ? title : undefined;
+    }
+    case "user":
+    case "plan":
+    case "subagent":
+      return undefined;
+    default: {
+      const _exhaustive: never = item;
+      return _exhaustive;
+    }
   }
-  if (item.type === "tool") {
-    const title = item.title.trim();
-    return title.length > 0 ? title : undefined;
-  }
-  return undefined;
 }
 
-function activityPreview(items: readonly TraceItem[]): string[] {
+/** Latest lines of a subagent transcript, capped so the card preview stays one height. */
+export function activityPreview(items: readonly TraceItem[]): string {
   const lines: string[] = [];
   for (const item of items) {
-    const line = activityLine(item);
-    if (line !== undefined) {
-      lines.push(line);
+    const text = activityText(item);
+    if (text === undefined) {
+      continue;
+    }
+    for (const rawLine of text.split("\n")) {
+      const line = rawLine.replace(/[ \t]+/g, " ").trim();
+      if (line.length > 0) {
+        lines.push(line);
+      }
     }
   }
-  return lines.slice(-activityPreviewLineCount);
+  const tail = lines.slice(-activityPreviewLineCount).join("\n");
+  return tail.length > activityPreviewCharTail ? tail.slice(tail.length - activityPreviewCharTail) : tail;
 }
 
 function StatusGlyph({ status }: { status: ToolCallStatus }): ReactElement {
@@ -178,7 +194,7 @@ export function SubagentBlock({
   if (card === undefined) {
     return null;
   }
-  const lines = activityPreview(activity ?? []);
+  const preview = activityPreview(activity ?? []);
   const classNames = ["subagent-block", className].filter((part) => part !== undefined && part.length > 0);
   return (
     <button
@@ -203,11 +219,11 @@ export function SubagentBlock({
         <span className="subagent-block-title">{card.title}</span>
       </span>
       {card.detail.length > 0 ? <span className="subagent-block-detail">{card.detail}</span> : null}
-      {lines.map((line, index) => (
-        <span key={`${index}:${line}`} className="subagent-block-activity">
-          {line}
+      {preview.length > 0 ? (
+        <span className="subagent-block-activity">
+          <span className="subagent-block-activity-text">{preview}</span>
         </span>
-      ))}
+      ) : null}
     </button>
   );
 }

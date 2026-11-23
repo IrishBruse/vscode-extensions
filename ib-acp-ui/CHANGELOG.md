@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A running subagent card shows the latest six lines in a preview that keeps the same height.
 - **Change**: The ACP tab log spans the panel width and starts below the view switch.
 - **Add**: A markdown link to a subagent opens that subagent, with the target on hover and Copy link on right-click.
 - **Add**: Cursor todo updates show in the same TODO list as agent plans.
