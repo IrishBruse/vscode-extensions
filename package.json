@@ -25,19 +25,20 @@
         "release": "node dev/release.mjs"
     },
     "devDependencies": {
-        "@types/node": "^26.6.5",
-        "@types/vscode": "^1.140.0",
+        "@types/node": "^26.6.6",
+        "@types/vscode": "^1.146.0",
         "@vitest/coverage-v8": "5.1.0",
-        "@vscode/vsce": "^4.0.0",
+        "@vscode/vsce": "^4.1.1",
         "typescript": "^7.0.2",
-        "vite-plus": "1.5.0"
+        "vite-plus": "1.7.0",
+        "vitest": "5.1.0"
     },
     "overrides": {
         "@vitest/browser": "5.1.0",
         "@vitest/browser-preview": "5.1.0",
         "@vitest/coverage-v8": "5.1.0",
         "@vitest/ui": "5.1.0",
-        "vite": "npm:@voidzero-dev/vite-plus-core@1.5.0",
+        "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
         "vitest": "5.1.0"
     },
     "devEngines": {
