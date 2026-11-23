@@ -29,6 +29,8 @@ export type PlanEntry = {
     content: string;
     status: string;
     priority?: string;
+    /** Set on Cursor todo rows so a later `merge` update can match the same item. */
+    id?: string;
 };
 
 export type TodoEntry = {

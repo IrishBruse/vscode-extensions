@@ -710,6 +710,58 @@ describe("messagesForSessionNotification", () => {
         ]);
     });
 
+    it("drops an Update TODOs tool row", () => {
+        const tracking = createToolCallKindTracking();
+        expect(
+            sessionUpdateToWebviewMessages(
+                {
+                    sessionUpdate: "tool_call",
+                    toolCallId: "todo-1",
+                    title: "Update TODOs",
+                    kind: "other",
+                    status: "completed",
+                    rawInput: { _toolName: "updateTodos" },
+                },
+                tracking,
+            ),
+        ).toEqual([]);
+        expect(
+            sessionUpdateToWebviewMessages(
+                {
+                    sessionUpdate: "tool_call_update",
+                    toolCallId: "todo-1",
+                    status: "completed",
+                    rawInput: { _toolName: "updateTodos" },
+                },
+                tracking,
+            ),
+        ).toEqual([]);
+    });
+
+    it("maps updateTodos raw todos onto cursorUpdateTodos", () => {
+        expect(
+            sessionUpdateToWebviewMessages({
+                sessionUpdate: "tool_call",
+                toolCallId: "todo-2",
+                title: "Update TODOs",
+                kind: "other",
+                status: "completed",
+                rawInput: {
+                    _toolName: "updateTodos",
+                    merge: true,
+                    todos: [{ id: "a", content: "Write the list", status: "pending" }],
+                },
+            }),
+        ).toEqual([
+            {
+                type: "cursorUpdateTodos",
+                toolCallId: "todo-2",
+                merge: true,
+                todos: [{ id: "a", content: "Write the list", status: "pending" }],
+            },
+        ]);
+    });
+
     it("links a tool call to a session content block", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "tool_call_update",

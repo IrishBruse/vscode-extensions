@@ -1859,6 +1859,50 @@ describe("chatReducer", () => {
     }
   });
 
+  it("shows cursor todo updates as one TODO list", () => {
+    let state = createInitialChatState();
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "todo-1",
+      title: "Update TODOs",
+      subtitle: '{"_toolName":"updateTodos"}',
+      status: "completed",
+    });
+    expect(state.trace).toEqual([]);
+    state = chatReducer(state, {
+      type: "cursorUpdateTodos",
+      toolCallId: "todo-1",
+      merge: false,
+      todos: [
+        { id: "a", content: "Write the list", status: "pending" },
+        { id: "b", content: "Ship it", status: "pending" },
+      ],
+    });
+    state = chatReducer(state, {
+      type: "appendToolCall",
+      toolCallId: "todo-2",
+      title: "Update TODOs",
+      subtitle: '{"_toolName":"updateTodos"}',
+      status: "completed",
+    });
+    state = chatReducer(state, {
+      type: "cursorUpdateTodos",
+      toolCallId: "todo-2",
+      merge: true,
+      todos: [{ id: "a", content: "Write the list", status: "in_progress" }],
+    });
+    expect(state.trace).toEqual([
+      {
+        type: "plan",
+        cursorTodos: true,
+        entries: [
+          { id: "a", content: "Write the list", status: "in_progress" },
+          { id: "b", content: "Ship it", status: "pending" },
+        ],
+      },
+    ]);
+  });
+
   it("marks a running child unknown after the agent disconnects", () => {
     let state = createInitialChatState();
     state = chatReducer(state, {

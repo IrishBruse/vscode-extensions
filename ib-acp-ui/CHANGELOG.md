@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: Cursor todo updates show in the same TODO list as agent plans.
 - **Fix**: Each Cursor subagent is one card, and opening that card shows that subagent.
 - **Fix**: Accepting a Cursor plan switches the chat to agent mode and continues with the implementation.
 - **Fix**: The first message in the chat transcript no longer sits flush against the top of the panel.

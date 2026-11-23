@@ -15,6 +15,13 @@ import {
   canonicalToolCallId,
   resolveToolIndexByCallId,
 } from "../../../src/acp/mapping/canonicalToolCallId";
+import {
+  cursorTodoStatus,
+  cursorTodosFromRaw,
+  isCursorUpdateTodosRaw,
+  isCursorUpdateTodosTitle,
+  mergeCursorTodos,
+} from "../../../src/acp/mapping/cursorTodoPresentation";
 import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import type {
     AcpUiPromptImage,
@@ -23,6 +30,7 @@ import type {
     AcpUiSlashCommand,
     PlanEntry,
     SubagentActivityEvent,
+    TodoEntry,
     SubagentWorkState,
     ToolCallDiffRow,
     ToolCallStatus,
@@ -79,7 +87,7 @@ export type TraceItem =
   | { type: "thought"; text: string; durationMs?: number; startedAtMs?: number }
   | { type: "agent"; text: string }
   | TraceToolItem
-  | { type: "plan"; entries: PlanEntry[] }
+  | { type: "plan"; entries: PlanEntry[]; cursorTodos?: boolean }
   | SubagentTraceItem;
 
 export type SubagentActivity = {
@@ -797,6 +805,12 @@ function traceFromVisibleCache(items: readonly AcpUiVisibleTraceItem[] | undefin
   const trace: TraceItem[] = [];
   const toolIndexById = new Map<string, number>();
   for (const item of items ?? []) {
+    if (
+      item.type === "tool" &&
+      (isCursorUpdateTodosTitle(item.title) || isCursorUpdateTodosRaw(item.subtitle))
+    ) {
+      continue;
+    }
     if (item.type === "tool") {
       const hasDiff = item.diffRows !== undefined && item.diffRows.length > 0;
       const hasContent = item.content !== undefined && item.content.trim().length > 0;
@@ -1735,6 +1749,101 @@ function sessionIdsReferToSameChild(stored: string, incoming: string): boolean {
   );
 }
 
+function cursorTodosFromToolRow(
+  toolCallId: string,
+  title: string | undefined,
+  subtitle: string | undefined,
+): Extract<ChatAction, { type: "cursorUpdateTodos" }> | "drop" | undefined {
+  if (!isCursorUpdateTodosTitle(title) && !isCursorUpdateTodosRaw(subtitle)) {
+    return undefined;
+  }
+  const parsed = cursorTodosFromRaw(subtitle);
+  if (parsed !== undefined && parsed.todos.length > 0) {
+    return {
+      type: "cursorUpdateTodos",
+      toolCallId,
+      todos: parsed.todos,
+      merge: parsed.merge,
+    };
+  }
+  return "drop";
+}
+
+function isCursorUpdateTodosToolRow(item: TraceItem): boolean {
+  return (
+    item.type === "tool" &&
+    (isCursorUpdateTodosTitle(item.title) || isCursorUpdateTodosRaw(item.subtitle))
+  );
+}
+
+function cursorTodosOnPlan(item: TraceItem | undefined): TodoEntry[] {
+  if (item?.type !== "plan" || item.cursorTodos !== true) {
+    return [];
+  }
+  const todos: TodoEntry[] = [];
+  for (const entry of item.entries) {
+    const status = cursorTodoStatus(entry.status);
+    if (entry.id === undefined || entry.id.length === 0 || status === undefined) {
+      continue;
+    }
+    todos.push({ id: entry.id, content: entry.content, status });
+  }
+  return todos;
+}
+
+function applyCursorUpdateTodos(
+  state: ChatState,
+  action: Extract<ChatAction, { type: "cursorUpdateTodos" }>,
+): ChatState {
+  const base = stateAfterLeavingOpenThoughtStream(state);
+  let previous: TodoEntry[] = [];
+  for (let index = base.trace.length - 1; index >= 0; index -= 1) {
+    const item = base.trace[index];
+    if (item?.type === "plan" && item.cursorTodos === true) {
+      previous = cursorTodosOnPlan(item);
+      break;
+    }
+  }
+  const merged = mergeCursorTodos(previous, action.todos, action.merge);
+  const plan: TraceItem = {
+    type: "plan",
+    cursorTodos: true,
+    entries: merged.map((todo) => ({
+      id: todo.id,
+      content: todo.content,
+      status: todo.status,
+    })),
+  };
+  const trace: TraceItem[] = [];
+  let replaced = false;
+  for (const item of base.trace) {
+    if (isCursorUpdateTodosToolRow(item)) {
+      continue;
+    }
+    if (item.type === "plan" && item.cursorTodos === true) {
+      if (!replaced) {
+        trace.push(plan);
+        replaced = true;
+      }
+      continue;
+    }
+    trace.push(item);
+  }
+  if (!replaced) {
+    trace.push(plan);
+  }
+  const next: ChatState = {
+    ...base,
+    trace,
+    toolIndexById: reindexTools(trace),
+    openStreamIndex: null,
+  };
+  if (!base.promptInFlight) {
+    return { ...next, visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base) };
+  }
+  return next;
+}
+
 function reindexTools(trace: readonly TraceItem[]): Map<string, number> {
   const toolIndexById = new Map<string, number>();
   for (let index = 0; index < trace.length; index++) {
@@ -2364,7 +2473,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return appendUserImage(state, action.image);
     case "appendAgentThought":
       return appendAgentThought(state, action.text, action.durationMs);
-    case "appendToolCall":
+    case "appendToolCall": {
+      const todos = cursorTodosFromToolRow(action.toolCallId, action.title, action.subtitle);
+      if (todos === "drop") {
+        return state;
+      }
+      if (todos !== undefined) {
+        return applyCursorUpdateTodos(state, todos);
+      }
       return appendToolCall(
         state,
         action.toolCallId,
@@ -2377,7 +2493,20 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.cwd,
         action.image,
       );
-    case "updateToolCall":
+    }
+    case "updateToolCall": {
+      const todos = cursorTodosFromToolRow(action.toolCallId, undefined, action.subtitle);
+      if (todos === "drop") {
+        return state;
+      }
+      if (todos !== undefined) {
+        return applyCursorUpdateTodos(state, todos);
+      }
+      const existingIndex = resolveToolIndexByCallId(state.toolIndexById, action.toolCallId);
+      const existing = existingIndex === undefined ? undefined : state.trace[existingIndex];
+      if (existing !== undefined && isCursorUpdateTodosToolRow(existing)) {
+        return state;
+      }
       return updateToolCall(
         state,
         action.toolCallId,
@@ -2390,6 +2519,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         action.cwd,
         action.image,
       );
+    }
     case "toolImage":
       return attachToolImage(state, action.toolCallId, action.image);
     case "slashCommands":
@@ -2451,20 +2581,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, askQuestionPrompt: action };
     case "cursorCreatePlanRequest":
       return { ...state, createPlanPrompt: action };
-    case "cursorUpdateTodos": {
-      const base = stateAfterLeavingOpenThoughtStream(state);
-      const trace = [
-        ...base.trace,
-        {
-          type: "plan" as const,
-          entries: action.todos.map((todo) => ({
-            content: todo.content,
-            status: todo.status,
-          })),
-        },
-      ];
-      return { ...base, trace, openStreamIndex: null };
-    }
+    case "cursorUpdateTodos":
+      return applyCursorUpdateTodos(state, action);
     case "cursorTask":
       return upsertCursorTask(state, action);
     case "cursorGenerateImage": {

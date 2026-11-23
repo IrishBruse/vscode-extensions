@@ -50,7 +50,7 @@ export type AcpUiVisibleTraceItem =
           durationMs?: number;
           startedAtMs?: number;
       }
-    | { type: "plan"; entries: PlanEntry[] }
+    | { type: "plan"; entries: PlanEntry[]; cursorTodos?: boolean }
     | {
           type: "subagent";
           sessionId: string;
@@ -134,10 +134,12 @@ function parsePlanEntries(value: unknown): PlanEntry[] | undefined {
             continue;
         }
         const priority = optionalString(row.priority);
+        const id = optionalString(row.id)?.trim();
         entries.push({
             content: row.content,
             status: row.status,
             ...(priority !== undefined ? { priority } : {}),
+            ...(id !== undefined && id.length > 0 ? { id } : {}),
         });
     }
     return entries.length > 0 ? entries : undefined;
@@ -241,7 +243,11 @@ function parseVisibleTraceItem(value: unknown): AcpUiVisibleTraceItem | null {
         if (entries === undefined) {
             return null;
         }
-        return { type: "plan", entries };
+        return {
+            type: "plan",
+            entries,
+            ...(value.cursorTodos === true ? { cursorTodos: true } : {}),
+        };
     }
     if (value.type !== "tool") {
         return null;

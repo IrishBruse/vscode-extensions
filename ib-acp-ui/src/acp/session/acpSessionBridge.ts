@@ -8,6 +8,7 @@ import type {
 import type { AcpAgentSpawnConfig } from "../domain/agentSpawnConfig";
 import { resolveAuthMethodId } from "../domain/agentSpawnConfig";
 import { AcpAgentProcess } from "../infrastructure/acpAgentProcess";
+import { cursorTodosFromExtensionParams } from "../mapping/cursorTodoPresentation";
 import { imagePreviewTargetFromMessage } from "../mapping/imageToolPreview";
 import { canonicalToolCallId } from "../mapping/canonicalToolCallId";
 import {
@@ -470,7 +471,24 @@ export class AcpSessionBridge {
                 this.createPlanWaiters.set(requestId, resolve);
             });
         }
+        if (method === "cursor/update_todos") {
+            this.postCursorUpdateTodos(params);
+            return {};
+        }
         return {};
+    }
+
+    private postCursorUpdateTodos(params: Record<string, unknown>): void {
+        const parsed = cursorTodosFromExtensionParams(params);
+        if (parsed === undefined) {
+            return;
+        }
+        this.postToWebview({
+            type: "cursorUpdateTodos",
+            toolCallId: parsed.toolCallId,
+            todos: parsed.todos,
+            merge: parsed.merge,
+        });
     }
 
     private async handleExtensionNotification(
@@ -478,47 +496,7 @@ export class AcpSessionBridge {
         params: Record<string, unknown>,
     ): Promise<void> {
         if (method === "cursor/update_todos") {
-            const toolCallId =
-                typeof params.toolCallId === "string" ? params.toolCallId : "cursor-update-todos";
-            const todos = Array.isArray(params.todos)
-                ? (params.todos as unknown[])
-                      .map((todo) => {
-                          if (todo === null || typeof todo !== "object") {
-                              return null;
-                          }
-                          const record = todo as Record<string, unknown>;
-                          if (
-                              typeof record.id !== "string" ||
-                              typeof record.content !== "string" ||
-                              typeof record.status !== "string"
-                          ) {
-                              return null;
-                          }
-                          const statusRaw = record.status;
-                          if (
-                              statusRaw !== "pending" &&
-                              statusRaw !== "in_progress" &&
-                              statusRaw !== "completed" &&
-                              statusRaw !== "cancelled"
-                          ) {
-                              return null;
-                          }
-                          const status: "pending" | "in_progress" | "completed" | "cancelled" =
-                              statusRaw;
-                          return {
-                              id: record.id,
-                              content: record.content,
-                              status,
-                          };
-                      })
-                      .filter((todo): todo is NonNullable<typeof todo> => todo !== null)
-                : [];
-            this.postToWebview({
-                type: "cursorUpdateTodos",
-                toolCallId,
-                todos,
-                merge: params.merge === true,
-            });
+            this.postCursorUpdateTodos(params);
             return;
         }
         if (method === "cursor/task") {
@@ -913,7 +891,9 @@ export class AcpSessionBridge {
             });
             return;
         }
-        this.toolCallKindTracking = createToolCallKindTracking();
+        this.toolCallKindTracking = createToolCallKindTracking(
+            this.toolCallKindTracking.updateTodosToolIds,
+        );
         this.readToolCallQueue = [];
         this.prompting = true;
         try {

@@ -11,6 +11,11 @@ import type {
     ToolCallStatus,
 } from "../../protocol/extensionHostMessages";
 import { positiveDurationMs } from "../../protocol/visibleTrace";
+import {
+    cursorTodosFromRaw,
+    isCursorUpdateTodosRaw,
+    isCursorUpdateTodosTitle,
+} from "./cursorTodoPresentation";
 import { sessionConfigOptionsFromAgent } from "../session/sessionConfigOptions";
 import { normalizeSlashCommand } from "../slashCommandMetadata";
 import { canonicalToolCallId } from "./canonicalToolCallId";
@@ -578,11 +583,47 @@ export type ToolCallKindTracking = {
     kindByToolId: Map<string, string | undefined>;
     /** Cursor task tools, so a completion that only sends `rawOutput` does not replace the prompt with JSON. */
     taskByToolId: Map<string, TaskToolFields>;
+    /** Update-todos tool ids, kept across turns so a late status update does not become a tool line. */
+    updateTodosToolIds: Set<string>;
 };
 
 /** Creates a fresh map for one prompt turn (tool IDs are unique per session but clearing each turn avoids unbounded growth). */
-export function createToolCallKindTracking(): ToolCallKindTracking {
-    return { kindByToolId: new Map(), taskByToolId: new Map() };
+export function createToolCallKindTracking(updateTodosToolIds?: Set<string>): ToolCallKindTracking {
+    return {
+        kindByToolId: new Map(),
+        taskByToolId: new Map(),
+        updateTodosToolIds: updateTodosToolIds ?? new Set(),
+    };
+}
+
+/**
+ * Cursor renders update-todos as a TODO list.
+ * The tool row only carries `{ _toolName: "updateTodos" }`, so it is dropped here.
+ * Todos in `rawInput` become `cursorUpdateTodos`. The live list arrives on `cursor/update_todos`.
+ */
+function cursorTodoToolMessages(
+    update: { toolCallId: string; rawInput?: unknown; title?: string | null },
+    toolKindTracking: ToolCallKindTracking | undefined,
+): ExtensionToWebviewMessage[] | undefined {
+    const toolCallId = canonicalToolCallId(update.toolCallId);
+    const title = typeof update.title === "string" ? update.title : undefined;
+    const known = toolKindTracking?.updateTodosToolIds.has(toolCallId) === true;
+    if (!known && !isCursorUpdateTodosRaw(update.rawInput) && !isCursorUpdateTodosTitle(title)) {
+        return undefined;
+    }
+    toolKindTracking?.updateTodosToolIds.add(toolCallId);
+    const parsed = cursorTodosFromRaw(update.rawInput);
+    if (parsed === undefined || parsed.todos.length === 0) {
+        return [];
+    }
+    return [
+        {
+            type: "cursorUpdateTodos",
+            toolCallId,
+            todos: parsed.todos,
+            merge: parsed.merge,
+        },
+    ];
 }
 
 /**
@@ -1113,6 +1154,10 @@ export function sessionUpdateToWebviewMessages(
             return [];
         }
         case "tool_call": {
+            const todoMessages = cursorTodoToolMessages(update, toolKindTracking);
+            if (todoMessages !== undefined) {
+                return todoMessages;
+            }
             const toolCallId = canonicalToolCallId(update.toolCallId);
             toolKindTracking?.kindByToolId.set(toolCallId, update.kind);
             const task = taskToolFieldsFromRaw(update.rawInput);
@@ -1148,6 +1193,10 @@ export function sessionUpdateToWebviewMessages(
             ]);
         }
         case "tool_call_update": {
+            const todoMessages = cursorTodoToolMessages(update, toolKindTracking);
+            if (todoMessages !== undefined) {
+                return todoMessages;
+            }
             const toolCallId = canonicalToolCallId(update.toolCallId);
             const incomingTask = taskToolFieldsFromRaw(update.rawInput);
             if (incomingTask !== undefined) {
