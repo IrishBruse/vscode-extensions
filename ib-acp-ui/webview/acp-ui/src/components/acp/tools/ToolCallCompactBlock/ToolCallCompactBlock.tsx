@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { splitMarkdownFileUris } from "../../../../../../../src/platform/fileUriPath";
+import { splitHttpUrls } from "../../../../../../../src/platform/httpUrlText";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import "../ToolCallBlock/ToolCallBlock.css";
 import "./ToolCallCompactBlock.css";
@@ -33,6 +34,30 @@ import {
 export type OpenWorkspacePathOptions = {
   target?: WorkspacePathOpenTarget;
 };
+
+type OpenExternalUrl = (url: string) => void;
+
+function toolPreviewSpans(
+  text: string,
+): Array<
+  | { kind: "text"; text: string }
+  | { kind: "file"; text: string; path: string }
+  | { kind: "url"; text: string; url: string }
+> {
+  const spans: Array<
+    | { kind: "text"; text: string }
+    | { kind: "file"; text: string; path: string }
+    | { kind: "url"; text: string; url: string }
+  > = [];
+  for (const span of splitMarkdownFileUris(text)) {
+    if (span.kind === "file") {
+      spans.push(span);
+      continue;
+    }
+    spans.push(...splitHttpUrls(span.text));
+  }
+  return spans;
+}
 
 const pathTooltipDelayMs = 500;
 const pathTooltipInstantWindowMs = 200;
@@ -173,10 +198,30 @@ function CompactPathLink({
 function CompactDetailText({
   parts,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
 }: {
   parts: CompactToolDetailParts;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
 }): ReactElement {
+  if (parts.url !== undefined) {
+    const url = parts.url;
+    return (
+      <span className="tool-call-compact-detail-text">
+        <a
+          className="tool-call-compact-path-link"
+          href={url}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenExternalUrl?.(url);
+          }}
+        >
+          {parts.detail}
+        </a>
+      </span>
+    );
+  }
   const segment = parts.pathSegment;
   if (segment === undefined) {
     return <span className="tool-call-compact-detail-text">{parts.detail}</span>;
@@ -193,9 +238,11 @@ function CompactDetailText({
 function CompactVerbDetail({
   parts,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
 }: {
   parts: CompactToolDetailParts;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
 }): ReactElement {
   return (
     <>
@@ -203,7 +250,11 @@ function CompactVerbDetail({
       {parts.detail.length > 0 ? (
         <>
           {" "}
-          <CompactDetailText parts={parts} onOpenWorkspacePath={onOpenWorkspacePath} />
+          <CompactDetailText
+            parts={parts}
+            onOpenWorkspacePath={onOpenWorkspacePath}
+            onOpenExternalUrl={onOpenExternalUrl}
+          />
         </>
       ) : null}
     </>
@@ -213,9 +264,11 @@ function CompactVerbDetail({
 function CompactEditLine({
   item,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
 }: {
   item: TraceToolItem;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
 }): ReactElement {
   const parts = compactToolDetailParts(item);
   const { added, removed } = diffLineStats(item.diffRows);
@@ -226,7 +279,11 @@ function CompactEditLine({
       {parts.detail.length > 0 ? (
         <>
           {" "}
-          <CompactDetailText parts={parts} onOpenWorkspacePath={onOpenWorkspacePath} />
+          <CompactDetailText
+            parts={parts}
+            onOpenWorkspacePath={onOpenWorkspacePath}
+            onOpenExternalUrl={onOpenExternalUrl}
+          />
         </>
       ) : null}
       {showStats && added > 0 ? (
@@ -266,30 +323,45 @@ function CompactImagePreview({
 function CompactDetailLine({
   item,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
   onOpenImage,
 }: {
   item: TraceToolItem;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
   onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
   if (item.image === undefined) {
     return compactToolShowsDiffStats(item) ? (
-      <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />
+      <CompactEditLine
+        item={item}
+        onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenExternalUrl={onOpenExternalUrl}
+      />
     ) : (
       <CompactVerbDetail
         parts={compactToolDetailParts(item)}
         onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenExternalUrl={onOpenExternalUrl}
       />
     );
   }
   const parts = compactToolDetailParts(item);
   const line = compactToolShowsDiffStats(item) ? (
-    <CompactEditLine item={item} onOpenWorkspacePath={onOpenWorkspacePath} />
+    <CompactEditLine
+      item={item}
+      onOpenWorkspacePath={onOpenWorkspacePath}
+      onOpenExternalUrl={onOpenExternalUrl}
+    />
   ) : (
     <>
       <span className="tool-call-compact-verb">{parts.verb}</span>
       {parts.detail.length > 0 ? (
-        <CompactDetailText parts={parts} onOpenWorkspacePath={onOpenWorkspacePath} />
+        <CompactDetailText
+          parts={parts}
+          onOpenWorkspacePath={onOpenWorkspacePath}
+          onOpenExternalUrl={onOpenExternalUrl}
+        />
       ) : null}
     </>
   );
@@ -304,10 +376,12 @@ function CompactDetailLine({
 function CompactGroupSummary({
   items,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
   onOpenImage,
 }: {
   items: TraceToolItem[];
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
   onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
   const parts = compactToolGroupSummaryParts(items);
@@ -316,6 +390,7 @@ function CompactGroupSummary({
       <CompactDetailLine
         item={items[0]!}
         onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenExternalUrl={onOpenExternalUrl}
         onOpenImage={onOpenImage}
       />
     );
@@ -365,12 +440,14 @@ function CompactToolEntry({
   expandAllToolOutputs,
   onCollapseExpandAll,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
   onOpenImage,
 }: {
   item: TraceToolItem;
   expandAllToolOutputs: boolean;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath: ((path: string, options?: OpenWorkspacePathOptions) => void) | undefined;
+  onOpenExternalUrl: OpenExternalUrl | undefined;
   onOpenImage: ((src: string) => void) | undefined;
 }): ReactElement {
   const detailKind = toolCallDetailKind(item);
@@ -403,6 +480,7 @@ function CompactToolEntry({
     <CompactDetailLine
       item={item}
       onOpenWorkspacePath={onOpenWorkspacePath}
+      onOpenExternalUrl={onOpenExternalUrl}
       onOpenImage={onOpenImage}
     />
   );
@@ -425,10 +503,10 @@ function CompactToolEntry({
       {detailKind === "diff" ? <CompactDiffLines item={item} /> : null}
       {detailKind === "expandable" && expanded && (item.content?.trim().length ?? 0) > 0 ? (
         <pre className="tool-call-compact-preview">
-          {splitMarkdownFileUris(item.content ?? "").map((span, index) =>
+          {toolPreviewSpans(item.content ?? "").map((span, index) =>
             span.kind === "text" ? (
               <span key={index}>{span.text}</span>
-            ) : (
+            ) : span.kind === "file" ? (
               <a
                 key={index}
                 className="tool-call-compact-path-link"
@@ -437,6 +515,19 @@ function CompactToolEntry({
                   event.preventDefault();
                   event.stopPropagation();
                   onOpenWorkspacePath?.(span.path);
+                }}
+              >
+                {span.text}
+              </a>
+            ) : (
+              <a
+                key={index}
+                className="tool-call-compact-path-link"
+                href={span.url}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onOpenExternalUrl?.(span.url);
                 }}
               >
                 {span.text}
@@ -459,6 +550,7 @@ export function ToolCallCompactBlock({
   expandAllToolOutputs,
   onCollapseExpandAll,
   onOpenWorkspacePath,
+  onOpenExternalUrl,
   onOpenImage,
 }: {
   items: TraceToolItem[];
@@ -468,6 +560,7 @@ export function ToolCallCompactBlock({
   expandAllToolOutputs?: boolean;
   onCollapseExpandAll?: () => void;
   onOpenWorkspacePath?: (path: string, options?: OpenWorkspacePathOptions) => void;
+  onOpenExternalUrl?: OpenExternalUrl;
   onOpenImage?: (src: string) => void;
 }): ReactElement {
   const expandAll = expandAllToolOutputs ?? false;
@@ -504,6 +597,7 @@ export function ToolCallCompactBlock({
           expandAllToolOutputs={expandAll}
           onCollapseExpandAll={onCollapseExpandAll}
           onOpenWorkspacePath={onOpenWorkspacePath}
+          onOpenExternalUrl={onOpenExternalUrl}
           onOpenImage={onOpenImage}
         />
       ) : (
@@ -511,6 +605,7 @@ export function ToolCallCompactBlock({
           <CompactGroupSummary
             items={items}
             onOpenWorkspacePath={onOpenWorkspacePath}
+            onOpenExternalUrl={onOpenExternalUrl}
             onOpenImage={onOpenImage}
           />
         </div>
@@ -534,6 +629,7 @@ export function ToolCallCompactBlock({
                 expandAllToolOutputs={expandAll}
                 onCollapseExpandAll={onCollapseExpandAll}
                 onOpenWorkspacePath={onOpenWorkspacePath}
+                onOpenExternalUrl={onOpenExternalUrl}
                 onOpenImage={onOpenImage}
               />
             </li>

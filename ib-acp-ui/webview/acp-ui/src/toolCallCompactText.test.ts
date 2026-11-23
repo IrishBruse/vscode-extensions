@@ -132,6 +132,7 @@ describe("toolCallCompactText", () => {
     expect(compactToolDetailLine(item)).toBe(
       "Fetched https://agentclientprotocol.com/protocol",
     );
+    expect(compactToolDetailParts(item).url).toBe("https://agentclientprotocol.com/protocol");
   });
 
   it("labels a SKILL.md read as Used plus the skill folder", () => {
@@ -148,6 +149,35 @@ describe("toolCallCompactText", () => {
       label: "writing-for-agents",
       title: "~/.agents/skills/misc/writing-for-agents/SKILL.md",
       openPath: "/home/econn/.agents/skills/misc/writing-for-agents/SKILL.md",
+    });
+  });
+
+  it("links a file at the workspace root", () => {
+    setCompactToolWorkspaceRoot("/home/econn/git/nsmbu-recomp");
+    const read = toolItem({
+      toolCallId: "read-root",
+      kind: "read",
+      subtitle: "/home/econn/git/nsmbu-recomp/recomplauncher.json",
+    });
+    expect(compactToolDetailLine(read)).toBe("Read recomplauncher.json");
+    expect(compactToolDetailParts(read).pathSegment).toMatchObject({
+      label: "recomplauncher.json",
+      openPath: "/home/econn/git/nsmbu-recomp/recomplauncher.json",
+    });
+    const grep = toolItem({
+      toolCallId: "grep-root",
+      kind: "search",
+      title: "Grep",
+      subtitle: "recomplauncher.json",
+      content: '"launcher_profile|local_"',
+    });
+    expect(compactToolDetailLine(grep)).toBe(
+      'Grepped "launcher_profile|local_" in recomplauncher.json',
+    );
+    expect(compactToolDetailParts(grep).pathSegment).toMatchObject({
+      label: "recomplauncher.json",
+      prefix: '"launcher_profile|local_" in ',
+      openPath: "recomplauncher.json",
     });
   });
 

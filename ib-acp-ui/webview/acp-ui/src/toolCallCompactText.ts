@@ -58,7 +58,7 @@ function shortPathDisplay(rawPath: string): {
   link: boolean;
 } {
   const full = formatCompactPath(rawPath);
-  return { label: full, full, link: full.includes("/") };
+  return { label: full, full, link: rawPath.trim().length > 0 };
 }
 
 function pathSegmentFromRaw(
@@ -99,6 +99,8 @@ export type CompactToolDetailParts = {
   verb: string;
   /** Visible detail text (uses short path labels). */
   detail: string;
+  /** When set, `detail` is an http(s) URL that opens outside the chat. */
+  url?: string;
   /** When set, the path portion is a clickable link. The full path is a tooltip. */
   pathSegment?: {
     prefix?: string;
@@ -657,7 +659,7 @@ export function compactToolDetailParts(item: TraceToolItem): CompactToolDetailPa
       : itemTitle.length > 0
         ? itemTitle
         : "Fetched";
-    return { verb, detail: subtitle };
+    return { verb, detail: subtitle, url: subtitle.trim() };
   }
 
   const title = item.title.trim();

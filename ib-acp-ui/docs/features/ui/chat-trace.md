@@ -40,9 +40,13 @@ A read of an image shows a small preview of that image.
 Click the preview to view the image larger.
 A tool path shows the full path.
 The path text uses the link color.
+A file at the workspace root is a link too.
 Hover uses the link hover color.
 The full path appears in a tooltip after the pointer rests on the path.
 A markdown file path on a tool line opens that file in the editor.
+A Fetched line links that URL.
+Click it to open the page.
+Links in the tool text open the same way.
 Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
 A long diff shows a short window around the edits.
@@ -148,6 +152,7 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L443-L532).
   [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
+  [shortPathDisplay](../../../webview/acp-ui/src/toolCallCompactText.ts#L55-L62) links that path, including a file at the workspace root.
   Other paths shorten to `~/…`.
   [imageFromToolFields](../../../src/acp/mapping/sessionUpdateMapping.ts#L129-L134) keeps the image from the tool result.
   When that result has no image, [readWorkspaceImage](../../../src/platform/readWorkspaceImage.ts#L9-L29) reads the file for the preview.
@@ -159,6 +164,8 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   The path uses `--vscode-textLink-foreground`.
   Hover and focus use `--vscode-textLink-activeForeground`.
   A markdown `file://` path is decoded by [filesystemPathFromFileUri](../../../src/platform/fileUriPath.ts#L6-L28) and opened with the default text editor by [openWorkspacePathTarget](../../../src/platform/openWorkspacePathTarget.ts#L13-L21), including a plan file outside the workspace.
+  [splitHttpUrls](../../../src/platform/httpUrlText.ts#L6-L30) finds web links in that text, and the Fetched URL comes from [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L655-L663).
+  Clicking either opens the page outside the chat.
   Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L29-L133).
   The working directory and elapsed time sit on the first line.
   [executeWorkingDirectoryLabel](../../../webview/acp-ui/src/toolCallCompactText.ts#L656-L667) shows that directory as `~/…` when it is under the home directory, and uses the workspace folder when the command has no directory.
@@ -174,7 +181,8 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 
 [createChatStateFromInit](../../../webview/acp-ui/src/chatReducer.ts#L274-L301) seeds the trace from `init.visibleTrace`.
 While that cache is on screen and history is loading, transcript updates go to a side buffer in [chatReducer](../../../webview/acp-ui/src/chatReducer.ts#L631-L634).
-When loading ends, the buffer replaces the visible trace in one step ([sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L1685-L1726)).
+When loading ends, the buffer replaces the visible trace in one step ([sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L2502-L2563)).
+A reconnect while the chat is open uses that same buffer.
 [settleOpenThoughts](../../../webview/acp-ui/src/chatReducer.ts#L581-L592) stops an open thought so Thinking does not keep counting after the agent is idle.
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.

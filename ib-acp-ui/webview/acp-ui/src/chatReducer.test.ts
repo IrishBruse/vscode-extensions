@@ -576,6 +576,40 @@ describe("chatReducer", () => {
     ]);
   });
 
+  it("ends the turn when that message is cancelled", () => {
+    let state = chatReducer(createInitialChatState(), { type: "submit", body: "fix the battle" });
+    state = chatReducer(state, { type: "turnComplete", stopReason: "cancelled" });
+    expect(state.promptInFlight).toBe(false);
+    expect(state.openPrompts).toBe(0);
+  });
+
+  it("keeps a newer message in flight when the previous turn is cancelled", () => {
+    let state = chatReducer(createInitialChatState(), { type: "submit", body: "first" });
+    state = chatReducer(state, { type: "submit", body: "steer this" });
+    state = chatReducer(state, { type: "turnComplete", stopReason: "cancelled" });
+    expect(state.promptInFlight).toBe(true);
+    expect(state.openPrompts).toBe(1);
+    expect(state.pendingUserEcho).toBe("steer this");
+    expect(state.trace.at(-1)).toEqual({ type: "user", text: "steer this" });
+  });
+
+  it("buffers a reconnect replay and keeps the message just sent", () => {
+    let state = chatReducer(createInitialChatState(), { type: "submit", body: "fix the battle" });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: true });
+    expect(state.viewportCacheActive).toBe(true);
+    state = chatReducer(state, { type: "appendUserText", text: "older" });
+    state = chatReducer(state, { type: "appendAgentText", text: "done" });
+    expect(state.trace.at(-1)).toEqual({ type: "user", text: "fix the battle" });
+    state = chatReducer(state, { type: "sessionHistoryLoading", loading: false });
+    expect(state.trace).toEqual([
+      { type: "user", text: "older" },
+      { type: "agent", text: "done" },
+      { type: "user", text: "fix the battle" },
+    ]);
+    expect(state.promptInFlight).toBe(true);
+    expect(state.viewportCacheActive).toBe(false);
+  });
+
   it("tracks sessionHistoryLoading during ACP resume", () => {
     const loading = chatReducer(createInitialChatState(), {
       type: "sessionHistoryLoading",

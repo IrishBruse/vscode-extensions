@@ -5,6 +5,11 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: A file at the workspace root on a tool line is a link.
+- **Fix**: Steering sends the queued message after the current tool finishes.
+- **Change**: A Fetched tool line and web links in the tool text open when you click them.
+- **Fix**: Sending a message while the agent is answering sends that message once and keeps it running.
+- **Fix**: Reconnecting a chat replays history behind the current screen, and agent system notifications stay out of the transcript.
 - **Change**: The code block copy button copies the code and shows a Copied tooltip.
 - **Change**: A running subagent card shows the latest six lines in a preview that keeps the same height.
 - **Change**: That preview renders as markdown at the card font size.

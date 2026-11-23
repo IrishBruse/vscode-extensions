@@ -762,9 +762,6 @@ export class AcpUiSessionController {
                 if (b === undefined) {
                     return;
                 }
-                if (b.isPrompting) {
-                    await b.cancel();
-                }
                 try {
                     await b.prompt(parsed.body, parsed.images);
                 } finally {

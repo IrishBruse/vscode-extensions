@@ -25,6 +25,7 @@ import type { AcpHostTerminal } from "../ports/hostTerminal";
 import { isImageFilePath } from "../../platform/imageFilePath";
 import { readWorkspaceImage } from "../../platform/readWorkspaceImage";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
+import { LatestPromptTurn } from "./latestPromptTurn";
 import { buildModelId, parseModelIdBracketParams } from "./modelVariantPicker";
 import {
     type AcpUiSessionConfigOption,
@@ -114,6 +115,7 @@ export class AcpSessionBridge {
     private agentProcess: AcpAgentProcess;
     private acpSessionId: string | null = null;
     private prompting = false;
+    private readonly promptTurns = new LatestPromptTurn();
     /** True after this session receives an ACP `usage_update` with a context window. */
     private contextWindowKnown = false;
     private lastModelSelection: AcpUiSessionModelSelection | null = null;
@@ -878,17 +880,32 @@ export class AcpSessionBridge {
         this.postToWebview({ type: "tokenUsage", size });
     }
 
-    /** Sends a user prompt. The bridge forwards all session updates to the UI. */
+    /** Sends a user prompt. A newer prompt cancels the turn that is still running. */
     async prompt(text: string, images: readonly AcpUiPromptImage[] = []): Promise<void> {
         if (!this.acpSessionId) {
-            this.postToWebview({
-                type: "error",
-                message: formatAcpConnectionErrorMessage(
-                    this.config.name,
-                    "Agent session not connected.",
-                ),
-                disconnected: true,
-            });
+            this.postDisconnected("Agent session not connected.");
+            return;
+        }
+        await this.promptTurns.run(
+            () => this.cancel(),
+            (isCurrent) => this.deliverPrompt(text, images, isCurrent),
+        );
+    }
+
+    /**
+     * One prompt turn, including a plan-accept follow-up.
+     * A replacement prompt leaves `isCurrent` false so this turn does not clear the busy flag.
+     */
+    private async deliverPrompt(
+        text: string,
+        images: readonly AcpUiPromptImage[],
+        isCurrent: () => boolean,
+    ): Promise<void> {
+        if (!isCurrent()) {
+            return;
+        }
+        if (!this.acpSessionId) {
+            this.postDisconnected("Agent session not connected.");
             return;
         }
         this.toolCallKindTracking = createToolCallKindTracking(
@@ -898,11 +915,17 @@ export class AcpSessionBridge {
         this.prompting = true;
         try {
             const result = await this.agentProcess.prompt(this.acpSessionId, text, images);
+            if (!isCurrent()) {
+                return;
+            }
             const followUp = result.stopReason === "cancelled" ? undefined : this.planToImplement;
             this.planToImplement = undefined;
             if (followUp !== undefined) {
                 await this.switchSessionToAgentMode();
-                await this.prompt(implementPlanPrompt(followUp));
+                if (!isCurrent()) {
+                    return;
+                }
+                await this.deliverPrompt(implementPlanPrompt(followUp), [], isCurrent);
                 return;
             }
             const reportedTokens = promptTurnTokenCount(result.usage);
@@ -918,11 +941,17 @@ export class AcpSessionBridge {
             } else if (!this.contextWindowKnown) {
                 this.publishInferredContextWindow();
             }
+            if (!isCurrent()) {
+                return;
+            }
             this.postToWebview({
                 type: "turnComplete",
                 stopReason: result.stopReason,
             });
         } catch (err: unknown) {
+            if (!isCurrent()) {
+                return;
+            }
             const raw = err instanceof Error ? err.message : String(err);
             const stalled = isAcpConnectionStall(raw);
             const message = formatAcpConnectionErrorMessage(this.config.name, raw);
@@ -933,8 +962,18 @@ export class AcpSessionBridge {
                 ...(stalled ? { stalled: true } : {}),
             });
         } finally {
-            this.prompting = false;
+            if (isCurrent()) {
+                this.prompting = false;
+            }
         }
+    }
+
+    private postDisconnected(detail: string): void {
+        this.postToWebview({
+            type: "error",
+            message: formatAcpConnectionErrorMessage(this.config.name, detail),
+            disconnected: true,
+        });
     }
 
     /** Moves a plan-mode session to the agent mode that can edit and run tools. */

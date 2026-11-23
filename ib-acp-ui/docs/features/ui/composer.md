@@ -35,6 +35,7 @@ Keyboard shortcuts while the composer is focused:
 
 - Enter sends, Shift+Enter inserts a newline.
   While the agent is running, Enter adds the draft to the queue.
+  A message that replaces the current turn is sent once, and it stays running until the agent finishes it.
   Each later draft is added behind the ones already waiting.
   The queue sends one message at a time, in order, when the turn ends.
   Enter with an empty composer marks the next queued message as steering, so it sends after the current tool finishes and does not stop that tool.
@@ -123,6 +124,8 @@ Task: covered by [sessions](../acp/sessions.md).
 [shouldCancelRunOnCtrlC](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L34-L58) gates Ctrl+C cancel.
 [shouldOpenNewChatOnCtrlT](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerKeybindings.ts#L1-L14) gates Ctrl+T new chat.
 [resolveFollowUpEnter](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerFollowUp.ts#L21-L42) appends a draft to the queue, then steers or interrupts the next queued message.
+[prompt](../../../src/acp/session/acpSessionBridge.ts#L884-L893) sends that message through [LatestPromptTurn](../../../src/acp/session/latestPromptTurn.ts#L6-L25), which cancels the running turn and sends the next prompt without waiting for the old prompt to finish.
+A cancelled turn does not clear the new message ([turnComplete](../../../webview/acp-ui/src/chatReducer.ts#L2751-L2772)).
 [ChatComposer](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx#L376-L418) shows each queued message on its own line.
 
 ### Multimodal prompts

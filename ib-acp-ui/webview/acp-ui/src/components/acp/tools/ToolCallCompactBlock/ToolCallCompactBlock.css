@@ -107,6 +107,9 @@
   font-weight: 400;
 }
 
+.tool-call-compact-preview .tool-call-compact-path-link,
+.tool-call-compact-preview .tool-call-compact-path-link:link,
+.tool-call-compact-preview .tool-call-compact-path-link:visited,
 .tool-call-compact-detail-text .tool-call-compact-path-link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:link,
 .tool-call-compact-detail-text .tool-call-compact-path-link:visited {
@@ -115,6 +118,8 @@
   cursor: pointer;
 }
 
+.tool-call-compact-preview .tool-call-compact-path-link:hover,
+.tool-call-compact-preview .tool-call-compact-path-link:focus-visible,
 .tool-call-compact-detail-text .tool-call-compact-path-link:hover,
 .tool-call-compact-detail-text .tool-call-compact-path-link:focus-visible {
   color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));

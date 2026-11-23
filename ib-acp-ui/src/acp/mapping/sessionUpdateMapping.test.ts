@@ -20,6 +20,17 @@ describe("sessionUpdateToWebviewMessages", () => {
         expect(messages).toEqual([{ type: "appendUserText", text: "hello" }]);
     });
 
+    it("drops a system notification user chunk", () => {
+        const messages = sessionUpdateToWebviewMessages({
+            sessionUpdate: "user_message_chunk",
+            content: {
+                type: "text",
+                text: "<timestamp>Monday</timestamp> <system_notification> The task finished.",
+            },
+        });
+        expect(messages).toEqual([]);
+    });
+
     it("keeps an image from a read tool and does not turn it into text", () => {
         const messages = sessionUpdateToWebviewMessages({
             sessionUpdate: "tool_call_update",

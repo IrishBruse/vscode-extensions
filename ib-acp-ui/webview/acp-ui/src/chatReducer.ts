@@ -131,6 +131,8 @@ export type ChatState = {
   openStreamIndex: number | null;
   toolIndexById: Map<string, number>;
   promptInFlight: boolean;
+  /** Submits whose turn has not finished. A cancelled turn keeps the newer ones running. */
+  openPrompts: number;
   /** Optimistic prompt text from submit waiting to absorb agent's echo. */
   pendingUserEcho: string | null;
   errorText: string | null;
@@ -299,6 +301,7 @@ export function createInitialChatState(): ChatState {
     openStreamIndex: null,
     toolIndexById: new Map(),
     promptInFlight: false,
+    openPrompts: 0,
     pendingUserEcho: null,
     errorText: null,
     agentConnected: false,
@@ -946,6 +949,27 @@ function userAttachmentFields(item: {
   };
 }
 
+function traceWithPendingUserEcho(
+  trace: readonly TraceItem[],
+  pending: string | null,
+): TraceItem[] {
+  if (pending === null || pending.length === 0) {
+    return [...trace];
+  }
+  const last = trace[trace.length - 1];
+  if (last?.type === "user" && last.text === pending) {
+    return [...trace];
+  }
+  return [...trace, { type: "user", text: pending }];
+}
+
+function promptStillRunning(state: ChatState, toolStartedAtMsById: Map<string, number>): boolean {
+  return (
+    (state.pendingUserEcho !== null && state.pendingUserEcho.length > 0) ||
+    toolStartedAtMsById.size > 0
+  );
+}
+
 function appendUserText(state: ChatState, text: string): ChatState {
   if (text.length === 0) {
     return state;
@@ -1521,6 +1545,7 @@ function applySessionReset(state: ChatState): ChatState {
     openStreamIndex: null,
     toolIndexById: new Map(),
     promptInFlight: false,
+    openPrompts: 0,
     pendingUserEcho: null,
     errorText: null,
     agentConnected: false,
@@ -2310,6 +2335,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       ],
       pendingUserEcho: action.body,
       promptInFlight: true,
+      openPrompts: state.openPrompts + 1,
       errorText: state.agentConnected ? null : state.errorText,
       openStreamIndex: null,
       toolIndexById: new Map(),
@@ -2480,9 +2506,20 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
     case "sessionHistoryLoading": {
       if (action.loading) {
+        const startReplay = state.trace.length > 0 && !state.viewportCacheActive;
         return {
           ...state,
           sessionHistoryLoading: true,
+          ...(startReplay
+            ? {
+                viewportCacheActive: true,
+                replayTrace: [],
+                replayToolIndexById: new Map(),
+                replayOpenStreamIndex: null,
+                replayThoughtStartedAtMs: null,
+                replayToolStartedAtMsById: new Map(),
+              }
+            : {}),
           thoughtDurations: mergeThoughtDurationLists(
             state.thoughtDurations,
             thoughtDurationsFromTrace(state.trace),
@@ -2494,7 +2531,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         };
       }
       if (state.viewportCacheActive && state.replayTrace.length > 0) {
-        const trace = settleOpenThoughts(
+        const settled = settleOpenThoughts(
           mergeToolDurationsFromCache(
             applyBashDurations(
               mergeThoughtDurationsFromCache(
@@ -2506,6 +2543,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
             state.trace,
           ),
         );
+        const trace = traceWithPendingUserEcho(settled, state.pendingUserEcho);
         const toolStartedAtMsById = toolClocksFromTrace(trace);
         return {
           ...state,
@@ -2518,7 +2556,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           openStreamIndex: null,
           thoughtStartedAtMs: null,
           toolStartedAtMsById,
-          promptInFlight: toolStartedAtMsById.size > 0,
+          promptInFlight: promptStillRunning(state, toolStartedAtMsById),
           replayTrace: [],
           replayToolIndexById: new Map(),
           replayOpenStreamIndex: null,
@@ -2528,7 +2566,8 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
           visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
         };
       }
-      const trace = settleOpenThoughts(state.trace);
+      const settled = settleOpenThoughts(state.trace);
+      const trace = traceWithPendingUserEcho(settled, state.pendingUserEcho);
       const toolStartedAtMsById = toolClocksFromTrace(trace);
       const thoughtDurations = thoughtDurationsFromTrace(trace);
       const bashDurations = bashDurationsFromTrace(trace);
@@ -2542,7 +2581,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         openStreamIndex: null,
         thoughtStartedAtMs: null,
         toolStartedAtMsById,
-        promptInFlight: toolStartedAtMsById.size > 0,
+        promptInFlight: promptStillRunning(state, toolStartedAtMsById),
         ...(thoughtDurations.length > 0 || bashDurations.length > 0
           ? { visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state) }
           : {}),
@@ -2701,6 +2740,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         trace,
         openStreamIndex: trace.length - 1,
         promptInFlight: false,
+        openPrompts: 0,
         pendingUserEcho: null,
         errorText: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
@@ -2711,15 +2751,27 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return {
         ...base,
         promptInFlight: false,
+        openPrompts: 0,
         pendingUserEcho: null,
       };
     }
     case "turnComplete": {
       const base = finalizeOpenThoughtDuration(state);
+      const olderPromptCancelled = action.stopReason === "cancelled" && state.openPrompts > 1;
+      if (olderPromptCancelled) {
+        return {
+          ...base,
+          openStreamIndex: null,
+          promptInFlight: true,
+          openPrompts: state.openPrompts - 1,
+          visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
+        };
+      }
       return {
         ...base,
         openStreamIndex: null,
         promptInFlight: false,
+        openPrompts: 0,
         pendingUserEcho: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };
@@ -2752,6 +2804,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         errorText: action.message,
         agentConnected: disconnected ? false : state.agentConnected,
         promptInFlight: false,
+        openPrompts: 0,
         pendingUserEcho: null,
         visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(base),
       };

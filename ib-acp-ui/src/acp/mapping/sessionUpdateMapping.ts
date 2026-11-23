@@ -1137,6 +1137,9 @@ export function sessionUpdateToWebviewMessages(
         case "user_message_chunk": {
             const block = update.content;
             if (block.type === "text") {
+                if (block.text.includes("<system_notification>")) {
+                    return [];
+                }
                 return [{ type: "appendUserText", text: block.text }];
             }
             if (

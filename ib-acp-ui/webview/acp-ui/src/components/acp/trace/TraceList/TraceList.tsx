@@ -207,6 +207,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
         expandAllToolOutputs={expandAllToolOutputs}
         onCollapseExpandAll={onCollapseExpandAll}
         onOpenWorkspacePath={onOpenWorkspacePath}
+        onOpenExternalUrl={onOpenMarkdownLink}
         onOpenImage={onOpenImage}
       />,
     );
@@ -291,6 +292,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
           expandAllToolOutputs={expandAllToolOutputs}
           onCollapseExpandAll={onCollapseExpandAll}
           onOpenWorkspacePath={onOpenWorkspacePath}
+          onOpenExternalUrl={onOpenMarkdownLink}
           onOpenImage={onOpenImage}
         />
       ),

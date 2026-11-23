@@ -15,6 +15,9 @@ Reopening shows that screen immediately, instead of a conversation loader.
 You can scroll inside that screen while the agent loads older messages.
 When the older messages arrive, the screen you are looking at stays where it is.
 The live transcript still comes from the agent via `session/load` replay when resume succeeds.
+A reconnect while the chat is open replays into a side buffer, then swaps that transcript in.
+The message you just sent stays at the end of that transcript.
+Agent system notifications are not shown as your messages.
 A thought keeps the time it took on that full transcript.
 A bash command keeps its elapsed time on that full transcript.
 
@@ -38,9 +41,11 @@ The UI session id (`.acp` header UUID) is separate from the runtime session id (
 [supportsLoadSession](../../../src/acp/infrastructure/acpAgentProcess.ts#L259-L261) reads `loadSession` from agent capabilities.
 [loadSession](../../../src/acp/infrastructure/acpAgentProcess.ts#L298-L311) calls the SDK with cwd and `mcpServers` (today empty).
 
-[loadSessionWithAuthRetry](../../../src/acp/session/acpSessionBridge.ts#L914-L927) handles auth-required errors during load.
+[loadSessionWithAuthRetry](../../../src/acp/session/acpSessionBridge.ts#L1050-L1063) handles auth-required errors during load.
 Replay `session/update` events map through [sessionUpdateMapping.ts](../../../src/acp/mapping/sessionUpdateMapping.ts).
 That includes `user_message_chunk` to user text in the trace.
+[user_message_chunk](../../../src/acp/mapping/sessionUpdateMapping.ts#L1137-L1144) drops a chunk that contains `<system_notification>`.
+A load that starts while the chat is open buffers replay, then [sessionHistoryLoading](../../../webview/acp-ui/src/chatReducer.ts#L2502-L2563) swaps that transcript in and keeps the message just sent ([traceWithPendingUserEcho](../../../webview/acp-ui/src/chatReducer.ts#L949-L961)).
 
 [acpUiSessionController.ts](../../../src/extension/acpUiSessionController.ts) passes `runtimeSessionId` on connect and clears it on chat reset.
 [acpUiSessionsStore.ts](../../../src/extension/acpUiSessionsStore.ts) persists the runtime id in the session header.
