@@ -56,9 +56,13 @@ function reactNodeToPlainText(node: ReactNode): string {
 }
 
 async function copyTextToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard?.writeText !== undefined) {
-    await navigator.clipboard.writeText(text);
-    return;
+  try {
+    if (navigator.clipboard?.writeText !== undefined) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch {
+    // The webview clipboard API can reject. Fall back to a selected textarea.
   }
   const textarea = document.createElement("textarea");
   textarea.value = text;
@@ -66,8 +70,11 @@ async function copyTextToClipboard(text: string): Promise<void> {
   textarea.style.opacity = "0";
   document.body.appendChild(textarea);
   textarea.select();
-  document.execCommand("copy");
+  const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("Copy failed");
+  }
 }
 
 function CopyCodeButton({ text }: { text: string }): ReactElement {
@@ -97,14 +104,21 @@ function CopyCodeButton({ text }: { text: string }): ReactElement {
     });
   }, [text]);
 
+  const className = copied
+    ? "agent-markdown-code-block-copy agent-markdown-code-block-copy--copied"
+    : "agent-markdown-code-block-copy";
   return (
     <button
       type="button"
-      className="agent-markdown-code-block-copy"
-      onClick={onCopy}
+      className={className}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onCopy();
+      }}
       aria-label={copied ? "Copied" : "Copy code"}
-      title={copied ? "Copied" : "Copy"}
     >
+      {copied ? <span className="agent-markdown-code-block-copied">Copied</span> : null}
       {copied ? (
         <svg className="agent-markdown-code-block-copy-icon" viewBox="0 0 16 16" aria-hidden="true">
           <path

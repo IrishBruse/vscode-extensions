@@ -167,8 +167,28 @@
 }
 
 .agent-markdown-code-block:hover .agent-markdown-code-block-copy,
-.agent-markdown-code-block-copy:focus-visible {
+.agent-markdown-code-block-copy:focus-visible,
+.agent-markdown-code-block-copy--copied {
   opacity: 1;
+}
+
+.agent-markdown-code-block-copied {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 2;
+  padding: 2px 8px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-widget-border));
+  border-radius: var(--vscode-cornerRadius-large, 5px);
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
+  box-shadow: var(--vscode-shadow-lg, 0 0 12px rgba(0, 0, 0, 0.14));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  font-family: var(--acp-ui-font-sans);
+  font-size: 12px;
+  font-weight: var(--acp-ui-font-weight-regular);
+  line-height: 19px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .agent-markdown-code-block-copy:hover {

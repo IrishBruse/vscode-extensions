@@ -28,6 +28,8 @@ Click the thumbnail to view the image larger.
 Transcript text uses the normal foreground color.
 A run of thought blocks and tool calls has extra padding so the group stays separate from the reply.
 Each code block has a copy button.
+Click it to copy that code.
+A small tooltip says Copied.
 
 Tool calls appear as one line each while the agent works.
 A grep line shows the pattern, the path, and the match count.
@@ -120,8 +122,9 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 
 [TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L101-L373) walks trace items and picks a presentation by type.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L242-L301) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
-  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L129-L167) puts the target on the anchor, and right-click opens Copy link.
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L256-L315) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L143-L181) puts the target on the anchor, and right-click opens Copy link.
+  [CopyCodeButton](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L80-L139) copies a code block and shows Copied.
   [onOpenMarkdownLink](../../../webview/acp-ui/src/AcpUiApp.tsx#L532-L547) opens a subagent id through [agentLinkTargetFromHref](../../../webview/acp-ui/src/chatReducer.ts#L1808-L1833), a file path in the editor, or an http link outside the chat.
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
   [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.

@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: The code block copy button copies the code and shows a Copied tooltip.
 - **Change**: A running subagent card shows the latest six lines in a preview that keeps the same height.
 - **Change**: That preview renders as markdown at the card font size.
 - **Change**: The ACP tab log spans the panel width and starts below the view switch.
