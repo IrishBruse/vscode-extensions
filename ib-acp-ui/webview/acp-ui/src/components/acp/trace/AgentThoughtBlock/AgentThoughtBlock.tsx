@@ -62,6 +62,7 @@ export function AgentThoughtBlock({
   startedAtMs,
   className,
   collapseNonce = 0,
+  onOpenLink,
 }: {
   text: string;
   durationMs?: number;
@@ -70,6 +71,7 @@ export function AgentThoughtBlock({
   className?: string;
   /** Increments to close this block without a click. */
   collapseNonce?: number;
+  onOpenLink?: (href: string) => void;
 }): ReactElement {
   const [expanded, setExpanded] = useState(false);
   const seenCollapseNonceRef = useRef(collapseNonce);
@@ -103,7 +105,7 @@ export function AgentThoughtBlock({
       />
       <div className="agent-thought-chunk-body">
         <Suspense fallback={<div className="agent-markdown-pending">{visibleText}</div>}>
-          <AgentMarkdown text={visibleText} />
+          <AgentMarkdown text={visibleText} onOpenLink={onOpenLink} />
         </Suspense>
       </div>
     </div>

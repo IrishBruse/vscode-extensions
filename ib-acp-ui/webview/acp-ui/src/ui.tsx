@@ -56,6 +56,7 @@ export function mountChatView(
   postOpenSession?: (sessionId: string) => void,
   postDismissRecent?: (sessionId: string) => void,
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void,
+  postOpenExternalUrl?: (url: string) => void,
   postSaveVisibleTrace?: (
     items: TraceItem[],
     thoughtDurations: number[],
@@ -99,6 +100,7 @@ export function mountChatView(
       postOpenSession={postOpenSession}
       postDismissRecent={postDismissRecent}
       postOpenWorkspacePath={postOpenWorkspacePath}
+      postOpenExternalUrl={postOpenExternalUrl}
       postPermissionResponse={postPermissionResponse}
       postCursorAskQuestionResponse={postCursorAskQuestionResponse}
       postCursorCreatePlanResponse={postCursorCreatePlanResponse}

@@ -3,13 +3,16 @@ import {
   Children,
   isValidElement,
   memo,
+  type MouseEvent as ReactMouseEvent,
   type ReactElement,
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { languageFromClassName, renderHighlightedCode } from "./codeHighlighting";
@@ -17,6 +20,14 @@ import { languageFromClassName, renderHighlightedCode } from "./codeHighlighting
 export type AgentMarkdownProps = {
   /** Full assistant message text; updates as streaming chunks arrive. */
   text: string;
+  /** Called when a link is clicked. The argument is the link target. */
+  onOpenLink?: (href: string) => void;
+};
+
+type LinkCopyMenu = {
+  x: number;
+  y: number;
+  href: string;
 };
 
 const CODE_TEXT_ATTR = "data-code-text";
@@ -113,6 +124,86 @@ function CopyCodeButton({ text }: { text: string }): ReactElement {
 
 const markdownRemarkPlugins = [remarkGfm];
 
+function MarkdownLink({
+  href,
+  children,
+  node: _node,
+  onOpenLink,
+  onShowCopyMenu,
+  ...rest
+}: {
+  href?: string;
+  children?: ReactNode;
+  node?: unknown;
+  onOpenLink?: (href: string) => void;
+  onShowCopyMenu?: (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => void;
+}): ReactElement {
+  const target = typeof href === "string" ? href.trim() : "";
+  return (
+    <a
+      {...rest}
+      href={target.length > 0 ? target : undefined}
+      title={target.length > 0 ? target : undefined}
+      onClick={(event) => {
+        if (onOpenLink === undefined || target.length === 0) {
+          return;
+        }
+        event.preventDefault();
+        onOpenLink(target);
+      }}
+      onContextMenu={(event) => {
+        if (target.length === 0) {
+          return;
+        }
+        event.preventDefault();
+        onShowCopyMenu?.(event, target);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+function LinkCopyMenu({
+  menu,
+  onCopy,
+  onClose,
+}: {
+  menu: LinkCopyMenu;
+  onCopy: () => void;
+  onClose: () => void;
+}): ReactElement {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("pointerdown", onClose);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onClose);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="agent-markdown-link-menu"
+      style={{ top: menu.y, left: menu.x }}
+      role="menu"
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
+    >
+      <button type="button" role="menuitem" onClick={onCopy}>
+        Copy link
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
 const markdownComponents = {
   pre({ children, node: _node, ...rest }: { children?: ReactNode; node?: unknown }) {
     const codeText = codeTextFromPreChild(children);
@@ -146,15 +237,55 @@ const markdownComponents = {
  * Renders chat markdown with GFM (tables, strikethrough, task lists). Re-parses when `text`
  * changes so streaming chunks render incrementally. Unchanged text skips that parse.
  */
-export const AgentMarkdown = memo(function AgentMarkdown({ text }: AgentMarkdownProps): ReactElement {
+export const AgentMarkdown = memo(function AgentMarkdown({
+  text,
+  onOpenLink,
+}: AgentMarkdownProps): ReactElement {
+  const [copyMenu, setCopyMenu] = useState<LinkCopyMenu | null>(null);
+  const closeCopyMenu = useCallback(() => {
+    setCopyMenu(null);
+  }, []);
+  const components = useMemo(
+    () => ({
+      ...markdownComponents,
+      a(props: { href?: string; children?: ReactNode; node?: unknown }) {
+        return (
+          <MarkdownLink
+            {...props}
+            onOpenLink={onOpenLink}
+            onShowCopyMenu={(event, href) => {
+              const menuWidth = 120;
+              const menuHeight = 36;
+              setCopyMenu({
+                href,
+                x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth)),
+                y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight)),
+              });
+            }}
+          />
+        );
+      },
+    }),
+    [onOpenLink],
+  );
   if (text.length === 0) {
     return <div className="agent-markdown agent-markdown-empty" aria-hidden="true" />;
   }
   return (
     <div className="agent-markdown">
-      <ReactMarkdown remarkPlugins={markdownRemarkPlugins} components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={markdownRemarkPlugins} components={components}>
         {text}
       </ReactMarkdown>
+      {copyMenu !== null ? (
+        <LinkCopyMenu
+          menu={copyMenu}
+          onClose={closeCopyMenu}
+          onCopy={() => {
+            void copyTextToClipboard(copyMenu.href);
+            setCopyMenu(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 });

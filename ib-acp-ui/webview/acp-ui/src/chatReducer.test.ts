@@ -7,6 +7,7 @@ import { canonicalToolCallId } from "../../../src/acp/mapping/canonicalToolCallI
 import {
   type ChatAction,
   chatReducer,
+  agentLinkTargetFromHref,
   createChatStateFromInit,
   createInitialChatState,
   joinThoughtChunks,
@@ -1857,6 +1858,45 @@ describe("chatReducer", () => {
         true,
       );
     }
+  });
+
+  it("opens a markdown subagent id on the task that owns that session", () => {
+    const sessionId = "178ce18c-356c-4b79-90fe-ec7bc776c7ea";
+    const linked = {
+      ...createInitialChatState(),
+      trace: [
+        {
+          type: "tool" as const,
+          toolCallId: "call-1",
+          title: "Task: Finish or revert Bowser heal",
+          kind: "other",
+          subtitle: undefined,
+          status: "completed" as const,
+          content: "prompt",
+          diffRows: undefined,
+          detailVisible: true,
+        },
+      ],
+      subagentSessionByToolId: new Map([["call-1", sessionId]]),
+      subagentActivity: new Map([
+        [sessionId, { trace: [], toolIndexById: new Map(), openStreamIndex: null }],
+      ]),
+    };
+    expect(agentLinkTargetFromHref(sessionId, linked)).toEqual({
+      kind: "task",
+      toolCallId: "call-1",
+    });
+    const sessionOnly = {
+      ...createInitialChatState(),
+      subagentActivity: new Map([
+        [sessionId, { trace: [], toolIndexById: new Map(), openStreamIndex: null }],
+      ]),
+    };
+    expect(agentLinkTargetFromHref(sessionId, sessionOnly)).toEqual({
+      kind: "session",
+      sessionId,
+    });
+    expect(agentLinkTargetFromHref("https://example.com", linked)).toBeUndefined();
   });
 
   it("shows cursor todo updates as one TODO list", () => {

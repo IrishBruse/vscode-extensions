@@ -1,6 +1,7 @@
 import {
     commands,
     type ExtensionContext,
+    env,
     RelativePattern,
     type TextDocument,
     Uri,
@@ -701,6 +702,11 @@ export class AcpUiSessionController {
                 type: "recentSessions",
                 sessions: this.recentSessionsForAgent(this.agentConfig?.name, this.sessionId),
             });
+            return;
+        }
+
+        if (parsed.type === "openExternalUrl") {
+            await env.openExternal(Uri.parse(parsed.url));
             return;
         }
 

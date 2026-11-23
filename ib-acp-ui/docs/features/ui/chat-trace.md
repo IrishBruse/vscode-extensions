@@ -60,6 +60,12 @@ After you open it, Show output stays under the output.
 A TODO list shows the agent plan.
 Each item has a mark for pending, in progress, complete, or cancelled.
 
+A markdown link whose target is a subagent id opens that subagent.
+Hover a link to see its target.
+Right-click a link and choose Copy link to copy that target.
+A file link opens that file.
+An http link opens outside the chat.
+
 A subagent task shows as its own card.
 The card shows the status, the short description, the subagent type, and the prompt.
 A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
@@ -112,7 +118,9 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 
 [TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L101-L373) walks trace items and picks a presentation by type.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L117-L158) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L240-L291) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L127-L165) puts the target on the anchor, and right-click opens Copy link.
+  [onOpenMarkdownLink](../../../webview/acp-ui/src/AcpUiApp.tsx#L532-L547) opens a subagent id through [agentLinkTargetFromHref](../../../webview/acp-ui/src/chatReducer.ts#L1808-L1833), a file path in the editor, or an http link outside the chat.
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
   [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.
 - Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L59-L111) is a disclosure.

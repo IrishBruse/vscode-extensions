@@ -147,6 +147,8 @@ export type WebviewToExtensionMessage =
           path: string;
           target?: WorkspacePathOpenTarget;
       }
+    /** Open an http(s) markdown link outside the chat. */
+    | { type: "openExternalUrl"; url: string }
     /** Editor tab status. `null` restores the chat name. `animate` cycles the generating mark. */
     | {
           type: "tabActivity";
@@ -630,6 +632,13 @@ export function tryParseWebviewMessage(raw: unknown): WebviewToExtensionMessage 
             indicator: record.indicator === null ? null : record.indicator,
             animate: record.animate !== false,
         };
+    }
+    if (
+        messageType === "openExternalUrl" &&
+        typeof record.url === "string" &&
+        /^https?:\/\//i.test(record.url)
+    ) {
+        return { type: "openExternalUrl", url: record.url };
     }
     if (
         messageType === "openWorkspacePath" &&

@@ -150,6 +150,9 @@ async function mountView(): Promise<void> {
         ...(options?.target === "auto" ? { target: "auto" } : {}),
       });
     },
+    (url) => {
+      host.post({ type: "openExternalUrl", url });
+    },
     (items, thoughtDurations, bashDurations) => {
       host.post({ type: "saveVisibleTrace", items, thoughtDurations, bashDurations });
     },

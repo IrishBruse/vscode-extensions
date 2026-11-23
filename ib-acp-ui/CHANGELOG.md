@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: A markdown link to a subagent opens that subagent, with the target on hover and Copy link on right-click.
 - **Add**: Cursor todo updates show in the same TODO list as agent plans.
 - **Fix**: Each Cursor subagent is one card, and opening that card shows that subagent.
 - **Fix**: Accepting a Cursor plan switches the chat to agent mode and continues with the implementation.

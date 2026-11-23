@@ -20,8 +20,11 @@ import type {
 import { anchoredScrollTop } from "./anchoredScroll";
 import { webviewLayoutIsMeasurable, webviewWidthIsMeasurable } from "./webviewLayout";
 import {
+  activityTraceForSession,
   activityTraceForTool,
+  agentLinkTargetFromHref,
   bashDurationsFromTrace,
+  subagentFocusItem,
   type ChatAction,
   chatReducer,
   createChatStateFromInit,
@@ -53,6 +56,10 @@ import { AcpRpcLogView } from "./components/acp/protocol/AcpRpcLogView";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
 import { collectPathsFromDataTransfer, dataTransferLooksLikePathDrop } from "./droppedFilePaths";
+import {
+  markdownExternalUrl,
+  markdownFilePath,
+} from "./components/acp/trace/AgentMarkdown/markdownLink";
 
 export type AcpUiAppProps = {
   init: InitPayload;
@@ -75,6 +82,7 @@ export type AcpUiAppProps = {
   postOpenSession?: (sessionId: string) => void;
   postDismissRecent?: (sessionId: string) => void;
   postOpenWorkspacePath?: (path: string, options?: { target?: WorkspacePathOpenTarget }) => void;
+  postOpenExternalUrl?: (url: string) => void;
   postPermissionResponse: (
     payload:
       | { requestId: string; selectedOptionId: string }
@@ -122,6 +130,7 @@ export function AcpUiApp({
   postOpenSession,
   postDismissRecent,
   postOpenWorkspacePath,
+  postOpenExternalUrl,
   postPermissionResponse,
   postCursorAskQuestionResponse,
   postCursorCreatePlanResponse,
@@ -520,12 +529,24 @@ export function AcpUiApp({
     appendDroppedPathsRef.current(paths);
   };
 
+  const onOpenMarkdownLink = (href: string): void => {
+    const agent = agentLinkTargetFromHref(href, state);
+    if (agent !== undefined) {
+      setOpenAgent(agent);
+      return;
+    }
+    const filePath = markdownFilePath(href);
+    if (filePath !== undefined) {
+      postOpenWorkspacePath?.(filePath);
+      return;
+    }
+    const url = markdownExternalUrl(href);
+    if (url !== undefined) {
+      postOpenExternalUrl?.(url);
+    }
+  };
   const openSession =
-    openAgent?.kind === "session"
-      ? state.trace.find(
-          (item) => item.type === "subagent" && item.sessionId === openAgent.sessionId,
-        )
-      : undefined;
+    openAgent?.kind === "session" ? subagentFocusItem(state, openAgent.sessionId) : undefined;
   const openTask =
     openAgent?.kind === "task"
       ? state.trace.find((item) => item.type === "tool" && item.toolCallId === openAgent.toolCallId)
@@ -662,7 +683,7 @@ export function AcpUiApp({
                 status={subagentStatusLabel(openSession.state, openSession.stopReason)}
                 startedAtMs={openSession.state === "running" ? openSession.startedAtMs : undefined}
                 description={openSession.description}
-                items={state.subagentActivity.get(openSession.sessionId)?.trace ?? []}
+                items={activityTraceForSession(state, openSession.sessionId)}
                 showThoughts={showThinkingBlocks}
                 expandAllToolOutputs={expandAllToolOutputs}
                 followBottom={stickToBottomRef.current}
@@ -677,6 +698,7 @@ export function AcpUiApp({
                 onOpenTask={(toolCallId) => {
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
+                onOpenMarkdownLink={onOpenMarkdownLink}
                 taskActivityByToolId={taskActivityByToolId}
                 subagentSessionByToolId={state.subagentSessionByToolId}
               />
@@ -698,6 +720,7 @@ export function AcpUiApp({
                 onOpenTask={(toolCallId) => {
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
+                onOpenMarkdownLink={onOpenMarkdownLink}
                 taskActivityByToolId={taskActivityByToolId}
                 subagentSessionByToolId={state.subagentSessionByToolId}
               />
@@ -718,6 +741,7 @@ export function AcpUiApp({
                 onOpenTask={(toolCallId) => {
                   setOpenAgent({ kind: "task", toolCallId });
                 }}
+                onOpenMarkdownLink={onOpenMarkdownLink}
                 taskActivityByToolId={taskActivityByToolId}
                 subagentSessionByToolId={state.subagentSessionByToolId}
               />

@@ -1749,6 +1749,89 @@ function sessionIdsReferToSameChild(stored: string, incoming: string): boolean {
   );
 }
 
+const agentLinkUuid =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Child transcript for a session id, including Cursor's `agentId.run` form. */
+export function activityTraceForSession(
+  state: ChatState,
+  sessionId: string,
+): readonly TraceItem[] {
+  const exact = state.subagentActivity.get(sessionId);
+  if (exact !== undefined) {
+    return exact.trace;
+  }
+  for (const [id, bucket] of state.subagentActivity) {
+    if (sessionIdsReferToSameChild(sessionId, id)) {
+      return bucket.trace;
+    }
+  }
+  return [];
+}
+
+/** Subagent header for a session id, including one that only lives in the child transcript. */
+export function subagentFocusItem(
+  state: ChatState,
+  sessionId: string,
+): SubagentTraceItem | undefined {
+  for (const item of state.trace) {
+    if (item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId)) {
+      return item;
+    }
+  }
+  for (const bucket of state.subagentActivity.values()) {
+    for (const item of bucket.trace) {
+      if (item.type === "subagent" && sessionIdsReferToSameChild(item.sessionId, sessionId)) {
+        return item;
+      }
+    }
+  }
+  for (const id of state.subagentActivity.keys()) {
+    if (sessionIdsReferToSameChild(id, sessionId)) {
+      return {
+        type: "subagent",
+        sessionId: id,
+        title: "Subagent",
+        description: "",
+        state: null,
+        stopReason: null,
+      };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Where a markdown link should open when its target is a subagent id.
+ * A task card that owns that session opens first.
+ */
+export function agentLinkTargetFromHref(
+  href: string,
+  state: ChatState,
+): { kind: "task"; toolCallId: string } | { kind: "session"; sessionId: string } | undefined {
+  const id = href.trim();
+  if (!agentLinkUuid.test(id)) {
+    return undefined;
+  }
+  for (const [toolId, sessionId] of state.subagentSessionByToolId) {
+    if (!sessionIdsReferToSameChild(sessionId, id)) {
+      continue;
+    }
+    const toolCallId = canonicalToolCallId(toolId);
+    const visible = state.trace.some(
+      (item) => item.type === "tool" && canonicalToolCallId(item.toolCallId) === toolCallId,
+    );
+    if (visible) {
+      return { kind: "task", toolCallId };
+    }
+  }
+  const session = subagentFocusItem(state, id);
+  if (session === undefined) {
+    return undefined;
+  }
+  return { kind: "session", sessionId: session.sessionId };
+}
+
 function cursorTodosFromToolRow(
   toolCallId: string,
   title: string | undefined,

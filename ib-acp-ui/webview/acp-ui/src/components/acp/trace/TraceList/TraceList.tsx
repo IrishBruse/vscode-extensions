@@ -136,6 +136,7 @@ type TraceSegmentViewProps = {
   onOpenImage?: (src: string) => void;
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
+  onOpenMarkdownLink?: (href: string) => void;
   taskActivity?: readonly TraceItem[];
 };
 
@@ -152,6 +153,7 @@ function traceSegmentPropsAreEqual(prev: TraceSegmentViewProps, next: TraceSegme
     prev.onOpenImage !== next.onOpenImage ||
     prev.onOpenSubagent !== next.onOpenSubagent ||
     prev.onOpenTask !== next.onOpenTask ||
+    prev.onOpenMarkdownLink !== next.onOpenMarkdownLink ||
     prev.taskActivity !== next.taskActivity
   ) {
     return false;
@@ -180,6 +182,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
   onOpenImage,
   onOpenSubagent,
   onOpenTask,
+  onOpenMarkdownLink,
   taskActivity,
 }: TraceSegmentViewProps): ReactElement | null {
   if (segment.kind === "toolExecute") {
@@ -238,7 +241,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
           </span>
         ) : null}
         <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
-          <AgentMarkdown text={item.text} />
+          <AgentMarkdown text={item.text} onOpenLink={onOpenMarkdownLink} />
         </Suspense>
       </section>,
     );
@@ -250,7 +253,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
       <div className={`agent-response-stream${gapClass}`}>
         <div className="agent-response-markdown" aria-label="Agent response">
           <Suspense fallback={<div className="agent-markdown-pending">{item.text}</div>}>
-            <AgentMarkdown text={item.text} />
+            <AgentMarkdown text={item.text} onOpenLink={onOpenMarkdownLink} />
           </Suspense>
         </div>
       </div>,
@@ -266,6 +269,7 @@ const TraceSegmentView = memo(function TraceSegmentView({
         durationMs={item.durationMs}
         startedAtMs={item.startedAtMs}
         collapseNonce={collapseNonce}
+        onOpenLink={onOpenMarkdownLink}
       />,
     );
   }
@@ -328,6 +332,7 @@ export const TraceList = memo(function TraceList({
   onOpenImage,
   onOpenSubagent,
   onOpenTask,
+  onOpenMarkdownLink,
   taskActivityByToolId,
   subagentSessionByToolId,
 }: {
@@ -344,6 +349,7 @@ export const TraceList = memo(function TraceList({
   onOpenImage?: (src: string) => void;
   onOpenSubagent?: (sessionId: string) => void;
   onOpenTask?: (toolCallId: string) => void;
+  onOpenMarkdownLink?: (href: string) => void;
   taskActivityByToolId?: ReadonlyMap<string, readonly TraceItem[]>;
   subagentSessionByToolId?: ReadonlyMap<string, string>;
 }): ReactElement {
@@ -445,6 +451,7 @@ export const TraceList = memo(function TraceList({
         onOpenImage={onOpenImage}
         onOpenSubagent={onOpenSubagent}
         onOpenTask={onOpenTask}
+        onOpenMarkdownLink={onOpenMarkdownLink}
         taskActivity={
           segment.kind === "single" && segment.item.type === "tool"
             ? taskActivityByToolId?.get(segment.item.toolCallId)
