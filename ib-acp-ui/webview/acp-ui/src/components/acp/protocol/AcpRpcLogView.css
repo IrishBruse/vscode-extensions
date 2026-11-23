@@ -2,13 +2,13 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0 var(--acp-ui-space-16) var(--acp-ui-space-12);
+  padding: 4rem 0 var(--acp-ui-space-12);
 }
 
 .acp-rpc-log-path {
   display: block;
-  width: calc(100% - var(--acp-ui-space-16) * 2);
-  margin: var(--acp-ui-space-8) var(--acp-ui-space-16) 0;
+  width: 100%;
+  margin: 0 0 var(--acp-ui-space-10);
   padding: var(--acp-ui-space-6) var(--acp-ui-space-10);
   border: 1px solid var(--acp-ui-border-subtle);
   border-radius: var(--acp-ui-radius-sm);

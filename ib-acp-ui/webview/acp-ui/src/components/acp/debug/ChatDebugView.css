@@ -273,8 +273,7 @@
   flex-direction: column;
 }
 
-.agent-trace--debug .chat-debug-hud,
-.agent-trace--acp .acp-rpc-log {
+.agent-trace--debug .chat-debug-hud {
   padding-inline-end: 3.5rem;
 }
 
