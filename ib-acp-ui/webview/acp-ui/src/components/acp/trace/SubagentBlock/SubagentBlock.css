@@ -55,10 +55,50 @@
   margin-top: 2px;
   padding-left: 1.05rem;
   overflow: hidden;
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+  line-height: 1.35;
   color: var(--acp-ui-text-primary);
 }
 
-.subagent-block-activity-text {
-  white-space: pre-wrap;
-  word-break: break-word;
+.subagent-block-activity .agent-markdown {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  pointer-events: none;
+}
+
+.subagent-block-activity .agent-markdown :is(h1, h2, h3, h4, h5, h6, p, li, pre, code, a, td, th) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.subagent-block-activity .agent-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-weight: 600;
+}
+
+.subagent-block-activity .agent-markdown :is(p, ul, ol, li, pre, blockquote, table) {
+  margin: 0;
+}
+
+.subagent-block-activity .agent-markdown :is(ul, ol) {
+  padding-left: 1.1em;
+}
+
+.subagent-block-activity .agent-markdown code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.subagent-block-activity .agent-markdown-code-block,
+.subagent-block-activity .agent-markdown-code-block > pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
 }

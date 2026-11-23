@@ -4,12 +4,13 @@ import type { ToolCallStatus } from "../../../../../../../src/protocol/extension
 import { formatCompactDurationMs } from "../../../../../../../src/protocol/visibleTrace";
 import type { SubagentTraceItem, TraceItem, TraceToolItem } from "../../../../chatReducer";
 import "../../tools/ToolCallBlock/ToolCallBlock.css";
+import { AgentMarkdown } from "../AgentMarkdown/AgentMarkdown";
 import { SubagentRunTimer } from "./SubagentRunTimer";
 import { subagentStatusLabel, taskStatusLabel } from "./subagentStatus";
 import "./SubagentBlock.css";
 
-const activityPreviewLineCount = 6;
-const activityPreviewCharTail = 600;
+const activityPreviewCharTail = 2000;
+const activityPreviewFenceLookback = 8000;
 
 function activityText(item: TraceItem): string | undefined {
   switch (item.type) {
@@ -33,23 +34,47 @@ function activityText(item: TraceItem): string | undefined {
   }
 }
 
-/** Latest lines of a subagent transcript, capped so the card preview stays one height. */
+/**
+ * Tail of a subagent transcript for the card preview.
+ * When the tail starts inside a code fence, the opening fence stays so markdown can render it.
+ */
 export function activityPreview(items: readonly TraceItem[]): string {
-  const lines: string[] = [];
+  const parts: string[] = [];
   for (const item of items) {
     const text = activityText(item);
-    if (text === undefined) {
-      continue;
-    }
-    for (const rawLine of text.split("\n")) {
-      const line = rawLine.replace(/[ \t]+/g, " ").trim();
-      if (line.length > 0) {
-        lines.push(line);
-      }
+    if (text !== undefined) {
+      parts.push(text);
     }
   }
-  const tail = lines.slice(-activityPreviewLineCount).join("\n");
-  return tail.length > activityPreviewCharTail ? tail.slice(tail.length - activityPreviewCharTail) : tail;
+  return markdownPreviewTail(parts.join("\n").trim());
+}
+
+function markdownPreviewTail(text: string): string {
+  if (text.length <= activityPreviewCharTail) {
+    return text;
+  }
+  const tailStart = text.length - activityPreviewCharTail;
+  const lookbackStart = Math.max(0, text.length - activityPreviewFenceLookback);
+  const fences: number[] = [];
+  const fence = /```/g;
+  let match: RegExpExecArray | null;
+  const region = text.slice(lookbackStart);
+  while ((match = fence.exec(region)) !== null) {
+    fences.push(lookbackStart + match.index);
+  }
+  let openFence = -1;
+  for (const index of fences) {
+    if (index >= tailStart) {
+      break;
+    }
+    openFence = openFence === -1 ? index : -1;
+  }
+  if (openFence !== -1) {
+    return text.slice(openFence);
+  }
+  const sliced = text.slice(tailStart);
+  const lineBreak = sliced.indexOf("\n");
+  return lineBreak === -1 ? sliced : sliced.slice(lineBreak + 1);
 }
 
 function StatusGlyph({ status }: { status: ToolCallStatus }): ReactElement {
@@ -221,7 +246,7 @@ export function SubagentBlock({
       {card.detail.length > 0 ? <span className="subagent-block-detail">{card.detail}</span> : null}
       {preview.length > 0 ? (
         <span className="subagent-block-activity">
-          <span className="subagent-block-activity-text">{preview}</span>
+          <AgentMarkdown text={preview} preview />
         </span>
       ) : null}
     </button>

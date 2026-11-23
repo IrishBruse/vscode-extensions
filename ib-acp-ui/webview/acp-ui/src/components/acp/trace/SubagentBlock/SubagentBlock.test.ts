@@ -37,12 +37,18 @@ describe("SubagentBlock", () => {
     expect(html).toContain("Explore");
   });
 
-  it("keeps the latest six activity lines in one fixed preview", async () => {
+  it("renders the preview as markdown and keeps an open code fence", async () => {
+    const filler = `${"x".repeat(2100)}\n`;
     const activity: TraceItem[] = [
-      { type: "agent", text: "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight" },
-      { type: "tool", title: "Read auth.ts", kind: "read", subtitle: undefined, toolCallId: "read-1", status: "completed", content: undefined, diffRows: undefined, detailVisible: false },
+      {
+        type: "agent",
+        text: `${filler}\`\`\`python\nprint(1)\nprint(2)\n\`\`\`\nDone **now**`,
+      },
     ];
-    expect(activityPreview(activity)).toBe("four\nfive\nsix\nseven\neight\nRead auth.ts");
+    const preview = activityPreview(activity);
+    expect(preview.startsWith("```python")).toBe(true);
+    expect(preview).toContain("**now**");
+    expect(preview).not.toContain(filler.trim());
     const html = await renderBlock(
       {
         type: "tool",
@@ -59,7 +65,8 @@ describe("SubagentBlock", () => {
       activity,
     );
     expect(html).toContain("subagent-block-activity");
-    expect(html).toContain("Read auth.ts");
-    expect(html).not.toContain(">one");
+    expect(html).toContain("<strong>now</strong>");
+    expect(html).toContain("print(1)");
+    expect(html).not.toContain("agent-markdown-code-block-copy");
   });
 });

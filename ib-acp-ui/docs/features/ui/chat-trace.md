@@ -69,8 +69,8 @@ An http link opens outside the chat.
 A subagent task shows as its own card.
 The card shows the status, the short description, the subagent type, and the prompt.
 A running card shows a live timer in the same form as Thinking, such as `Running for 1.2s`.
-The card also shows the latest six lines of that subagent.
-The preview stays six lines tall, so the card height does not change while the text updates.
+The card also shows the latest six lines of that subagent as markdown.
+The preview uses the card font size and stays six lines tall, so the card height does not change while the text updates.
 A nested child shows inside the child that owns it.
 Open the card to read that agent's live messages and tool calls, then use Back to return to the parent chat.
 A child session from the agent shows the same way, with status Running, Needs action, Idle, Failed, Cancelled, or Unknown.
@@ -120,8 +120,8 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 
 [TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L101-L373) walks trace items and picks a presentation by type.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L240-L291) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
-  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L127-L165) puts the target on the anchor, and right-click opens Copy link.
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L242-L301) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L129-L167) puts the target on the anchor, and right-click opens Copy link.
   [onOpenMarkdownLink](../../../webview/acp-ui/src/AcpUiApp.tsx#L532-L547) opens a subagent id through [agentLinkTargetFromHref](../../../webview/acp-ui/src/chatReducer.ts#L1808-L1833), a file path in the editor, or an http link outside the chat.
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
   [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.
@@ -135,9 +135,9 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   [activityGroupRanges](../../../webview/acp-ui/src/components/acp/trace/TraceList/traceActivityGroup.ts#L10-L31) wraps each run of thoughts and tool calls.
   [trace-activity-group](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.css#L91-L96) adds padding around that run.
 - TODO lists: [PlanBlock](../../../webview/acp-ui/src/components/acp/trace/PlanBlock/PlanBlock.tsx#L57-L91) draws a mark for pending, in progress, complete, and cancelled.
-- Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L180-L229) is the card for a Cursor task and for an ACP child session.
-  [activityPreview](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L37-L53) keeps the latest six lines.
-  [subagent-block-activity](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.css#L50-L59) holds that preview at `height: 6lh` and aligns the text to the bottom.
+- Subagent rows: [SubagentBlock](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L205-L254) is the card for a Cursor task and for an ACP child session.
+  [activityPreview](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.tsx#L41-L78) keeps the latest text, including an open code fence.
+  [subagent-block-activity](../../../webview/acp-ui/src/components/acp/trace/SubagentBlock/SubagentBlock.css#L50-L104) renders that text as markdown at the card font size, in a `6lh` window aligned to the bottom.
   [partitionTraceSegments](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L55-L88) skips the child row when a task card already owns that session.
   [SubagentFocus](../../../webview/acp-ui/src/components/acp/trace/SubagentFocus/SubagentFocus.tsx#L11-L84) shows the prompt and that subagent.
   [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx) draws Back in the top-left chrome to return to the parent.

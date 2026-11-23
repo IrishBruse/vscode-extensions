@@ -22,6 +22,8 @@ export type AgentMarkdownProps = {
   text: string;
   /** Called when a link is clicked. The argument is the link target. */
   onOpenLink?: (href: string) => void;
+  /** Omit the code-copy button so this block can sit inside another control. */
+  preview?: boolean;
 };
 
 type LinkCopyMenu = {
@@ -240,6 +242,7 @@ const markdownComponents = {
 export const AgentMarkdown = memo(function AgentMarkdown({
   text,
   onOpenLink,
+  preview = false,
 }: AgentMarkdownProps): ReactElement {
   const [copyMenu, setCopyMenu] = useState<LinkCopyMenu | null>(null);
   const closeCopyMenu = useCallback(() => {
@@ -248,6 +251,13 @@ export const AgentMarkdown = memo(function AgentMarkdown({
   const components = useMemo(
     () => ({
       ...markdownComponents,
+      ...(preview
+        ? {
+            pre({ children, node: _node, ...rest }: { children?: ReactNode; node?: unknown }) {
+              return <pre {...rest}>{children}</pre>;
+            },
+          }
+        : {}),
       a(props: { href?: string; children?: ReactNode; node?: unknown }) {
         return (
           <MarkdownLink
@@ -266,7 +276,7 @@ export const AgentMarkdown = memo(function AgentMarkdown({
         );
       },
     }),
-    [onOpenLink],
+    [onOpenLink, preview],
   );
   if (text.length === 0) {
     return <div className="agent-markdown agent-markdown-empty" aria-hidden="true" />;
