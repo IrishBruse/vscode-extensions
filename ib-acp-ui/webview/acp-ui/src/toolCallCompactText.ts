@@ -709,14 +709,19 @@ export function compactToolShowsDiffStats(item: TraceToolItem): boolean {
 export type ToolCallDetailKind = "diff" | "expandable" | "summary";
 
 /**
- * Writes with diff rows always open as a diff.
+ * Writes with diff rows open as a diff.
+ * A finished file delete stays one line.
  * Other tools with extra text are a compact line you can click.
  */
 export function toolCallDetailKind(item: TraceToolItem): ToolCallDetailKind {
   if (isExecuteTool(item) || isSubagentTaskTool(item)) {
     return "summary";
   }
-  if (normalizedKind(item) === "edit" && (item.diffRows?.length ?? 0) > 0) {
+  if (
+    normalizedKind(item) === "edit" &&
+    (item.diffRows?.length ?? 0) > 0 &&
+    !isConfirmedFileDeletion(item)
+  ) {
     return "diff";
   }
   if ((item.content?.trim().length ?? 0) > 0 && !isSearchCountContent(item.content ?? "")) {

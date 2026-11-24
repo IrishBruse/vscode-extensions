@@ -291,6 +291,7 @@ describe("toolCallCompactText", () => {
       diffRows: [{ kind: "removed", text: "export function SubagentTaskBlock() {}" }],
     });
     expect(compactToolDetailLine(removed)).toBe(`Deleted ${path}`);
+    expect(toolCallDetailKind(removed)).toBe("summary");
     expect(compactToolGroupSummary([removed, { ...removed, toolCallId: "del-2" }])).toBe(
       "deleted 2 files",
     );

@@ -51,6 +51,8 @@ Click a tool line that has more text to show that text.
 A write always shows its diff under the line.
 A long diff shows a short window around the edits.
 A completed file delete says Deleted.
+It does not show a diff under the line.
+The tool verb, such as Read, Edited, Deleted, Grepped, or Fetched, is bold.
 A delete that is still waiting stays Edited.
 A bash command shows the working directory and the elapsed time, then the command under `$`.
 For example, `~/foo/bar 2.1s` and then `$ echo test`.
@@ -150,7 +152,8 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   [AcpUiApp](../../../webview/acp-ui/src/AcpUiApp.tsx) draws Back in the top-left chrome to return to the parent.
   [messagesForSessionNotification](../../../src/acp/mapping/sessionUpdateMapping.ts#L1529-L1566) keeps child session updates on that child.
 - Tools: [ToolCallCompactBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.tsx#L443-L532).
-  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts) shows a write as a diff, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
+  [toolCallDetailKind](../../../webview/acp-ui/src/toolCallCompactText.ts#L716-L734) shows a write as a diff, leaves a finished file delete as one line, makes ranged reads with extra text clickable, and leaves whole-file reads as one line.
+  [tool-call-compact-verb](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactBlock/ToolCallCompactBlock.css#L100-L103) draws that verb in bold.
   [formatCompactPath](../../../webview/acp-ui/src/toolCallCompactText.ts) shows paths under the agent working directory (`init.workspaceRoot`) as relative paths, including when the agent writes them with `~`.
   [shortPathDisplay](../../../webview/acp-ui/src/toolCallCompactText.ts#L55-L62) links that path, including a file at the workspace root.
   Other paths shorten to `~/…`.

@@ -5,6 +5,8 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A completed file delete does not show a diff under the line.
+- **Change**: Tool verbs such as Read, Edited, and Deleted are bold.
 - **Fix**: A file at the workspace root on a tool line is a link.
 - **Fix**: Steering sends the queued message after the current tool finishes.
 - **Change**: A Fetched tool line and web links in the tool text open when you click them.

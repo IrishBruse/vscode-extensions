@@ -29,7 +29,7 @@
 
 .tool-call-compact-summary-verbs {
   color: var(--vscode-foreground);
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .tool-call-compact-summary-counts {
@@ -45,7 +45,7 @@
 
 .tool-call-compact--truncated-details .tool-call-compact-detail-row .tool-call-compact-verb {
   color: var(--vscode-foreground);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .tool-call-compact--truncated-details .tool-call-compact-detail-row .tool-call-compact-detail-text {
@@ -99,7 +99,7 @@
 
 .tool-call-compact-verb {
   color: var(--vscode-foreground);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .tool-call-compact-detail-text {
