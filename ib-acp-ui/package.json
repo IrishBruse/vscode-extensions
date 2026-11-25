@@ -120,6 +120,12 @@
                     "default": "",
                     "description": "Directory for chat .acp files. Empty uses extension global storage. Absolute path or workspace-relative."
                 },
+                "ib-acp-ui.autoApproveWebFetchAndSearch": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "Auto-approve web fetch and web search",
+                    "markdownDescription": "Approve web fetch and web search without a permission dialog. File search, grep, edits, and shell commands still ask."
+                },
                 "ib-acp-ui.contentWidthPercent": {
                     "type": "number",
                     "default": 100,

@@ -25,7 +25,9 @@ import type { AcpHostTerminal } from "../ports/hostTerminal";
 import { isImageFilePath } from "../../platform/imageFilePath";
 import { readWorkspaceImage } from "../../platform/readWorkspaceImage";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
+import { readAutoApproveWebFetchAndSearch } from "../config/autoApproveWebToolsSetting";
 import { LatestPromptTurn } from "./latestPromptTurn";
+import { autoApproveWebToolOption } from "./webToolPermission";
 import { buildModelId, parseModelIdBracketParams } from "./modelVariantPicker";
 import {
     type AcpUiSessionConfigOption,
@@ -177,6 +179,17 @@ export class AcpSessionBridge {
         params: acp.RequestPermissionRequest,
     ): Promise<acp.RequestPermissionResponse> {
         const trackedKind = this.permissionTrackedKind(params.toolCall);
+        if (readAutoApproveWebFetchAndSearch()) {
+            const option = autoApproveWebToolOption(params);
+            if (option !== undefined) {
+                for (const msg of extensionMessagesForPermissionRequest("perm-web-auto", params)) {
+                    if (msg.type !== "permissionRequest") {
+                        this.postSessionOrChild(params.sessionId, msg);
+                    }
+                }
+                return { outcome: { outcome: "selected", optionId: option.optionId } };
+            }
+        }
         const remembered = stickyPermissionOutcome(this.permissionGrants, params, trackedKind);
         if (remembered !== undefined) {
             for (const msg of extensionMessagesForPermissionRequest("perm-remembered", params)) {

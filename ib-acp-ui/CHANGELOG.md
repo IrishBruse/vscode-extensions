@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Add**: `ib-acp-ui.autoApproveWebFetchAndSearch` approves web fetch and web search without a dialog, and it is off by default.
 - **Change**: A completed file delete does not show a diff under the line.
 - **Change**: Tool verbs such as Read, Edited, and Deleted are bold.
 - **Fix**: A file at the workspace root on a tool line is a link.
