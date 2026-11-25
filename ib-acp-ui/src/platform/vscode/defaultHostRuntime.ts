@@ -1,4 +1,5 @@
 import { workspace } from "vscode";
+import { readAutoApproveWebFetchAndSearch } from "../../acp/config/autoApproveWebToolsSetting";
 import { loadCursorMcpReport } from "../../acp/mcp/vscodeMcpServers";
 import type { AcpRpcNdjsonSink } from "../../acp/ports/rpcNdjsonSink";
 import type { AcpSessionHostRuntime } from "../../acp/session/acpSessionBridge";
@@ -15,6 +16,7 @@ export function createDefaultAcpSessionHostRuntime(
         hostTerminal: createVscodeAcpHostTerminal({ getWorkspaceRoot }),
         rpcNdjsonSink,
         getWorkspaceRoot,
+        autoApproveWebTools: readAutoApproveWebFetchAndSearch,
         loadMcpServers: (capabilities) => loadCursorMcpReport(capabilities),
     };
 }

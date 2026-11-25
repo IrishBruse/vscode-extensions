@@ -26,7 +26,6 @@ import type { AcpHostTerminal } from "../ports/hostTerminal";
 import { isImageFilePath } from "../../platform/imageFilePath";
 import { readWorkspaceImage } from "../../platform/readWorkspaceImage";
 import type { AcpRpcNdjsonSink } from "../ports/rpcNdjsonSink";
-import { readAutoApproveWebFetchAndSearch } from "../config/autoApproveWebToolsSetting";
 import { LatestPromptTurn } from "./latestPromptTurn";
 import { autoApproveWebToolOption } from "./webToolPermission";
 import { buildModelId, parseModelIdBracketParams } from "./modelVariantPicker";
@@ -78,6 +77,8 @@ export type AcpSessionHostRuntime = {
     hostTerminal: AcpHostTerminal;
     rpcNdjsonSink: AcpRpcNdjsonSink;
     getWorkspaceRoot: () => string | undefined;
+    /** When true, web fetch and web search permissions are approved without a dialog. */
+    autoApproveWebTools?: () => boolean;
     /** MCP servers for `session/new` and `session/load`. Omit to send none. */
     loadMcpServers?: (
         capabilities: acp.McpCapabilities | undefined,
@@ -184,7 +185,7 @@ export class AcpSessionBridge {
         params: acp.RequestPermissionRequest,
     ): Promise<acp.RequestPermissionResponse> {
         const trackedKind = this.permissionTrackedKind(params.toolCall);
-        if (readAutoApproveWebFetchAndSearch()) {
+        if (this.host.autoApproveWebTools?.() === true) {
             const option = autoApproveWebToolOption(params);
             if (option !== undefined) {
                 for (const msg of extensionMessagesForPermissionRequest("perm-web-auto", params)) {
