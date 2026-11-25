@@ -1,4 +1,5 @@
 import { workspace } from "vscode";
+import { loadCursorMcpReport } from "../../acp/mcp/vscodeMcpServers";
 import type { AcpRpcNdjsonSink } from "../../acp/ports/rpcNdjsonSink";
 import type { AcpSessionHostRuntime } from "../../acp/session/acpSessionBridge";
 import { createVscodeAcpHostFilesystem, getFirstWorkspaceFolderPath } from "./vscodeHostFilesystem";
@@ -14,5 +15,6 @@ export function createDefaultAcpSessionHostRuntime(
         hostTerminal: createVscodeAcpHostTerminal({ getWorkspaceRoot }),
         rpcNdjsonSink,
         getWorkspaceRoot,
+        loadMcpServers: (capabilities) => loadCursorMcpReport(capabilities),
     };
 }

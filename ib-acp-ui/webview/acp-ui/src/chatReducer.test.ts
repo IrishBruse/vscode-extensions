@@ -668,6 +668,24 @@ describe("chatReducer", () => {
     expect(state.nextAcpRpcLineId).toBe(2);
   });
 
+  it("stores MCP servers for the MCP tab", () => {
+    const state = chatReducer(createInitialChatState(), {
+      type: "mcpServers",
+      servers: [
+        {
+          name: "github",
+          transport: "stdio",
+          detail: "npx server",
+          source: "~/.cursor/mcp.json",
+          forwarded: true,
+        },
+      ],
+      note: "Could not read .cursor/mcp.json",
+    });
+    expect(state.mcpServers).toHaveLength(1);
+    expect(state.mcpServerNote).toBe("Could not read .cursor/mcp.json");
+  });
+
   it("clears acpRpcLines on sessionReset", () => {
     let state = createInitialChatState();
     state = chatReducer(state, {

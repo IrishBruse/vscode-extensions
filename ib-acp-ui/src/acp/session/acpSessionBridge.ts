@@ -3,6 +3,7 @@ import { RequestError } from "@agentclientprotocol/sdk";
 import type {
     ExtensionToWebviewMessage,
     WebviewToExtensionMessage,
+    AcpUiMcpServerRow,
     AcpUiPromptImage,
 } from "../../protocol/extensionHostMessages";
 import type { AcpAgentSpawnConfig } from "../domain/agentSpawnConfig";
@@ -77,6 +78,10 @@ export type AcpSessionHostRuntime = {
     hostTerminal: AcpHostTerminal;
     rpcNdjsonSink: AcpRpcNdjsonSink;
     getWorkspaceRoot: () => string | undefined;
+    /** MCP servers for `session/new` and `session/load`. Omit to send none. */
+    loadMcpServers?: (
+        capabilities: acp.McpCapabilities | undefined,
+    ) => Promise<{ forwarded: acp.McpServer[]; servers: AcpUiMcpServerRow[]; note?: string }>;
 };
 
 export type AcpSessionBridgeHooks = {
@@ -571,6 +576,7 @@ export class AcpSessionBridge {
             supported: this.agentProcess.supportsImagePrompt(),
         });
         await this.ensureAuthenticated(init);
+        const mcpServers = await this.mcpServersForSession(init);
         const runtimeSessionId = options?.runtimeSessionId?.trim();
         const useLoad = shouldLoadRuntimeSession(
             runtimeSessionId,
@@ -580,16 +586,16 @@ export class AcpSessionBridge {
         if (useLoad && runtimeSessionId !== undefined) {
             await this.hooks?.onResumeSession?.();
             try {
-                bootstrap = await this.loadSessionWithAuthRetry(init, runtimeSessionId);
+                bootstrap = await this.loadSessionWithAuthRetry(init, runtimeSessionId, mcpServers);
                 this.setParentSessionId(runtimeSessionId);
             } catch {
                 await this.hooks?.onLoadSessionFailed?.();
-                const created = await this.newSessionWithAuthRetry(init);
+                const created = await this.newSessionWithAuthRetry(init, mcpServers);
                 bootstrap = created;
                 this.setParentSessionId(created.sessionId);
             }
         } else {
-            const created = await this.newSessionWithAuthRetry(init);
+            const created = await this.newSessionWithAuthRetry(init, mcpServers);
             bootstrap = created;
             this.setParentSessionId(created.sessionId);
         }
@@ -1046,32 +1052,44 @@ export class AcpSessionBridge {
         }
     }
 
+    private async mcpServersForSession(init: acp.InitializeResponse): Promise<acp.McpServer[]> {
+        const report = await this.host.loadMcpServers?.(init.agentCapabilities?.mcpCapabilities);
+        this.postToWebview({
+            type: "mcpServers",
+            servers: report?.servers ?? [],
+            ...(report?.note !== undefined && report.note.length > 0 ? { note: report.note } : {}),
+        });
+        return report?.forwarded ?? [];
+    }
+
     private async newSessionWithAuthRetry(
         init: acp.InitializeResponse,
+        mcpServers: acp.McpServer[],
     ): Promise<acp.NewSessionResponse> {
         try {
-            return await this.agentProcess.newSession();
+            return await this.agentProcess.newSession(mcpServers);
         } catch (err: unknown) {
             if (!isAuthRequiredError(err)) {
                 throw err;
             }
             await this.ensureAuthenticated(init);
-            return await this.agentProcess.newSession();
+            return await this.agentProcess.newSession(mcpServers);
         }
     }
 
     private async loadSessionWithAuthRetry(
         init: acp.InitializeResponse,
         runtimeSessionId: string,
+        mcpServers: acp.McpServer[],
     ): Promise<acp.LoadSessionResponse> {
         try {
-            return await this.agentProcess.loadSession(runtimeSessionId);
+            return await this.agentProcess.loadSession(runtimeSessionId, mcpServers);
         } catch (err: unknown) {
             if (!isAuthRequiredError(err)) {
                 throw err;
             }
             await this.ensureAuthenticated(init);
-            return await this.agentProcess.loadSession(runtimeSessionId);
+            return await this.agentProcess.loadSession(runtimeSessionId, mcpServers);
         }
     }
 

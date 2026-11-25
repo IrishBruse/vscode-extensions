@@ -163,6 +163,16 @@ export type WebviewToExtensionMessage =
  */
 export type SubagentWorkState = "running" | "idle" | "requires_action" | "unknown";
 
+/** One MCP server row for the MCP tab. Secrets stay out of `detail`. */
+export type AcpUiMcpServerRow = {
+    name: string;
+    transport: "stdio" | "http" | "sse";
+    detail: string;
+    source: string;
+    forwarded: boolean;
+    skipReason?: string;
+};
+
 export type ExtensionToWebviewMessage =
     | {
           type: "init";
@@ -210,6 +220,12 @@ export type ExtensionToWebviewMessage =
     | {
           type: "contentWidthRatio";
           ratio: number;
+      }
+    | {
+          /** MCP servers read for this chat, including ones the agent did not accept. */
+          type: "mcpServers";
+          servers: AcpUiMcpServerRow[];
+          note?: string;
       }
     | {
           /** Markdown heading and inline-code colors derived from the active theme. */

@@ -1,0 +1,65 @@
+.mcp-servers {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4rem var(--acp-ui-space-10) var(--acp-ui-space-12);
+}
+
+.mcp-servers-note,
+.mcp-servers-empty {
+  margin: 0 0 var(--acp-ui-space-10);
+  color: var(--acp-ui-text-secondary);
+  font-size: var(--acp-ui-font-size-small);
+}
+
+.mcp-servers-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--acp-ui-space-8);
+}
+
+.mcp-servers-row {
+  padding: var(--acp-ui-space-8) var(--acp-ui-space-10);
+  border: 1px solid var(--acp-ui-border-subtle);
+  border-radius: var(--acp-ui-radius-sm);
+  background: color-mix(in srgb, var(--acp-ui-surface-panel) 88%, var(--vscode-editor-background));
+}
+
+.mcp-servers-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--acp-ui-space-8);
+}
+
+.mcp-servers-name {
+  font-weight: var(--acp-ui-font-weight-bold, 700);
+}
+
+.mcp-servers-transport,
+.mcp-servers-source,
+.mcp-servers-detail {
+  color: var(--acp-ui-text-secondary);
+  font-family: var(--acp-ui-font-mono);
+  font-size: var(--acp-ui-font-size-x-small);
+}
+
+.mcp-servers-status {
+  margin-left: auto;
+  font-size: var(--acp-ui-font-size-x-small);
+  color: var(--vscode-textLink-foreground);
+}
+
+.mcp-servers-status--skipped {
+  color: var(--acp-ui-text-secondary);
+}
+
+.mcp-servers-detail,
+.mcp-servers-source {
+  margin-top: var(--acp-ui-space-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

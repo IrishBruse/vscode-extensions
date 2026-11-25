@@ -52,6 +52,7 @@ import { openTaskHeader } from "./components/acp/trace/SubagentBlock/SubagentBlo
 import { subagentStatusLabel } from "./components/acp/trace/SubagentBlock/subagentStatus";
 import { SubagentFocus } from "./components/acp/trace/SubagentFocus/SubagentFocus";
 import { ChatDebugView } from "./components/acp/debug/ChatDebugView";
+import { McpServersView } from "./components/acp/mcp/McpServersView";
 import { AcpRpcLogView } from "./components/acp/protocol/AcpRpcLogView";
 import { TraceList } from "./components/acp/trace/TraceList/TraceList";
 import { SessionHistoryLoader } from "./components/acp/trace/SessionHistoryLoader/SessionHistoryLoader";
@@ -145,7 +146,7 @@ export function AcpUiApp({
       replayed ?? createChatStateFromInit(initPayload),
   );
   const [expandAllToolOutputs, setExpandAllToolOutputs] = useState(false);
-  const [traceView, setTraceView] = useState<"chat" | "debug" | "acp">("chat");
+  const [traceView, setTraceView] = useState<"chat" | "debug" | "acp" | "mcp">("chat");
   const [showThinkingBlocks, setShowThinkingBlocks] = useState(true);
   const [contentWidthRatio, setContentWidthRatio] = useState(init.contentWidthRatio ?? 1);
   const traceRef = useRef<HTMLElement | null>(null);
@@ -617,6 +618,16 @@ export function AcpUiApp({
             >
               ACP
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={traceView === "mcp"}
+              onClick={() => {
+                setTraceView("mcp");
+              }}
+            >
+              MCP
+            </button>
           </div>
         </header>
         <main
@@ -630,7 +641,13 @@ export function AcpUiApp({
           }
           role="log"
           aria-label={
-            traceView === "debug" ? "Debug view" : traceView === "acp" ? "ACP protocol" : "Conversation"
+            traceView === "debug"
+              ? "Debug view"
+              : traceView === "acp"
+                ? "ACP protocol"
+                : traceView === "mcp"
+                  ? "MCP servers"
+                  : "Conversation"
           }
           onScroll={onTraceScroll}
         >
@@ -648,6 +665,8 @@ export function AcpUiApp({
               logPath={state.acpRpcLogPath}
               homeDir={init.homeDir}
             />
+          ) : traceView === "mcp" ? (
+            <McpServersView servers={state.mcpServers} note={state.mcpServerNote} />
           ) : (
           <>
           {state.sessionHistoryLoading && state.trace.length > 0 && earlierOverlay ? (

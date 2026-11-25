@@ -24,6 +24,7 @@ import {
 } from "../../../src/acp/mapping/cursorTodoPresentation";
 import { subagentTaskViewFromTool } from "../../../src/acp/mapping/taskToolPresentation";
 import type {
+    AcpUiMcpServerRow,
     AcpUiPromptImage,
     AcpUiRecentSession,
     ExtensionToWebviewMessage,
@@ -200,6 +201,9 @@ export type ChatState = {
   /** NDJSON-RPC lines for the in-chat ACP protocol view. */
   acpRpcLines: AcpRpcLogEntry[];
   nextAcpRpcLineId: number;
+  /** MCP servers for this chat, including ones the agent did not accept. */
+  mcpServers: AcpUiMcpServerRow[];
+  mcpServerNote: string | null;
   /** Absolute path of the session's `.rpc.ndjson` log file. */
   acpRpcLogPath?: string;
 };
@@ -342,6 +346,8 @@ export function createInitialChatState(): ChatState {
     tokenUsage: null,
     acpRpcLines: [],
     nextAcpRpcLineId: 1,
+    mcpServers: [],
+    mcpServerNote: null,
   };
 }
 
@@ -1577,6 +1583,8 @@ function applySessionReset(state: ChatState): ChatState {
     visibleTraceCacheEpoch: bumpVisibleTraceCacheEpoch(state),
     acpRpcLines: [],
     nextAcpRpcLineId: 1,
+    mcpServers: [],
+    mcpServerNote: null,
   };
 }
 
@@ -2454,6 +2462,12 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     return { ...state, createPlanPrompt: null };
   }
   switch (action.type) {
+    case "mcpServers":
+      return {
+        ...state,
+        mcpServers: action.servers,
+        mcpServerNote: action.note ?? null,
+      };
     case "acpRpcLine": {
       const entry: AcpRpcLogEntry = {
         id: state.nextAcpRpcLineId,

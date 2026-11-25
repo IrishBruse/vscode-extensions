@@ -27,10 +27,10 @@ While a permission prompt is open, the composer is blocked so you cannot send an
 ### ACP callback
 
 [AcpAgentProcess](../../../src/acp/infrastructure/acpAgentProcess.ts#L303-L304) registers `requestPermission` on the SDK client connection.
-[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L178-L210) assigns a request id, posts webview messages, and waits on a promise.
+[AcpSessionBridge.queuePermissionRequest](../../../src/acp/session/acpSessionBridge.ts#L183-L215) assigns a request id, posts webview messages, and waits on a promise.
 
-[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L229-L268) resolves the waiter when the webview replies.
-[resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L271-L285) applies Allow always or Reject always to other requests that are already waiting.
+[handlePermissionResponse](../../../src/acp/session/acpSessionBridge.ts#L234-L273) resolves the waiter when the webview replies.
+[resolveGrantedPendingRequests](../../../src/acp/session/acpSessionBridge.ts#L276-L290) applies Allow always or Reject always to other requests that are already waiting.
 [resolveToolCallKind](../../../src/acp/session/permissionMemory.ts#L15-L40) and [enrichPermissionRequest](../../../src/acp/session/permissionMemory.ts#L62-L76) fill a missing permission `toolCall.kind` from the live trace or the title before scoping a grant.
 [stickyPermissionOutcome](../../../src/acp/session/permissionMemory.ts#L135-L154) answers a later request when the chat already stored Allow always or Reject always for that tool kind.
 [readAutoApproveWebFetchAndSearch](../../../src/acp/config/autoApproveWebToolsSetting.ts#L6-L8) reads `ib-acp-ui.autoApproveWebFetchAndSearch`.

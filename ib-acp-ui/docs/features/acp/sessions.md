@@ -39,9 +39,9 @@ The UI session id (`.acp` header UUID) is separate from the runtime session id (
 
 [shouldLoadRuntimeSession](../../../src/acp/session/acpSessionBridge.test.ts) decides load vs new on connect.
 [supportsLoadSession](../../../src/acp/infrastructure/acpAgentProcess.ts#L259-L261) reads `loadSession` from agent capabilities.
-[loadSession](../../../src/acp/infrastructure/acpAgentProcess.ts#L298-L311) calls the SDK with cwd and `mcpServers` (today empty).
+[loadSession](../../../src/acp/infrastructure/acpAgentProcess.ts#L467-L483) calls the SDK with cwd and the MCP servers for this workspace.
 
-[loadSessionWithAuthRetry](../../../src/acp/session/acpSessionBridge.ts#L1050-L1063) handles auth-required errors during load.
+[loadSessionWithAuthRetry](../../../src/acp/session/acpSessionBridge.ts#L1080-L1094) handles auth-required errors during load.
 Replay `session/update` events map through [sessionUpdateMapping.ts](../../../src/acp/mapping/sessionUpdateMapping.ts).
 That includes `user_message_chunk` to user text in the trace.
 [user_message_chunk](../../../src/acp/mapping/sessionUpdateMapping.ts#L1137-L1144) drops a chunk that contains `<system_notification>`.

@@ -464,7 +464,10 @@ export class AcpAgentProcess {
         return sessions;
     }
 
-    async loadSession(sessionId: string): Promise<acp.LoadSessionResponse> {
+    async loadSession(
+        sessionId: string,
+        mcpServers: acp.McpServer[] = [],
+    ): Promise<acp.LoadSessionResponse> {
         if (!this.connection) {
             throw new Error("Agent not started");
         }
@@ -475,7 +478,7 @@ export class AcpAgentProcess {
         return this.connection.loadSession({
             sessionId,
             cwd,
-            mcpServers: [],
+            mcpServers,
         });
     }
 
@@ -489,12 +492,12 @@ export class AcpAgentProcess {
         await this.connection.deleteSession({ sessionId });
     }
 
-    async newSession(): Promise<acp.NewSessionResponse> {
+    async newSession(mcpServers: acp.McpServer[] = []): Promise<acp.NewSessionResponse> {
         if (!this.connection) {
             throw new Error("Agent not started");
         }
         const cwd = this.options.getWorkspaceRoot() ?? process.cwd();
-        return this.connection.newSession({ cwd, mcpServers: [] });
+        return this.connection.newSession({ cwd, mcpServers });
     }
 
     async setSessionModel(sessionId: string, modelId: string): Promise<void> {

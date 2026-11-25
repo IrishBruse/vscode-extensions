@@ -120,6 +120,13 @@
                     "default": "",
                     "description": "Directory for chat .acp files. Empty uses extension global storage. Absolute path or workspace-relative."
                 },
+                "ib-acp-ui.mcpServers": {
+                    "type": "object",
+                    "default": {},
+                    "additionalProperties": true,
+                    "title": "MCP servers",
+                    "markdownDescription": "Extra MCP servers merged over `~/.cursor/mcp.json`, `.vscode/mcp.json`, and `.cursor/mcp.json`. Use the same server fields as Cursor (`command`, `args`, `env`, `url`, `headers`)."
+                },
                 "ib-acp-ui.autoApproveWebFetchAndSearch": {
                     "type": "boolean",
                     "default": false,
