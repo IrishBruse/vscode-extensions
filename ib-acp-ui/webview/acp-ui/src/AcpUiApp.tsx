@@ -360,7 +360,13 @@ export function AcpUiApp({
           rows.push({ start, end, height: node.offsetHeight });
         }
       }
-      const items = visibleTraceTail(state.trace, rows, el?.clientHeight ?? 0).filter(
+      const coversTail =
+        el?.querySelector(".trace-virtual-list")?.getAttribute("data-covers-tail") !== "false";
+      const items = visibleTraceTail(
+        state.trace,
+        coversTail ? rows : [],
+        el?.clientHeight ?? 0,
+      ).filter(
         (item) =>
           item.type !== "subagent" ||
           !traceCoversSubagentSession(

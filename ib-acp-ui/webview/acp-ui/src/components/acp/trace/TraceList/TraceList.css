@@ -92,6 +92,23 @@
   min-width: 0;
 }
 
+.trace-virtual-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.trace-activity-item {
+  margin-bottom: var(--acp-ui-space-12);
+}
+
+.trace-activity-item--start {
+  margin-top: var(--acp-ui-space-20);
+}
+
+.trace-activity-item--end {
+  margin-bottom: var(--acp-ui-space-20);
+}
+
 .trace-activity-group {
   display: flex;
   flex-direction: column;
@@ -102,6 +119,10 @@
 .trace-activity-group .agent-thought-chunk,
 .trace-activity-group .tool-call-compact,
 .trace-activity-group .tool-call-compact-execute,
-.trace-activity-group .tool-call-terminal {
+.trace-activity-group .tool-call-terminal,
+.trace-activity-item .agent-thought-chunk,
+.trace-activity-item .tool-call-compact,
+.trace-activity-item .tool-call-compact-execute,
+.trace-activity-item .tool-call-terminal {
   margin-bottom: 0;
 }

@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Change**: A long chat draws only the rows near the screen.
 - **Add**: Chat markdown renders Mermaid diagrams and GitHub note quotes such as `[!NOTE]`.
 - **Fix**: `/clear` and `/new` clear the current chat when the command has a trailing space.
 - **Add**: MCP servers from Cursor and VS Code config are sent with the chat, and the MCP tab shows what the agent received.

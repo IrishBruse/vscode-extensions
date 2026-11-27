@@ -8,6 +8,8 @@ import {
   type ReactElement,
   type RefObject,
 } from "react";
+import { useVirtualTraceWindow } from "./useVirtualTraceWindow";
+import { virtualTraceMinRows } from "./virtualTraceWindow";
 import "./TraceList.css";
 import type { WorkspacePathOpenTarget } from "../../../../../../../src/protocol/extensionHostMessages";
 import type { TraceItem, TraceToolItem } from "../../../../chatReducer";
@@ -431,16 +433,25 @@ export const TraceList = memo(function TraceList({
   }, [collapseNonceByIndex, traceScrollRef]);
 
   const segments = partitionTraceSegments(items, showThoughts, subagentSessionByToolId);
-  let previousVisibleType: TraceItem["type"] | undefined;
+  const virtual = useVirtualTraceWindow({
+    enabled: segments.length >= virtualTraceMinRows,
+    count: segments.length,
+    estimateAt: (index) => estimateSegmentPx(segments[index]),
+    scrollRef: traceScrollRef,
+    historyCommit,
+    followBottom,
+  });
 
-  const renderSegment = (segment: TraceRenderSegment): ReactElement | null => {
+  const renderSegment = (
+    segment: TraceRenderSegment,
+    previousVisibleType: TraceItem["type"] | undefined,
+  ): ReactElement | null => {
     const currentType =
       segment.kind === "single" ? visibleTraceType(segment.item, showThoughts) : "tool";
     if (currentType === undefined) {
       return null;
     }
     const gapClass = traceSegmentGapClass(previousVisibleType, currentType);
-    previousVisibleType = currentType;
     return (
       <TraceSegmentView
         key={segment.index}
@@ -469,6 +480,67 @@ export const TraceList = memo(function TraceList({
       range,
     ]),
   );
+  const groupAt = new Map<number, { start: number; end: number }>();
+  for (const range of groupByStart.values()) {
+    for (let cursor = range.start; cursor <= range.end; cursor++) {
+      groupAt.set(cursor, range);
+    }
+  }
+
+  const previousTypeAt = (index: number): TraceItem["type"] | undefined => {
+    const previous = index > 0 ? segments[index - 1] : undefined;
+    if (previous === undefined) {
+      return undefined;
+    }
+    return previous.kind === "single" ? visibleTraceType(previous.item, showThoughts) : "tool";
+  };
+
+  if (virtual.window !== null) {
+    const slice: ReactElement[] = [];
+    for (let index = virtual.window.start; index < virtual.window.end; index++) {
+      const segment = segments[index];
+      if (segment === undefined) {
+        continue;
+      }
+      const row = renderSegment(segment, previousTypeAt(index));
+      if (row === null) {
+        continue;
+      }
+      const range = groupAt.get(index);
+      const activityClass =
+        range === undefined
+          ? ""
+          : [
+              "trace-activity-item",
+              index === range.start ? "trace-activity-item--start" : "",
+              index === range.end ? "trace-activity-item--end" : "",
+            ]
+              .filter((name) => name !== "")
+              .join(" ");
+      const className = [index === 0 ? TRACE_LIST_LEADING_GAP_CLASS : "", activityClass]
+        .filter((name) => name !== "")
+        .join(" ");
+      slice.push(
+        <div key={segment.index} data-virtual-index={index} className={className}>
+          {row}
+        </div>,
+      );
+    }
+    return (
+      <div
+        ref={virtual.containerRef}
+        className="trace-virtual-list"
+        data-covers-tail={virtual.window.paddingBottom === 0 ? "true" : "false"}
+        style={{
+          paddingTop: virtual.window.paddingTop,
+          paddingBottom: virtual.window.paddingBottom,
+        }}
+      >
+        {slice}
+      </div>
+    );
+  }
+
   const rows: ReactElement[] = [];
   let segmentIndex = 0;
   let isFirstVisibleRow = true;
@@ -482,13 +554,13 @@ export const TraceList = memo(function TraceList({
   while (segmentIndex < segments.length) {
     const range = groupByStart.get(segmentIndex);
     if (range === undefined) {
-      pushRow(renderSegment(segments[segmentIndex]!));
+      pushRow(renderSegment(segments[segmentIndex]!, previousTypeAt(segmentIndex)));
       segmentIndex += 1;
       continue;
     }
     const children: ReactElement[] = [];
     for (let cursor = range.start; cursor <= range.end; cursor++) {
-      const row = renderSegment(segments[cursor]!);
+      const row = renderSegment(segments[cursor]!, previousTypeAt(cursor));
       if (row !== null) {
         children.push(row);
       }
@@ -509,4 +581,15 @@ function segmentTraceType(segment: TraceRenderSegment): TraceItem["type"] {
     return segment.item.type;
   }
   return "tool";
+}
+
+function estimateSegmentPx(segment: TraceRenderSegment | undefined): number {
+  const type = segment === undefined ? undefined : segmentTraceType(segment);
+  if (type === "tool" || type === "thought") {
+    return 36;
+  }
+  if (type === "plan" || type === "subagent") {
+    return 96;
+  }
+  return 120;
 }

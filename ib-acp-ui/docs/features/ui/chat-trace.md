@@ -13,6 +13,8 @@ Each step has a circle that shows the share of its tool kinds.
 The panel lists those calls in the same colors.
 It shows your messages, streaming agent replies, reasoning thoughts, tool calls, file diffs, terminal output, and TODO lists.
 While the panel follows new text, empty space equal to 10% of the panel height stays above the composer.
+A long transcript draws only the rows near the screen.
+Earlier rows stay in the scroll height, so scrolling up still reaches them.
 A thought block uses quieter text.
 A thought block does not show fenced code blocks.
 The open body shows three lines and stays on the newest text.
@@ -196,6 +198,9 @@ When loading ends, the buffer replaces the visible trace in one step ([sessionHi
 A reconnect while the chat is open uses that same buffer.
 [settleOpenThoughts](../../../webview/acp-ui/src/chatReducer.ts#L581-L592) stops an open thought so Thinking does not keep counting after the agent is idle.
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
+[virtualTraceWindow](../../../webview/acp-ui/src/components/acp/trace/TraceList/virtualTraceWindow.ts#L15-L52) chooses the rows near the scrollport once the list reaches 40 rows.
+[useVirtualTraceWindow](../../../webview/acp-ui/src/components/acp/trace/TraceList/useVirtualTraceWindow.ts#L53-L201) measures those rows and keeps the ones above and below as empty space.
+[TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L498-L541) mounts that slice.
 [agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L30-L33) is 10% of the transcript height, so follow-scroll stops above the composer.
 [visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport.
 The webview writes them to the session file `cache` when [visibleTraceCacheEpoch](../../../webview/acp-ui/src/chatReducer.ts) bumps at turn end, not on every stream update.

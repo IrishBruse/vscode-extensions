@@ -53,4 +53,30 @@ describe("TraceList user markdown", () => {
     expect(html).toContain("2 images");
     expect(html).toContain("<code>vendor/decomp</code>");
   });
+
+  it("mounts only the tail of a long transcript", async () => {
+    const items = Array.from({ length: 80 }, (_, index) => ({
+      type: "user" as const,
+      text: `virtual-row-${index}`,
+    }));
+    const { prelude } = await prerenderToNodeStream(
+      createElement(TraceList, {
+        items,
+        showThoughts: false,
+        expandAllToolOutputs: false,
+        followBottom: true,
+        historyCommit: 0,
+        traceScrollRef: createRef<HTMLElement>(),
+      }),
+    );
+    const chunks: Buffer[] = [];
+    for await (const chunk of prelude) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const html = Buffer.concat(chunks).toString("utf8");
+
+    expect(html).toContain("trace-virtual-list");
+    expect(html).toContain("virtual-row-79");
+    expect(html).not.toContain("virtual-row-0");
+  });
 });
