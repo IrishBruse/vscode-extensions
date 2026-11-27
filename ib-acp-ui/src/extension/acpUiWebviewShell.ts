@@ -19,7 +19,8 @@ export function getAcpUiWebviewHtml(extensionRoot: Uri, webview: Webview): strin
     const contentSecurityPolicy = [
         `default-src 'none'`,
         `img-src ${cspSource} data:`,
-        `style-src ${cspSource}`,
+        // Mermaid writes style rules inside the diagram SVG.
+        `style-src ${cspSource} 'unsafe-inline'`,
         `font-src ${cspSource}`,
         `script-src ${cspSource}`,
     ].join("; ");

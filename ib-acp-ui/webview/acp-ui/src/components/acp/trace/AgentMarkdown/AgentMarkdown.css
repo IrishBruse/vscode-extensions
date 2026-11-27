@@ -251,6 +251,75 @@
   color: var(--acp-ui-text-primary);
 }
 
+.agent-markdown-alert {
+  margin: 0.65em 0;
+  padding: 0.35em 16px 0.45em 10px;
+  border-left: 5px solid var(--vscode-textBlockQuote-border, #007acc);
+  border-radius: 2px;
+  background-color: transparent;
+}
+
+.agent-markdown-alert-title {
+  margin: 0 0 0.2em;
+  font-weight: 700;
+}
+
+.agent-markdown-alert p {
+  margin: 0.2em 0;
+}
+
+.agent-markdown-alert--note {
+  border-left-color: var(--vscode-textLink-foreground);
+}
+
+.agent-markdown-alert--note .agent-markdown-alert-title {
+  color: var(--vscode-textLink-foreground);
+}
+
+.agent-markdown-alert--tip {
+  border-left-color: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #89d185));
+}
+
+.agent-markdown-alert--tip .agent-markdown-alert-title {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #89d185));
+}
+
+.agent-markdown-alert--important {
+  border-left-color: var(--vscode-charts-purple, #b180d7);
+}
+
+.agent-markdown-alert--important .agent-markdown-alert-title {
+  color: var(--vscode-charts-purple, #b180d7);
+}
+
+.agent-markdown-alert--warning {
+  border-left-color: var(--vscode-editorWarning-foreground);
+}
+
+.agent-markdown-alert--warning .agent-markdown-alert-title {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.agent-markdown-alert--caution {
+  border-left-color: var(--vscode-editorError-foreground);
+}
+
+.agent-markdown-alert--caution .agent-markdown-alert-title {
+  color: var(--vscode-editorError-foreground);
+}
+
+.agent-markdown-mermaid {
+  position: relative;
+  margin: 0.65em 0;
+  overflow-x: auto;
+}
+
+.agent-markdown-mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 .agent-markdown table {
   margin: 0.65em 0 0.85em;
   border-collapse: collapse;

@@ -23,6 +23,10 @@ It stays open if you have scrolled up and that block is on screen.
 
 Your messages and agent replies render as theme-aware markdown with colored headings, GFM tables, and syntax-highlighted fenced code blocks.
 A quote keeps the surrounding background and uses a 5px blue bar on the left.
+A quote that starts with `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, or `[!CAUTION]` shows that label and a colored bar.
+A `mermaid` code block renders as a diagram.
+The source stays visible until that diagram is valid.
+The copy button on a diagram copies the source.
 An image on your message shows as a small thumbnail.
 Click the thumbnail to view the image larger.
 Transcript text uses the normal foreground color.
@@ -128,12 +132,16 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
 
 [TraceList](../../../webview/acp-ui/src/components/acp/trace/TraceList/TraceList.tsx#L101-L373) walks trace items and picks a presentation by type.
 
-- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L256-L315) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
-  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L143-L181) puts the target on the anchor, and right-click opens Copy link.
-  [CopyCodeButton](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L80-L139) copies a code block and shows Copied.
+- User and agent text: [AgentMarkdown](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L213-L272) with [remark-gfm](https://github.com/remarkjs/remark-gfm).
+  [MarkdownLink](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L62-L100) puts the target on the anchor, and right-click opens Copy link.
+  [CopyCodeButton](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/CopyCodeButton.tsx#L25-L84) copies a code block and shows Copied.
   [onOpenMarkdownLink](../../../webview/acp-ui/src/AcpUiApp.tsx#L532-L547) opens a subagent id through [agentLinkTargetFromHref](../../../webview/acp-ui/src/chatReducer.ts#L1808-L1833), a file path in the editor, or an http link outside the chat.
   Code highlighting uses [renderHighlightedCode](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/codeHighlighting.tsx#L101-L120) with workbench theme colors.
-  [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L185-L192) uses a 5px blue bar and a transparent background.
+  [blockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L245-L252) uses a 5px blue bar and a transparent background.
+  [remarkGithubAlerts](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/githubAlert.ts#L96-L100) marks a GitHub alert quote.
+  [MarkdownBlockquote](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L164-L185) adds the label, and [agent-markdown-alert](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.css#L254-L309) colors the bar.
+  [MarkdownPre](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/AgentMarkdown.tsx#L142-L162) sends a `mermaid` fence to [MermaidDiagram](../../../webview/acp-ui/src/components/acp/trace/AgentMarkdown/MermaidDiagram.tsx#L48-L70).
+  [getAcpUiWebviewHtml](../../../src/extension/acpUiWebviewShell.ts#L19-L26) allows inline styles so the diagram SVG can include its rules.
 - Thoughts: [AgentThoughtBlock](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/AgentThoughtBlock.tsx#L59-L111) is a disclosure.
   [omitFencedCodeBlocks](../../../webview/acp-ui/src/components/acp/trace/AgentThoughtBlock/thoughtMarkdown.ts#L2-L20) drops fenced code blocks, including a fence that is still open.
   The heading stays open until it is clicked.
@@ -188,7 +196,7 @@ When loading ends, the buffer replaces the visible trace in one step ([sessionHi
 A reconnect while the chat is open uses that same buffer.
 [settleOpenThoughts](../../../webview/acp-ui/src/chatReducer.ts#L581-L592) stops an open thought so Thinking does not keep counting after the agent is idle.
 [anchoredScrollTop](../../../webview/acp-ui/src/anchoredScroll.ts#L1-L15) keeps the same pixels in view if you have scrolled up.
-[agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L46-L49) is 10% of the transcript height, so follow-scroll stops above the composer.
+[agent-trace-follow-gap](../../../webview/acp-ui/src/AcpUiApp.css#L30-L33) is 10% of the transcript height, so follow-scroll stops above the composer.
 [visibleTraceTail](../../../webview/acp-ui/src/visibleTraceTail.ts#L12-L53) chooses the rows that fill the scrollport.
 The webview writes them to the session file `cache` when [visibleTraceCacheEpoch](../../../webview/acp-ui/src/chatReducer.ts) bumps at turn end, not on every stream update.
 [SessionHistoryLoader](../../../webview/acp-ui/src/components/acp/trace/SessionHistoryLoader/SessionHistoryLoader.tsx#L7-L26) fills the panel only when the cache is empty.
