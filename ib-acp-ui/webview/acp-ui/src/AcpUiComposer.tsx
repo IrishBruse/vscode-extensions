@@ -18,6 +18,7 @@ import type { AcpUiPromptImage, AcpUiSlashCommand } from "../../../src/protocol/
 import { type ChatAction, runningBashStartedAtMs, type TraceItem } from "./chatReducer";
 import { type AcpUiTokenUsage } from "./tokenUsage";
 import { ChatComposer } from "./components/acp/composer/ChatComposer/ChatComposer";
+import { builtInSlashCommand } from "./components/acp/composer/ChatComposer/composerBuiltInCommand";
 import { buildComposerAutocompleteState, wrapIndex } from "./components/acp/composer/ChatComposer/composerAutocomplete";
 import {
   shouldCancelRunOnCtrlC,
@@ -255,8 +256,8 @@ export function AcpUiComposer({
     if (body.trim().length === 0 && images.length === 0) {
       return;
     }
-    const asCommand = body.toLowerCase();
-    if (asCommand === "/clear" || asCommand === "/new") {
+    const asCommand = builtInSlashCommand(body);
+    if (asCommand === "clear" || asCommand === "new") {
       releaseComposerDraft();
       setQueuedFollowUps([]);
       steerSawRunningToolRef.current = false;
@@ -265,12 +266,12 @@ export function AcpUiComposer({
       postResetSession();
       return;
     }
-    if (asCommand === "/show-thinking") {
+    if (asCommand === "show-thinking") {
       releaseComposerDraft();
       onToggleShowThinking();
       return;
     }
-    if (body.toLowerCase().startsWith("/rename")) {
+    if (asCommand === "rename") {
       const match = body.match(/^\/rename\s+(\S+)$/i);
       if (match === null) {
         dispatch({
@@ -289,12 +290,7 @@ export function AcpUiComposer({
   };
 
   const handleComposerSend = (): void => {
-    const trimmed = draft.trim().toLowerCase();
-    const immediateCommand =
-      trimmed === "/clear" ||
-      trimmed === "/new" ||
-      trimmed === "/show-thinking" ||
-      trimmed.startsWith("/rename");
+    const immediateCommand = builtInSlashCommand(draft) !== undefined;
     if (immediateCommand) {
       submit();
       return;

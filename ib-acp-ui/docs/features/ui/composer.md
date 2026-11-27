@@ -19,6 +19,8 @@ A long error stays on one line, and the full text is in the tooltip.
 
 While typing, ACP UI suggests completions without leaving the message box.
 Type `/` to open slash-command suggestions from the connected agent alongside built-in commands such as `/clear`, `/new`, `/rename`, and `/show-thinking`.
+Enter on `/clear` or `/new` clears this chat and starts a fresh agent session.
+That still happens when the suggestion leaves a space after the command.
 Type `@` to mention workspace files.
 Paths with spaces or quotes are inserted as quoted mentions.
 
@@ -70,7 +72,9 @@ Detection applies at the start of a line or after whitespace.
 [ChatComposer](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/ChatComposer.tsx) recomputes autocomplete from the draft (caret at end).
 [AcpUiApp.onComposerKeyDown](../../../webview/acp-ui/src/AcpUiApp.tsx) handles keyboard navigation.
 
-**Built-in commands** — [builtInSlashCommands](../../../webview/acp-ui/src/AcpUiApp.tsx) defines `/clear`, `/new`, `/rename`, `/show-thinking`.
+**Built-in commands** — [builtInSlashCommands](../../../webview/acp-ui/src/AcpUiComposer.tsx#L135-L153) defines `/clear`, `/new`, `/rename`, and `/show-thinking`.
+[builtInSlashCommand](../../../webview/acp-ui/src/components/acp/composer/ChatComposer/composerBuiltInCommand.ts#L4-L19) trims the draft before matching.
+[submit](../../../webview/acp-ui/src/AcpUiComposer.tsx#L259-L267) then clears the transcript and starts a fresh agent session.
 **Agent commands** — ACP `available_commands_update` is mapped in [sessionUpdateMapping.ts](../../../src/acp/mapping/sessionUpdateMapping.ts).
 [slashCommandMetadata.ts](../../../src/acp/slashCommandMetadata.ts) normalizes source labels and grouping.
 

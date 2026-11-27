@@ -5,6 +5,7 @@ Update any bullet that does not follow this form.
 
 ## Unreleased
 
+- **Fix**: `/clear` and `/new` clear the current chat when the command has a trailing space.
 - **Add**: MCP servers from Cursor and VS Code config are sent with the chat, and the MCP tab shows what the agent received.
 - **Add**: `ib-acp-ui.autoApproveWebFetchAndSearch` approves web fetch and web search without a dialog, and it is off by default.
 - **Change**: A completed file delete does not show a diff under the line.
