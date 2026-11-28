@@ -49,11 +49,20 @@
   white-space: nowrap;
 }
 
-.tool-call-compact-execute-toggle {
+.tool-call-compact-execute-toggles {
   display: inline-flex;
   margin: 4px 0 0 0;
-  padding: 0;
+  border: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
+  border-radius: var(--acp-ui-radius-sm);
+  overflow: hidden;
+}
+
+.tool-call-compact-execute-toggle {
+  display: inline-flex;
+  margin: 0;
+  padding: 1px var(--acp-ui-space-8);
   border: none;
+  border-right: var(--acp-ui-stroke-width) solid var(--acp-ui-border-chrome);
   background: none;
   color: var(--vscode-textLink-foreground, var(--vscode-foreground));
   font-family: var(--acp-ui-font-sans);
@@ -62,8 +71,13 @@
   cursor: pointer;
 }
 
+.tool-call-compact-execute-toggle:last-child {
+  border-right: none;
+}
+
 .tool-call-compact-execute-toggle:hover,
 .tool-call-compact-execute-toggle:focus-visible {
+  background: var(--vscode-toolbar-hoverBackground);
   color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
 }
 

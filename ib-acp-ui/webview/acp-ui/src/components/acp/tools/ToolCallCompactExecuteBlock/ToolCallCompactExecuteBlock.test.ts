@@ -106,6 +106,24 @@ describe("ToolCallCompactExecuteBlock", () => {
     expect(html).not.toContain('shell-hl--argument">6</span>');
   });
 
+  it("shares one control when Show full command and Show output sit together", async () => {
+    const command = Array.from({ length: 6 }, (_, index) => `cmd line ${index + 1}`).join("\n");
+    const output = Array.from({ length: 8 }, (_, index) => `line ${index + 1}`).join("\n");
+    const html = await renderBlock(executeItem(output, command));
+    const group = html.match(
+      /<div class="tool-call-compact-execute-toggles"[\s\S]*?<\/div>/,
+    )?.[0];
+    expect(group).toContain("Show full command");
+    expect(group).toContain("Show output");
+    expect(html.match(/tool-call-compact-execute-toggles/g)).toHaveLength(1);
+
+    const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
+    expect(css).toMatch(
+      /\.tool-call-compact-execute-toggles\s*\{[^}]*display:\s*inline-flex[^}]*border-radius:\s*var\(--acp-ui-radius-sm\)/,
+    );
+    expect(css).toMatch(/\.tool-call-compact-execute-toggle:last-child\s*\{[^}]*border-right:\s*none/);
+  });
+
   it("shows command output without a left bar", () => {
     const css = readFileSync(new URL("./ToolCallCompactExecuteBlock.css", import.meta.url), "utf8");
     const rule = css.match(/\.tool-call-compact-execute-output\s*\{[^}]*\}/)?.[0] ?? "";

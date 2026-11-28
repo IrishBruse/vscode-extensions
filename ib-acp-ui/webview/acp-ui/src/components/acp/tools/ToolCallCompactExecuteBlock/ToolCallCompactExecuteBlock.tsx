@@ -94,6 +94,33 @@ export function ToolCallCompactExecuteBlock({
     setLocalCommandExpanded(true);
   };
 
+  const commandToggle = canToggleCommand ? (
+    <button
+      type="button"
+      className="tool-call-compact-execute-toggle"
+      aria-expanded={commandExpanded}
+      onClick={toggleCommand}
+    >
+      {commandExpanded ? "Hide full command" : "Show full command"}
+    </button>
+  ) : null;
+  const outputToggle = canToggleOutput ? (
+    <button
+      type="button"
+      className="tool-call-compact-execute-toggle"
+      aria-expanded={outputExpanded}
+      onClick={toggleOutput}
+    >
+      {outputExpanded ? "Hide output" : "Show output"}
+    </button>
+  ) : null;
+  const togglesBesideCommand = outputExpanded ? commandToggle : (
+    <>
+      {commandToggle}
+      {outputToggle}
+    </>
+  );
+
   return (
     <div
       className={
@@ -126,50 +153,20 @@ export function ToolCallCompactExecuteBlock({
           )}
         </span>
       </div>
-      {canToggleCommand && !commandExpanded ? (
-        <button
-          type="button"
-          className="tool-call-compact-execute-toggle"
-          aria-expanded={false}
-          onClick={toggleCommand}
-        >
-          Show full command
-        </button>
-      ) : null}
-      {canToggleCommand && commandExpanded ? (
-        <button
-          type="button"
-          className="tool-call-compact-execute-toggle"
-          aria-expanded={true}
-          onClick={toggleCommand}
-        >
-          Hide full command
-        </button>
-      ) : null}
-      {canToggleOutput && !outputExpanded ? (
-        <button
-          type="button"
-          className="tool-call-compact-execute-toggle"
-          aria-expanded={false}
-          onClick={toggleOutput}
-        >
-          Show output
-        </button>
+      {commandToggle !== null || (outputToggle !== null && !outputExpanded) ? (
+        <div className="tool-call-compact-execute-toggles" role="group" aria-label="Command details">
+          {togglesBesideCommand}
+        </div>
       ) : null}
       {previewLines.length > 0 ? (
         <pre className="tool-call-compact-execute-output" aria-label="Command output">
           {previewLines.join("\n")}
         </pre>
       ) : null}
-      {canToggleOutput && outputExpanded ? (
-        <button
-          type="button"
-          className="tool-call-compact-execute-toggle"
-          aria-expanded={true}
-          onClick={toggleOutput}
-        >
-          Hide output
-        </button>
+      {outputExpanded && outputToggle !== null ? (
+        <div className="tool-call-compact-execute-toggles" role="group" aria-label="Command details">
+          {outputToggle}
+        </div>
       ) : null}
       {inProgress && !showRunTimer && previewLines.length === 0 ? (
         <div className="tool-call-compact-execute-running">Running…</div>

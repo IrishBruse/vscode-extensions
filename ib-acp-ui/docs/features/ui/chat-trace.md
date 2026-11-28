@@ -70,6 +70,7 @@ The output uses the composer background with a small corner radius.
 A short result shows in that block.
 A long result stays closed until you click Show output.
 After you open it, Show output stays under the output.
+When Show full command and Show output sit together, they share one button.
 
 A TODO list shows the agent plan.
 Each item has a mark for pending, in progress, complete, or cancelled.
@@ -179,14 +180,15 @@ After `session/load` replay, [applyThoughtDurationList](../../../webview/acp-ui/
   A markdown `file://` path is decoded by [filesystemPathFromFileUri](../../../src/platform/fileUriPath.ts#L6-L28) and opened with the default text editor by [openWorkspacePathTarget](../../../src/platform/openWorkspacePathTarget.ts#L13-L21), including a plan file outside the workspace.
   [splitHttpUrls](../../../src/platform/httpUrlText.ts#L6-L30) finds web links in that text, and the Fetched URL comes from [compactToolDetailParts](../../../webview/acp-ui/src/toolCallCompactText.ts#L655-L663).
   Clicking either opens the page outside the chat.
-  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L29-L133).
+  Execute output uses [ToolCallCompactExecuteBlock](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L31-L176).
+  [tool-call-compact-execute-toggles](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L52-L76) draws Show full command and Show output as one button.
   The working directory and elapsed time sit on the first line.
   [executeWorkingDirectoryLabel](../../../webview/acp-ui/src/toolCallCompactText.ts#L656-L667) shows that directory as `~/…` when it is under the home directory, and uses the workspace folder when the command has no directory.
   The command keeps its line breaks under the `$`.
   [BashRunTimer](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.tsx#L17-L22) counts while the command runs.
   [runningBashStartedAtMs](../../../webview/acp-ui/src/chatReducer.ts#L298-L310) feeds the same clock to the composer.
   [executeOutputPreview](../../../webview/acp-ui/src/toolCallCompactText.ts#L693-L722) keeps a long result closed.
-  Show output opens that result in [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L70-L81).
+  Show output opens that result in [tool-call-compact-execute-output](../../../webview/acp-ui/src/components/acp/tools/ToolCallCompactExecuteBlock/ToolCallCompactExecuteBlock.css#L84-L95).
   That block uses the composer background, a small corner radius, and no side bar.
   While the result is open, the control stays under the output.
   The directory line shows a compact duration when known (`~/foo/bar 117ms`).
